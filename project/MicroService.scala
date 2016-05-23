@@ -18,9 +18,21 @@ trait MicroService {
   lazy val plugins : Seq[Plugins] = Seq(play.PlayScala)
   lazy val playSettings : Seq[Setting[_]] = Seq.empty
 
+  lazy val scoverageSettings = {
+    import scoverage.ScoverageSbtPlugin._
+    Seq(
+      // Semicolon-separated list of regexs matching classes to exclude
+      ScoverageKeys.coverageExcludedPackages := "<empty>;Reverse.*;.*AuthService.*;models/.data/..*;view.*",
+      ScoverageKeys.coverageMinimum := 80,
+      ScoverageKeys.coverageFailOnMinimum := false,
+      ScoverageKeys.coverageHighlighting := true,
+      parallelExecution in Test := false
+    )
+  }
+
   lazy val microservice = Project(appName, file("."))
     .enablePlugins(Seq(play.PlayScala) ++ plugins : _*)
-    .settings(playSettings : _*)
+    .settings(playSettings ++ scoverageSettings : _*)
     .settings(scalaSettings: _*)
     .settings(publishingSettings: _*)
     .settings(defaultSettings(): _*)
