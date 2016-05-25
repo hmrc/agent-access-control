@@ -1,5 +1,6 @@
+import play.PlayImport.PlayKeys._
 import sbt.Keys._
-import sbt.Tests.{SubProcess, Group}
+import sbt.Tests.{Group, SubProcess}
 import sbt._
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
 
@@ -9,7 +10,7 @@ trait MicroService {
   import org.scalastyle.sbt.ScalastylePlugin.scalastyleConfig
   import uk.gov.hmrc._
   import DefaultBuildSettings._
-  import uk.gov.hmrc.{SbtBuildInfo, ShellPrompt}
+
 
   import TestPhases._
 
@@ -37,6 +38,7 @@ trait MicroService {
     .settings(scalaSettings: _*)
     .settings(publishingSettings: _*)
     .settings(defaultSettings(): _*)
+    .settings(routesImport ++= Seq("uk.gov.hmrc.agentaccesscontrol.binders.PathBinders._"))
     .settings(
       targetJvm := "jvm-1.8",
       scalaVersion := "2.11.8",
