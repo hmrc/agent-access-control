@@ -1,3 +1,5 @@
 # microservice specific routes
 
-GET        /hello-world             uk.gov.hmrc.agentaccesscontrol.controllers.MicroserviceHelloWorld.hello
+
+
+GET    /sa-auth/agent/:agentCode/client/:saUtr    @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorised(agentCode: uk.gov.hmrc.domain.AgentCode, saUtr: uk.gov.hmrc.domain.SaUtr)
