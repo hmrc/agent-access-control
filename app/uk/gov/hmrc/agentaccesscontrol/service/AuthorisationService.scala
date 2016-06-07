@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
+import play.api.Logger
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model.{FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
@@ -28,8 +29,21 @@ class AuthorisationService(desAgentClientApiConnector: DesAgentClientApiConnecto
   def isAuthorised(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
     desAgentClientApiConnector.getAgentClientRelationship(agentCode, saUtr).
       map {
-        case NotFoundResponse => false
-        case FoundResponse(auth64_8, authI64_8) => auth64_8 && authI64_8
+        case NotFoundResponse =>
+          notAuthorised(s"DES API returned not found for agent $agentCode and client $saUtr")
+        case FoundResponse(auth64_8, authI64_8) if auth64_8 && authI64_8 =>
+          authorised(s"DES API returned true for both flags for agent $agentCode and client $saUtr")
+        case FoundResponse(auth64_8, authI64_8) =>
+          notAuthorised(s"DES API returned false for at least one flag agent $agentCode and client $saUtr. 64-8=$auth64_8, i64-8=$authI64_8")
       }
-    Future successful false
+
+  private def notAuthorised(message: String) = {
+    Logger.info(s"Not authorised: $message")
+    false
+  }
+
+  private def authorised(message: String) = {
+    Logger.info(s"Authorised: $message")
+    true
+  }
 }
