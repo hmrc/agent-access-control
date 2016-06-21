@@ -16,8 +16,11 @@
 
 package uk.gov.hmrc.agentaccesscontrol
 
+import java.net.URL
+
 import play.api.mvc.Controller
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
+import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector => OurAuthConnector}
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController
 import uk.gov.hmrc.agentaccesscontrol.service.AuthorisationService
@@ -44,7 +47,8 @@ object MicroserviceAuthConnector extends AuthConnector with ServicesConfig {
 trait ServiceRegistry extends ServicesConfig {
   lazy val auditService: AuditService.type = AuditService
   lazy val desAgentClientApiConnector = new DesAgentClientApiConnector(baseUrl("des"))
-  lazy val authorisationService: AuthorisationService = new AuthorisationService(desAgentClientApiConnector)
+  lazy val authConnector = new OurAuthConnector(new URL(baseUrl("auth")), WSHttp)
+  lazy val authorisationService: AuthorisationService = new AuthorisationService(desAgentClientApiConnector, authConnector)
 }
 
 trait ControllerRegistry {

@@ -16,16 +16,16 @@
 
 package uk.gov.hmrc.agentaccesscontrol.support
 
-import com.github.tomakehurst.wiremock.client.{MappingBuilder, ResponseDefinitionBuilder}
 import com.github.tomakehurst.wiremock.client.WireMock._
-import org.scalatest.{BeforeAndAfterEach, Suite, BeforeAndAfter}
+import com.github.tomakehurst.wiremock.client.{MappingBuilder, ResponseDefinitionBuilder}
+import org.scalatest.{BeforeAndAfterEach, Suite}
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
-import uk.gov.hmrc.domain.{SaUtr, AgentCode}
+import uk.gov.hmrc.domain.{SaAgentReference, SaUtr}
 
-trait TestObjects {
-  val theAgent = AgentCode("Agent1")
-  val unknownAgent = AgentCode("UnknownAgent")
-  val agent500 = AgentCode("Agent500")
+trait TestDesObjects {
+  val theAgent = SaAgentReference("Agent1")
+  val unknownAgent = SaAgentReference("UnknownAgent")
+  val agent500 = SaAgentReference("Agent500")
   val anUnauthorisedClient = SaUtr("ClientOfAgent0")
   val aClientAuthorisedBy648 = SaUtr("ClientOfAgent1")
   val aClientAuthorisedByI648 = SaUtr("ClientOfAgent2")
@@ -38,11 +38,11 @@ trait DesStubHelper {
   def desAgentClientFlagsRequest =
     new DesAgentClientFlagsStubBuilder(get(urlMatching(s"/agents/[^/]+/sa/client/sa-utr/[^/]+")))
 
-  def desAgentClientFlagsRequest(agentCode: AgentCode) =
-    new DesAgentClientFlagsStubBuilder(get(urlMatching(s"/agents/${agentCode.value}/sa/client/sa-utr/[^/]+")))
+  def desAgentClientFlagsRequest(saAgentReference: SaAgentReference) =
+    new DesAgentClientFlagsStubBuilder(get(urlMatching(s"/agents/${saAgentReference.value}/sa/client/sa-utr/[^/]+")))
 
-  def desAgentClientFlagsRequest(agentCode: AgentCode, clientSaUtr: SaUtr) =
-    new DesAgentClientFlagsStubBuilder(get(urlPathEqualTo(s"/agents/${agentCode.value}/sa/client/sa-utr/${clientSaUtr.value}")))
+  def desAgentClientFlagsRequest(saAgentReference: SaAgentReference, clientSaUtr: SaUtr) =
+    new DesAgentClientFlagsStubBuilder(get(urlPathEqualTo(s"/agents/${saAgentReference.value}/sa/client/sa-utr/${clientSaUtr.value}")))
 
   case class DesAgentClientFlagsStubBuilder(request: MappingBuilder) {
 
@@ -62,7 +62,7 @@ trait DesStubHelper {
 
 }
 
-trait DesStub extends DesStubHelper with BeforeAndAfterEach with TestObjects {
+trait DesStub extends DesStubHelper with BeforeAndAfterEach with TestDesObjects {
   me: StartAndStopWireMock with Suite =>
 
   override def beforeEach(): Unit = {

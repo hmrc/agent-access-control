@@ -21,7 +21,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.domain.{SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpReads, NotFoundException}
 
 import scala.concurrent.Future
@@ -35,12 +35,12 @@ class DesAgentClientApiConnector(desBaseUrl: String) {
 
   private implicit val reader = HttpReads.readFromJson[FoundResponse]
 
-  def getAgentClientRelationship(agentCode: AgentCode, saUtr: SaUtr)(implicit hc: HeaderCarrier):
+  def getAgentClientRelationship(agentCode: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
       Future[DesAgentClientFlagsApiResponse] =
     WSHttp.GET(urlFor(agentCode, saUtr)) recover {
       case _: NotFoundException => NotFoundResponse
     }
 
-  private def urlFor(agentCode: AgentCode, saUtr: SaUtr): String =
-    s"$desBaseUrl/agents/$agentCode/sa/client/sa-utr/$saUtr"
+  private def urlFor(agentCode: SaAgentReference, saUtr: SaUtr): String =
+    s"$desBaseUrl/agents/${agentCode.value}/sa/client/sa-utr/$saUtr"
 }
