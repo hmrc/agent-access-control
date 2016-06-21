@@ -16,72 +16,83 @@
 
 package uk.gov.hmrc.agentaccesscontrol
 
-import org.scalatestplus.play.OneServerPerSuite
-import play.api.test.FakeApplication
-import uk.gov.hmrc.agentaccesscontrol.support.{DesStub, Resource}
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.agentaccesscontrol.support.{BaseISpec, Resource}
+import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HttpResponse
-import uk.gov.hmrc.play.test.UnitSpec
-
-abstract class BaseISpec
-  extends UnitSpec
-  with OneServerPerSuite
-  with StartAndStopWireMock
-  with DesStub {
-
-  private val configAuthControllerNeedsAuth = "controllers.uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.needsAuth"
-  private val configDesHost = "microservice.services.des.host"
-  private val configDesPort = "microservice.services.des.port"
-  private val auditEnabled = "auditing.enabled"
-
-  override implicit lazy val app: FakeApplication = FakeApplication(
-    additionalConfiguration = Map(
-      configAuthControllerNeedsAuth -> false,
-      configDesHost -> wiremockHost,
-      configDesPort -> wiremockPort,
-      auditEnabled -> false
-    )
-  )
-}
 
 class AuthorisationControllerISpec extends BaseISpec {
 
-  // TODO rewrite in the style of AuthConnectorISpec as this will not scale as more and more backend services are used
+  val agentCode = AgentCode("ABCDEF123456")
+  val saAgentReference = SaAgentReference("ABC456")
+  val clientUtr = SaUtr("123")
 
-//  "/agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
-//    "respond with 401" when {
-//      "the agent is unknown" in {
-//        authResponseFor(unknownAgent, anUnlinkedClient).status shouldBe 401
-//      }
-//
-//      "there is no relationship between the agent and the client" in {
-//        authResponseFor(theAgent, anUnlinkedClient).status shouldBe 401
-//      }
-//
-//      "the client has authorised the agent only with 64-8, but not i64-8" in {
-//        authResponseFor(theAgent, aClientAuthorisedBy648).status shouldBe 401
-//      }
-//
-//      "the client has authorised the agent only with i64-8, but not 64-8" in {
-//        authResponseFor(theAgent, aClientAuthorisedByI648).status shouldBe 401
-//      }
-//
-//      "the client has authorised the agent with neither i64-8 nor 64-8" in {
-//        authResponseFor(theAgent, anUnauthorisedClient).status shouldBe 401
-//      }
-//
-//      "there was an error in a downstream service" in {
-//        authResponseFor(agent500, anUnlinkedClient).status shouldBe 401
-//      }
-//    }
-//
-//    "respond with 200" when {
-//      "the client has authorised the agent with both 64-8 and i64-8" in  {
-//        authResponseFor(theAgent, aFullyAuthorisedClient).status shouldBe 200
-//      }
-//    }
-//  }
+  "/agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
+    "respond with 401" when {
+      "agent is not logged in" in {
+        given()
+          .agentAdmin(agentCode).isNotLoggedIn()
 
+        authResponseFor(agentCode, clientUtr).status shouldBe 401
+      }
+
+      "agent is not enrolled to SA" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andIsNotEnrolledForSA()
+
+        authResponseFor(agentCode, clientUtr).status shouldBe 401
+      }
+
+      "agent and client has no relation" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasSaAgentReference(saAgentReference)
+          .andHasNoRelationInDesWith(clientUtr)
+
+        authResponseFor(agentCode, clientUtr).status shouldBe 401
+      }
+
+      "the client has authorised the agent only with 64-8, but not i64-8" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasSaAgentReference(saAgentReference)
+          .andIsRelatedToClient(clientUtr).andIsAuthorisedByOnly648()
+
+        authResponseFor(agentCode, clientUtr).status shouldBe 401
+      }
+
+      "the client has authorised the agent only with i64-8, but not 64-8" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasSaAgentReference(saAgentReference)
+          .andIsRelatedToClient(clientUtr).andIsAuthorisedByOnlyI648()
+
+        authResponseFor(agentCode, clientUtr).status shouldBe 401
+      }
+
+      "the client has not authorised the agent" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasSaAgentReference(saAgentReference)
+          .andIsRelatedToClient(clientUtr).butIsNotAuthorised()
+
+        authResponseFor(agentCode, clientUtr).status shouldBe 401
+      }
+    }
+
+    "respond with 200" when {
+      "the client has authorised the agent with both 64-8 and i64-8" in  {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasSaAgentReference(saAgentReference)
+          .andIsRelatedToClient(clientUtr).andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr).status shouldBe 200
+      }
+    }
+
+  }
+  
   def authResponseFor(agentCode: AgentCode, clientSaUtr: SaUtr): HttpResponse =
     new Resource(s"/agent-access-control/sa-auth/agent/${agentCode.value}/client/${clientSaUtr.value}")(port).get()
 

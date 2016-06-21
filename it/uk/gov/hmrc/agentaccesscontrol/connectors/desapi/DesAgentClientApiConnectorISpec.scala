@@ -16,62 +16,53 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
-import com.github.tomakehurst.wiremock.client.WireMock._
-import org.scalatestplus.play.OneServerPerSuite
-import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentaccesscontrol.model.{FoundResponse, NotFoundResponse}
-import uk.gov.hmrc.agentaccesscontrol.support.DesStubHelper
-import uk.gov.hmrc.domain.{SaAgentReference, AgentCode, SaUtr}
+import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
+import uk.gov.hmrc.domain.{SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
 
 
-class DesAgentClientApiConnectorISpec extends UnitSpec
-  with OneServerPerSuite
-  with StartAndStopWireMock
-  with DesStubHelper {
+class DesAgentClientApiConnectorISpec extends BaseISpec {
 
   implicit val headerCarrier = HeaderCarrier()
 
   "getAgentClientRelationship" should {
     "pass along 64-8 and i64-8 information" when {
       "agent is authorised by 64-8 and i64-8" in new Context {
-        desAgentClientFlagsRequest(saAgentReference, saUtr)
-          .willReturn(aResponse().withStatus(200).withBody(
-            """
-              |{
-              |    "Auth_64-8": true,
-              |    "Auth_i64-8": true
-              |}
-            """.stripMargin))
+        givenClientIsLoggedIn()
+          .andIsRelatedToClient(saUtr).andAuthorisedByBoth648AndI648()
 
         await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
       }
       "agent is authorised by only i64-8" in new Context {
-        desAgentClientFlagsRequest(saAgentReference, saUtr).willReturnFlags(false, true)
+        givenClientIsLoggedIn()
+          .andIsRelatedToClient(saUtr).andIsAuthorisedByOnlyI648()
 
         await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = true)
       }
       "agent is authorised by only 64-8" in new Context {
-        desAgentClientFlagsRequest(saAgentReference, saUtr).willReturnFlags(true, false)
+        givenClientIsLoggedIn()
+          .andIsRelatedToClient(saUtr).andIsAuthorisedByOnly648()
 
         await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = false)
       }
       "agent is not authorised" in new Context {
-        desAgentClientFlagsRequest(saAgentReference, saUtr).willReturnFlags(false, false)
+        givenClientIsLoggedIn()
+          .andIsRelatedToClient(saUtr).butIsNotAuthorised()
 
         await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = false)
       }
     }
 
     "return NotFoundResponse in case of a 404" in new Context {
-      desAgentClientFlagsRequest(saAgentReference, saUtr).willReturnStatus(404)
+      givenClientIsLoggedIn()
+        .andHasNoRelationInDesWith(saUtr)
 
       await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe NotFoundResponse
     }
 
     "fail in any other cases, like internal server error" in new Context {
-      desAgentClientFlagsRequest(saAgentReference, saUtr).willReturnStatus(500)
+      givenClientIsLoggedIn().andDesIsDown()
 
       an[Exception] should be thrownBy await(connector.getAgentClientRelationship(saAgentReference, saUtr))
     }
@@ -81,5 +72,10 @@ class DesAgentClientApiConnectorISpec extends UnitSpec
     val connector = new DesAgentClientApiConnector(wiremockBaseUrl)
     val saAgentReference = SaAgentReference("AGENTR")
     val saUtr = SaUtr("SAUTR456")
+
+    def givenClientIsLoggedIn() =
+      given()
+        .agentAdmin("ABCDEF122345").isLoggedIn()
+        .andHasSaAgentReference(saAgentReference)
   }
 }
