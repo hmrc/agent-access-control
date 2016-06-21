@@ -28,13 +28,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AuthConnector(baseUrl: URL, httpGet: HttpGet) {
 
-  def currentSaAgentReference()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SaAgentReference] =
+  def currentSaAgentReference()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[SaAgentReference]] =
     currentAuthority
       .flatMap(enrolments)
       .map(toSaAgentReference)
 
-  private def toSaAgentReference(enrolments: Enrolments): SaAgentReference =
-    enrolments.saAgentReferenceOption.getOrElse(throw new NoSaAgentReferenceFound)
+  private def toSaAgentReference(enrolments: Enrolments): Option[SaAgentReference] =
+    enrolments.saAgentReferenceOption
 
   private def currentAuthority()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[JsValue] =
     httpGetAs[JsValue]("/auth/authority")
@@ -50,5 +50,3 @@ class AuthConnector(baseUrl: URL, httpGet: HttpGet) {
     httpGet.GET[T](url(relativeUrl).toString)(rds, hc)
 
 }
-
-class NoSaAgentReferenceFound extends RuntimeException

@@ -32,17 +32,15 @@ class AuthConnectorISpec extends BaseISpec {
         .agentAdmin("ABCDEF123456").isLoggedIn()
         .andHasSaAgentReference("REF879")
 
-      await(newAuthConnector.currentSaAgentReference) shouldBe SaAgentReference("REF879")
+      await(newAuthConnector.currentSaAgentReference).get shouldBe SaAgentReference("REF879")
     }
 
-    "return a failed future if 6 digit agent reference cannot be found" in {
+    "return None if 6 digit agent reference cannot be found" in {
       given()
         .agentAdmin("ABCDEF123456").isLoggedIn()
         .andHasNoSaAgentReference()
 
-      an[NoSaAgentReferenceFound] shouldBe thrownBy {
-        await(newAuthConnector.currentSaAgentReference)
-      }
+      await(newAuthConnector.currentSaAgentReference) shouldBe None
     }
 
     "return a failed future if any errors happen" in {
