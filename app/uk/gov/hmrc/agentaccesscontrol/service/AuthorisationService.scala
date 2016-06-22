@@ -29,16 +29,16 @@ class AuthorisationService(desAgentClientApiConnector: DesAgentClientApiConnecto
                            authConnector: AuthConnector) {
 
   def isAuthorised(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
-    authConnector.currentSaAgentReference().flatMap({
+    authConnector.currentSaAgentReference().flatMap {
       case Some(saAgentReference) =>
         desAgentClientApiConnector
           .getAgentClientRelationship(saAgentReference, saUtr)
           .map(handleDesResponse(agentCode, saUtr, _))
       case None =>
         Future successful notAuthorised(s"No 6 digit agent code found for agent $agentCode")
-    })
+    }
 
-  def handleDesResponse(agentCode: AgentCode, saUtr: SaUtr, response: DesAgentClientFlagsApiResponse): Boolean = response match {
+  private def handleDesResponse(agentCode: AgentCode, saUtr: SaUtr, response: DesAgentClientFlagsApiResponse): Boolean = response match {
     case NotFoundResponse =>
       notAuthorised(s"DES API returned not found for agent $agentCode and client $saUtr")
     case FoundResponse(true, true) =>
