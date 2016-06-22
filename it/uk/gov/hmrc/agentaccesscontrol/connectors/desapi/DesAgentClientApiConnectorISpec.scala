@@ -76,6 +76,6 @@ class DesAgentClientApiConnectorISpec extends BaseISpec {
     def givenClientIsLoggedIn() =
       given()
         .agentAdmin("ABCDEF122345").isLoggedIn()
-        .andHasSaAgentReference(saAgentReference)
+        .andHasSaAgentReferenceWithEnrolment(saAgentReference)
   }
 }

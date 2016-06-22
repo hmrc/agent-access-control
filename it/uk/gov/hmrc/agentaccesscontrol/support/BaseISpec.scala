@@ -122,10 +122,14 @@ trait StubUtils {
       this
     }
 
-    def andIsNotEnrolledForSA() = andHasNoSaAgentReference
+    def andIsNotEnrolledForSA() = andHasNoIrSaAgentEnrolment()
 
     def andHasNoSaAgentReference(): A = {
       saAgentReference = None
+      andHasNoIrSaAgentEnrolment()
+    }
+
+    def andHasNoIrSaAgentEnrolment(): A = {
       stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(
         s"""
            |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
@@ -135,20 +139,35 @@ trait StubUtils {
       this
     }
 
-    def andHasSaAgentReference(saAgentReference: SaAgentReference): A =
+    def andHasSaAgentReference(saAgentReference: SaAgentReference): A = {
       andHasSaAgentReference(saAgentReference.value)
+    }
 
     def andHasSaAgentReference(ref: String): A = {
       saAgentReference = Some(SaAgentReference(ref))
+      this
+    }
+
+    def andHasSaAgentReferenceWithEnrolment(saAgentReference: SaAgentReference): A =
+      andHasSaAgentReferenceWithEnrolment(saAgentReference.value)
+
+    def andHasSaAgentReferenceWithEnrolment(ref: String, enrolmentState: String = "Activated"): A = {
+      andHasSaAgentReference(ref)
       stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(
         s"""
            |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
            | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
-           | {"key":"IR-SA-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the IR Agent Reference"}, {"key":"IRAgentReference","value":"$ref"}],"state":"Activated"}]
+           | {"key":"IR-SA-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the IR Agent Reference"}, {"key":"IRAgentReference","value":"$ref"}],"state":"$enrolmentState"}]
          """.stripMargin
       )))
       this
     }
+
+    def andHasSaAgentReferenceWithPendingEnrolment(saAgentReference: SaAgentReference): A =
+      andHasSaAgentReferenceWithPendingEnrolment(saAgentReference.value)
+
+    def andHasSaAgentReferenceWithPendingEnrolment(ref: String): A =
+      andHasSaAgentReferenceWithEnrolment(ref, enrolmentState = "Pending")
 
     def isNotLoggedIn(): A = {
       stubFor(get(urlPathEqualTo(s"/auth/authority")).willReturn(aResponse().withStatus(401)))
