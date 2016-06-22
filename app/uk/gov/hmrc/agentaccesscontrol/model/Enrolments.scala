@@ -23,7 +23,7 @@ import scala.concurrent.Future
 
 case class EnrolmentIdentifier(key: String, value: String)
 case class AuthEnrolment(key: String, identifiers: Seq[EnrolmentIdentifier], state: String) {
-  val isActivated: Boolean = state == "Activated"
+  val isActivated: Boolean = state equalsIgnoreCase "Activated"
   def identifier(key: String): Option[String] = identifiers.find(_.key == key).map(_.value)
 }
 
