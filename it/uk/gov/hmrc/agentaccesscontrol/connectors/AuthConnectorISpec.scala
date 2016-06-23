@@ -30,7 +30,7 @@ class AuthConnectorISpec extends BaseISpec {
     "return sa agent reference" in {
       given()
         .agentAdmin("ABCDEF123456").isLoggedIn()
-        .andHasSaAgentReference("REF879")
+        .andHasSaAgentReferenceWithEnrolment("REF879")
 
       await(newAuthConnector.currentSaAgentReference).get shouldBe SaAgentReference("REF879")
     }
