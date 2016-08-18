@@ -23,7 +23,7 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector => OurAuthConnector}
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController
-import uk.gov.hmrc.agentaccesscontrol.service.AuthorisationService
+import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, CesaAuthorisationService}
 import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.auth.microservice.connectors.AuthConnector
@@ -48,7 +48,8 @@ trait ServiceRegistry extends ServicesConfig {
   lazy val auditService: AuditService.type = AuditService
   lazy val desAgentClientApiConnector = new DesAgentClientApiConnector(baseUrl("des"))
   lazy val authConnector = new OurAuthConnector(new URL(baseUrl("auth")), WSHttp)
-  lazy val authorisationService: AuthorisationService = new AuthorisationService(desAgentClientApiConnector, authConnector)
+  lazy val cesaAuthorisationService = new CesaAuthorisationService(desAgentClientApiConnector)
+  lazy val authorisationService: AuthorisationService = new AuthorisationService(cesaAuthorisationService, authConnector)
 }
 
 trait ControllerRegistry {

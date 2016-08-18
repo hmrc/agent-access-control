@@ -20,8 +20,6 @@ import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.connectors.AuthConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.model.{FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -37,57 +35,32 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   implicit val headerCarrier = HeaderCarrier()
 
+
   "isAuthorised" should {
-    "return false if the Agent or the relationship between the Agent and Client was not found" in new Context {
-      when(mockAuthConnector.currentSaAgentReference()).thenReturn(Some(saAgentRef))
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(NotFoundResponse)
-
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-    }
-
-    "return true if the API returns 64-8=true and i64-8=true" in new Context {
-      when(mockAuthConnector.currentSaAgentReference()).thenReturn(Some(saAgentRef))
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = true, authI64_8 = true))
-
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
-    }
-
-    "return false if the API returns 64-8=true and i64-8=false" in new Context {
-      when(mockAuthConnector.currentSaAgentReference()).thenReturn(Some(saAgentRef))
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = true, authI64_8 = false))
-
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-    }
-
-    "return false if the API returns 64-8=false and i64-8=true" in new Context {
-      when(mockAuthConnector.currentSaAgentReference()).thenReturn(Some(saAgentRef))
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = false, authI64_8 = true))
-
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-    }
-
-    "return false if the API returns 64-8=false and i64-8=false" in new Context {
-      when(mockAuthConnector.currentSaAgentReference()).thenReturn(Some(saAgentRef))
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = false, authI64_8 = false))
-
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-    }
-
     "return false if SA agent reference cannot be found" in new Context {
       when(mockAuthConnector.currentSaAgentReference()).thenReturn(None)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
     }
 
-    "propagate any errors that happened" in new Context {
+    "return false if SA agent reference is found and CesaAuthorisationService returns false" in new Context {
       when(mockAuthConnector.currentSaAgentReference()).thenReturn(Some(saAgentRef))
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(Future failed new BadRequestException("bad request"))
+      when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
+        .thenReturn(false)
+
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+    }
+
+    "return true if SA agent reference is found and CesaAuthorisationService returns true" in new Context {
+      when(mockAuthConnector.currentSaAgentReference()).thenReturn(Some(saAgentRef))
+      when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
+        .thenReturn(true)
+
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
+    }
+
+    "propagate any errors that happened" in new Context {
+      when(mockAuthConnector.currentSaAgentReference()).thenReturn(Future failed new BadRequestException("bad request"))
 
       intercept[BadRequestException] {
         await(authorisationService.isAuthorised(agentCode, clientSaUtr))
@@ -96,10 +69,10 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   }
 
   private abstract class Context {
-    val mockDesAgentClientApiConnector = mock[DesAgentClientApiConnector]
     val mockAuthConnector = mock[AuthConnector]
+    val mockCesaAuthorisationService = mock[CesaAuthorisationService]
     val authorisationService = new AuthorisationService(
-      mockDesAgentClientApiConnector,
+      mockCesaAuthorisationService,
       mockAuthConnector)
   }
 }
