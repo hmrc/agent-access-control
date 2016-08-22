@@ -23,16 +23,21 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) {
   }
 
   def parseResponse(xmlString: String) : Option[AgentDetails] = {
+    // TODO make this secure -- disable insecure XML parser features
     val XML = scala.xml.XML.withSAXParser(SAXParserFactory.newInstance().newSAXParser())
 
     val xml = XML.loadString(xmlString)
     val agentDetails = xml \ "AllocatedAgents" \ "AgentDetails"
-    val agentCode = (agentDetails \ "AgentCode").head.text
+    if (agentDetails.nonEmpty) {
+      val agentCode = (agentDetails \ "AgentCode").head.text
 
-    val credentials = (agentDetails \ "AssignedCredentials" \ "Credential").map { elem =>
-      AssignedCredentials((elem \ "CredentialIdentifier").head.text)
+      val credentials = (agentDetails \ "AssignedCredentials" \ "Credential").map { elem =>
+        AssignedCredentials((elem \ "CredentialIdentifier").head.text)
+      }
+      Some(AgentDetails(agentCode, credentials))
+    } else {
+      None
     }
-    Some(AgentDetails(agentCode, credentials))
   }
 
 
