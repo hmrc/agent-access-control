@@ -19,14 +19,13 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.domain.{SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpReads, NotFoundException}
+import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpReads, NotFoundException}
 
 import scala.concurrent.Future
 
-class DesAgentClientApiConnector(desBaseUrl: String) {
+class DesAgentClientApiConnector(desBaseUrl: String, httpGet: HttpGet) {
 
   private implicit val foundResponseReads: Reads[FoundResponse] = (
     (__ \ "Auth_64-8").read[Boolean] and
@@ -37,7 +36,7 @@ class DesAgentClientApiConnector(desBaseUrl: String) {
 
   def getAgentClientRelationship(agentCode: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
       Future[DesAgentClientFlagsApiResponse] =
-    WSHttp.GET(urlFor(agentCode, saUtr)) recover {
+    httpGet.GET(urlFor(agentCode, saUtr)) recover {
       case _: NotFoundException => NotFoundResponse
     }
 

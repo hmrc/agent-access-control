@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
+import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.model.{FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
 import uk.gov.hmrc.domain.{SaAgentReference, SaUtr}
@@ -69,7 +70,7 @@ class DesAgentClientApiConnectorISpec extends BaseISpec {
   }
 
   private abstract class Context {
-    val connector = new DesAgentClientApiConnector(wiremockBaseUrl)
+    val connector = new DesAgentClientApiConnector(wiremockBaseUrl, WSHttp)
     val saAgentReference = SaAgentReference("AGENTR")
     val saUtr = SaUtr("SAUTR456")
 
