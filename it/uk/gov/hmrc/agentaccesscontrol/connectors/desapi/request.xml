@@ -1,0 +1,5 @@
+<GsoAdminGetAssignedAgentsXmlInput xmlns="urn:GSO-System-Services:external:2.13.3:GsoAdminGetAssignedAgentsXmlInput">
+    <DelegatedAccessIdentifier>HMRC</DelegatedAccessIdentifier>
+    <ServiceName>IR-SA</ServiceName>
+    <Identifiers><Identifier IdentifierType="utr">5115552936</Identifier></Identifiers>
+</GsoAdminGetAssignedAgentsXmlInput>
