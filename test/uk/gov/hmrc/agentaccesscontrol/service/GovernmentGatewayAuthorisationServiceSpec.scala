@@ -25,7 +25,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class GovernmentGatewayAuthorisationServiceTest extends UnitSpec with MockitoSugar {
+class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   val ggProxyConnector = mock[GovernmentGatewayProxyConnector]
   val service = new GovernmentGatewayAuthorisationService(ggProxyConnector)
@@ -34,19 +34,37 @@ class GovernmentGatewayAuthorisationServiceTest extends UnitSpec with MockitoSug
 
   "isAuthorisedInGovernmentGateway " should {
     "return true if the agent is assigned to the client" in {
-      when(ggProxyConnector.getAssignedSaAgents(utr)(hc)).thenReturn(Future successful Some(AgentDetails("AgentCode", Seq(AssignedCredentials("000111333")))))
+      when(ggProxyConnector.getAssignedSaAgents(utr)(hc)).thenReturn(Future successful Seq(AgentDetails("AgentCode", Seq(AssignedCredentials("000111333")))))
 
       val result = await(service.isAuthorisedInGovernmentGateway(utr, "000111333"))
 
       result shouldBe true
     }
 
+    "return true if there is more than one agent is assigned to the client" in {
+      when(ggProxyConnector.getAssignedSaAgents(utr)(hc)).thenReturn(Future successful
+        Seq(AgentDetails("AgentCode", Seq(AssignedCredentials("000111333"), AssignedCredentials("000111444")))))
+
+      val result = await(service.isAuthorisedInGovernmentGateway(utr, "000111444"))
+
+      result shouldBe true
+    }
+
     "return false if the agent is not assigned to the client" in {
-      when(ggProxyConnector.getAssignedSaAgents(utr)(hc)).thenReturn(Future successful Some(AgentDetails("AgentCode", Seq(AssignedCredentials("000111333")))))
+      when(ggProxyConnector.getAssignedSaAgents(utr)(hc)).thenReturn(Future successful Seq(AgentDetails("AgentCode", Seq(AssignedCredentials("000111333")))))
 
       val result = await(service.isAuthorisedInGovernmentGateway(utr, "NonMatchingCred"))
 
       result shouldBe false
+    }
+
+    "throw exception if there is more than one agency assigned to the client" in {
+      when(ggProxyConnector.getAssignedSaAgents(utr)(hc)).thenReturn(
+        Future successful Seq(
+          AgentDetails("AgentCode", Seq(AssignedCredentials("000111333"))),
+          AgentDetails("AgentCode1", Seq(AssignedCredentials("000111444")))))
+
+      an[IllegalStateException] should be thrownBy await(service.isAuthorisedInGovernmentGateway(utr, "NonMatchingCred"))
     }
 
     "throw exception if government gateway proxy fails" in {

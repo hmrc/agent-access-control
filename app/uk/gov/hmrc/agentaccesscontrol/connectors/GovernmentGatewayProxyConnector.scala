@@ -36,23 +36,21 @@ case class AssignedCredentials(identifier: String)
 class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) {
   val url: URL = new URL(baseUrl, "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents")
 
-  def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Option[AgentDetails]] = {
+  def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AgentDetails]] = {
     httpPost.POSTString(url.toString, body(utr))
       .map(r => parseResponse(r.body))
   }
 
-  def parseResponse(xmlString: String) : Option[AgentDetails] = {
+  def parseResponse(xmlString: String) : Seq[AgentDetails] = {
     val xml: Elem = toXmlElement(xmlString)
     val agentDetails = xml \ "AllocatedAgents" \ "AgentDetails"
-    if (agentDetails.nonEmpty) {
-      val agentCode = (agentDetails \ "AgentCode").head.text
+    agentDetails.map { agency =>
+      val agentCode = (agency \ "AgentCode").text
 
-      val credentials = (agentDetails \ "AssignedCredentials" \ "Credential").map { elem =>
-        AssignedCredentials((elem \ "CredentialIdentifier").head.text)
+      val credentials = (agency \ "AssignedCredentials" \ "Credential").map { elem =>
+        AssignedCredentials((elem \ "CredentialIdentifier").text)
       }
-      Some(AgentDetails(agentCode, credentials))
-    } else {
-      None
+      AgentDetails(agentCode, credentials)
     }
   }
 

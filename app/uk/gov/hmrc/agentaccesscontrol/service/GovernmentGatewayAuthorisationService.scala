@@ -27,8 +27,9 @@ class GovernmentGatewayAuthorisationService(val ggProxyConnector: GovernmentGate
 
   def isAuthorisedInGovernmentGateway(saUtr: SaUtr, ggCredentialId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
     ggProxyConnector.getAssignedSaAgents(saUtr) map {
-      case Some(agentDetails) if agentDetails.assignedCredentials.head.identifier == ggCredentialId => true
-      case _ => false
+      case _ :: _ :: tail => throw new IllegalStateException(s"More than one agency assigned to $saUtr")
+      case agentDetails :: Nil => agentDetails.assignedCredentials.exists(c => c.identifier == ggCredentialId)
+      case Nil => false
     }
   }
 }
