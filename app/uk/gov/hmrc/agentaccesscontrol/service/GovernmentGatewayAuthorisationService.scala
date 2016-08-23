@@ -26,10 +26,9 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 class GovernmentGatewayAuthorisationService(val ggProxyConnector: GovernmentGatewayProxyConnector) {
 
   def isAuthorisedInGovernmentGateway(saUtr: SaUtr, ggCredentialId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    ggProxyConnector.getAssignedSaAgents(saUtr) map {
-      case _ :: _ :: tail => throw new IllegalStateException(s"More than one agency assigned to $saUtr")
-      case agentDetails :: Nil => agentDetails.assignedCredentials.exists(c => c.identifier == ggCredentialId)
-      case Nil => false
+    ggProxyConnector.getAssignedSaAgents(saUtr) map { agentDetails =>
+      agentDetails.exists(agency
+      => agency.assignedCredentials.exists(c => c.identifier == ggCredentialId))
+      }
     }
-  }
 }

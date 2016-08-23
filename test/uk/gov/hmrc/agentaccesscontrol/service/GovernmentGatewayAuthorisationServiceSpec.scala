@@ -58,13 +58,13 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
       result shouldBe false
     }
 
-    "throw exception if there is more than one agency assigned to the client" in {
+    "return true there is more than one agency assigned to the client" in {
       when(ggProxyConnector.getAssignedSaAgents(utr)(hc)).thenReturn(
         Future successful Seq(
           AgentDetails("AgentCode", Seq(AssignedCredentials("000111333"))),
           AgentDetails("AgentCode1", Seq(AssignedCredentials("000111444")))))
 
-      an[IllegalStateException] should be thrownBy await(service.isAuthorisedInGovernmentGateway(utr, "NonMatchingCred"))
+      await(service.isAuthorisedInGovernmentGateway(utr, "000111444")) shouldBe true
     }
 
     "throw exception if government gateway proxy fails" in {
