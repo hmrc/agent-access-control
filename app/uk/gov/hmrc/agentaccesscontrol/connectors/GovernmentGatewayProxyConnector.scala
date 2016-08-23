@@ -17,13 +17,16 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
+import javax.xml.XMLConstants
 import javax.xml.parsers.SAXParserFactory
 
+import org.apache.xerces.impl.Constants
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.domain.SaUtr
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost}
 
 import scala.concurrent.Future
+import scala.xml.Elem
 
 case class AgentDetails(agentCode: String,
                         assignedCredentials: Seq[AssignedCredentials])
@@ -39,10 +42,7 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) {
   }
 
   def parseResponse(xmlString: String) : Option[AgentDetails] = {
-    // TODO make this secure -- disable insecure XML parser features
-    val XML = scala.xml.XML.withSAXParser(SAXParserFactory.newInstance().newSAXParser())
-
-    val xml = XML.loadString(xmlString)
+    val xml: Elem = toXmlElement(xmlString)
     val agentDetails = xml \ "AllocatedAgents" \ "AgentDetails"
     if (agentDetails.nonEmpty) {
       val agentCode = (agentDetails \ "AgentCode").head.text
@@ -56,6 +56,17 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) {
     }
   }
 
+
+  def toXmlElement(xmlString: String): Elem = {
+    val factory = SAXParserFactory.newInstance("org.apache.xerces.jaxp.SAXParserFactoryImpl", this.getClass.getClassLoader)
+      factory.setFeature(Constants.SAX_FEATURE_PREFIX + Constants.EXTERNAL_GENERAL_ENTITIES_FEATURE, false)
+      factory.setFeature(Constants.SAX_FEATURE_PREFIX + Constants.EXTERNAL_PARAMETER_ENTITIES_FEATURE, false)
+      factory.setFeature(Constants.XERCES_FEATURE_PREFIX + Constants.DISALLOW_DOCTYPE_DECL_FEATURE, true)
+      factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)
+    val XML = scala.xml.XML.withSAXParser(factory.newSAXParser())
+
+    XML.loadString(xmlString)
+  }
 
   def body(utr: SaUtr): String =
     <GsoAdminGetAssignedAgentsXmlInput xmlns="urn:GSO-System-Services:external:2.13.3:GsoAdminGetAssignedAgentsXmlInput">
