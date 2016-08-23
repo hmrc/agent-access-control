@@ -31,25 +31,25 @@ class DesAgentClientApiConnectorISpec extends BaseISpec {
     "pass along 64-8 and i64-8 information" when {
       "agent is authorised by 64-8 and i64-8" in new Context {
         givenClientIsLoggedIn()
-          .andIsRelatedToClient(saUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToClientInDes(saUtr).andAuthorisedByBoth648AndI648()
 
         await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
       }
       "agent is authorised by only i64-8" in new Context {
         givenClientIsLoggedIn()
-          .andIsRelatedToClient(saUtr).andIsAuthorisedByOnlyI648()
+          .andIsRelatedToClientInDes(saUtr).andIsAuthorisedByOnlyI648()
 
         await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = true)
       }
       "agent is authorised by only 64-8" in new Context {
         givenClientIsLoggedIn()
-          .andIsRelatedToClient(saUtr).andIsAuthorisedByOnly648()
+          .andIsRelatedToClientInDes(saUtr).andIsAuthorisedByOnly648()
 
         await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = false)
       }
       "agent is not authorised" in new Context {
         givenClientIsLoggedIn()
-          .andIsRelatedToClient(saUtr).butIsNotAuthorised()
+          .andIsRelatedToClientInDes(saUtr).butIsNotAuthorised()
 
         await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = false)
       }

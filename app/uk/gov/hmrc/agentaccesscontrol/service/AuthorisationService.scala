@@ -22,14 +22,18 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService, authConnector: AuthConnector)
+class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
+                           authConnector: AuthConnector,
+                           ggAuthorisationService: GovernmentGatewayAuthorisationService)
   extends LoggingAuthorisationResults {
 
   def isAuthorised(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
-    authConnector.currentSaAgentReference().flatMap {
-      case Some(saAgentReference) =>
-        cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr)
-      case None =>
+    authConnector.currentAgentIdentifiers().flatMap {
+      case (Some(saAgentReference), ggCredentialId) =>
+        val results = cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
+          ggAuthorisationService.isAuthorisedInGovernmentGateway(saUtr, ggCredentialId)
+        results.map { case (cesa, gg) => cesa && gg }
+      case (None, _) =>
         Future successful notAuthorised(s"No 6 digit agent code found for agent $agentCode")
     }
 }

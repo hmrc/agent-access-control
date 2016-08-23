@@ -38,29 +38,49 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   "isAuthorised" should {
     "return false if SA agent reference cannot be found" in new Context {
-      when(mockAuthConnector.currentSaAgentReference()).thenReturn(None)
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((None, "ggId"))
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
     }
 
-    "return false if SA agent reference is found and CesaAuthorisationService returns false" in new Context {
-      when(mockAuthConnector.currentSaAgentReference()).thenReturn(Some(saAgentRef))
+    "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns true" in new Context {
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((Some(saAgentRef), "ggId"))
+      when(mockGGAuthorisationService.isAuthorisedInGovernmentGateway(clientSaUtr, "ggId")).thenReturn(true)
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(false)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
     }
 
-    "return true if SA agent reference is found and CesaAuthorisationService returns true" in new Context {
-      when(mockAuthConnector.currentSaAgentReference()).thenReturn(Some(saAgentRef))
+    "return true if SA agent reference is found and CesaAuthorisationService returns true and GG Authorisation returns true" in new Context {
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((Some(saAgentRef), "ggId"))
+      when(mockGGAuthorisationService.isAuthorisedInGovernmentGateway(clientSaUtr, "ggId")).thenReturn(true)
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
     }
 
+    "return false if SA agent reference is found and CesaAuthorisationService returns true and GG Authorisation returns false" in new Context {
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((Some(saAgentRef), "ggId"))
+      when(mockGGAuthorisationService.isAuthorisedInGovernmentGateway(clientSaUtr, "ggId")).thenReturn(true)
+      when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
+        .thenReturn(false)
+
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+    }
+
+    "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns false" in new Context {
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((Some(saAgentRef), "ggId"))
+      when(mockGGAuthorisationService.isAuthorisedInGovernmentGateway(clientSaUtr, "ggId")).thenReturn(false)
+      when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
+        .thenReturn(false)
+
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+    }
+
     "propagate any errors that happened" in new Context {
-      when(mockAuthConnector.currentSaAgentReference()).thenReturn(Future failed new BadRequestException("bad request"))
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn(Future failed new BadRequestException("bad request"))
 
       intercept[BadRequestException] {
         await(authorisationService.isAuthorised(agentCode, clientSaUtr))
@@ -71,8 +91,10 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   private abstract class Context {
     val mockAuthConnector = mock[AuthConnector]
     val mockCesaAuthorisationService = mock[CesaAuthorisationService]
+    val mockGGAuthorisationService = mock[GovernmentGatewayAuthorisationService]
     val authorisationService = new AuthorisationService(
       mockCesaAuthorisationService,
-      mockAuthConnector)
+      mockAuthConnector,
+      mockGGAuthorisationService)
   }
 }
