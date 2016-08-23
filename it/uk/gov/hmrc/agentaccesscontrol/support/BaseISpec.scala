@@ -33,6 +33,8 @@ abstract class BaseISpec extends UnitSpec
   private val configDesPort = "microservice.services.des.port"
   private val configAuthHost = "microservice.services.auth.host"
   private val configAuthPort = "microservice.services.auth.port"
+  private val ggProxyHost = "microservice.services.government-gateway-proxy.host"
+  private val ggProxyPort = "microservice.services.government-gateway-proxy.port"
 
   implicit val hc = HeaderCarrier()
 
@@ -41,7 +43,9 @@ abstract class BaseISpec extends UnitSpec
       configDesHost -> wiremockHost,
       configDesPort -> wiremockPort,
       configAuthHost -> wiremockHost,
-      configAuthPort -> wiremockPort
+      configAuthPort -> wiremockPort,
+      ggProxyHost -> wiremockHost,
+      ggProxyPort -> wiremockPort
     )
   )
 
@@ -83,7 +87,7 @@ trait StubUtils {
       this
     }
 
-    def andIsRelatedToClient(clientUtr: SaUtr): DesStubBuilder = {
+    def andIsRelatedToClientInDes(clientUtr: SaUtr): DesStubBuilder = {
       new DesStubBuilder(clientUtr)
     }
 
@@ -116,7 +120,7 @@ trait StubUtils {
 
     val path: String = "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents"
 
-    def andIsAssignedToClient(utr: String): A = {
+    def andIsAssignedToClient(utr: SaUtr): A = {
       stubFor(post(urlEqualTo(path))
         .withRequestBody(matching(s".*>$utr<.*"))
         .willReturn(aResponse()
@@ -146,7 +150,7 @@ trait StubUtils {
                  """.stripMargin)))
       this
     }
-    def andIsNotAssignedToClient(utr: String): A = {
+    def andIsNotAssignedToClient(utr: SaUtr): A = {
       stubFor(post(urlEqualTo(path))
         .withRequestBody(matching(s".*>$utr<.*"))
         .willReturn(aResponse()
@@ -246,7 +250,7 @@ trait StubUtils {
            |  "uri":"/auth/oid/$oid",
            |  "loggedInAt":"2016-06-20T10:44:29.634Z",
            |  "credentials":{
-           |    "gatewayId":"0000001592621267"
+           |    "gatewayId":"0000001232456789"
            |  },
            |  "accounts":{
            |    "agent":{

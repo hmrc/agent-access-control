@@ -17,7 +17,7 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec {
     "return agent allocations" in {
       given()
         .agentAdmin("AgentCode")
-          .andIsAssignedToClient("1234567890")
+          .andIsAssignedToClient(SaUtr("1234567890"))
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
 
@@ -34,7 +34,7 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec {
     "return None if there are no matching credentials" in {
       given()
         .agentAdmin("AgentCode")
-        .andIsNotAssignedToClient("1234567890")
+        .andIsNotAssignedToClient(SaUtr("1234567890"))
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
 

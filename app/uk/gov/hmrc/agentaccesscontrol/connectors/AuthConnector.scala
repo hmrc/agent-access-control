@@ -28,10 +28,18 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AuthConnector(baseUrl: URL, httpGet: HttpGet) {
 
-  def currentSaAgentReference()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[SaAgentReference]] =
+  def currentAgentIdentifiers()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[(Option[SaAgentReference], String)] =
     currentAuthority
-      .flatMap(enrolments)
-      .map(toSaAgentReference)
+      .flatMap({ authority =>
+        enrolments(authority)
+          .map(e => toSaAgentReference(e))
+          .map(ref => (ref, ggCredentialId(authority)))
+      })
+
+
+  private def ggCredentialId(authorityJson: JsValue): String = {
+    (authorityJson \ "credentials" \ "gatewayId").as[String]
+  }
 
   private def toSaAgentReference(enrolments: Enrolments): Option[SaAgentReference] =
     enrolments.saAgentReferenceOption
