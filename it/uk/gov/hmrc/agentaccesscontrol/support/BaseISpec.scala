@@ -120,7 +120,7 @@ trait StubUtils {
 
     val path: String = "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents"
 
-    def andIsOneAgentAssignedToClient(utr: SaUtr): A = {
+    def andIsAssignedToClient(utr: SaUtr): A = {
       stubFor(post(urlEqualTo(path))
         .withRequestBody(matching(s".*>$utr<.*"))
         .willReturn(aResponse()
@@ -159,36 +159,6 @@ trait StubUtils {
                |		</AgentDetails>
                |	</AllocatedAgents>
                |</GsoAdminGetAssignedAgentsXmlOutput>
-                 """.stripMargin)))
-      this
-    }
-    def andIsAssignedToClient(utr: SaUtr): A = {
-      stubFor(post(urlEqualTo(path))
-        .withRequestBody(matching(s".*>$utr<.*"))
-        .willReturn(aResponse()
-              .withBody(
-                s"""
-                   |<GsoAdminGetAssignedAgentsXmlOutput RequestID="E665D904F81C4AC89AAB34B562A98966" xmlns="urn:GSO-System-Services:external:2.13.3:GsoAdminGetAssignedAgentsXmlOutput" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-                   |	<AllocatedAgents>
-                   |		<AgentDetails>
-                   |			<AgentId>GGWCESAtests</AgentId>
-                   |			<AgentCode>$agentCode</AgentCode>
-                   |			<AgentFriendlyName>GGWCESA tests</AgentFriendlyName>
-                   |			<AssignedCredentials>
-                   |				<Credential>
-                   |					<CredentialName>GGWCESA tests</CredentialName>
-                   |					<CredentialIdentifier>0000001232456789</CredentialIdentifier>
-                   |					<Role>User</Role>
-                   |				</Credential>
-                   |				<Credential>
-                   |					<CredentialName>GGWCESA tests1</CredentialName>
-                   |					<CredentialIdentifier>98741987654321</CredentialIdentifier>
-                   |					<Role>User</Role>
-                   |				</Credential>
-                   |			</AssignedCredentials>
-                   |		</AgentDetails>
-                   |	</AllocatedAgents>
-                   |</GsoAdminGetAssignedAgentsXmlOutput>
                  """.stripMargin)))
       this
     }

@@ -17,7 +17,7 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec {
     "return agent allocations" in {
       given()
         .agentAdmin("AgentCode")
-          .andIsOneAgentAssignedToClient(SaUtr("1234567890"))
+          .andIsAssignedToClient(SaUtr("1234567890"))
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
 
