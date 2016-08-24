@@ -22,35 +22,40 @@ import javax.xml.parsers.SAXParserFactory
 
 import org.apache.xerces.impl.Constants
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import uk.gov.hmrc.domain.SaUtr
+import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost}
 
 import scala.concurrent.Future
 import scala.xml.Elem
 
-case class AgentDetails(agentCode: String,
-                        assignedCredentials: Seq[AssignedCredentials])
+case class AssignedAgent(
+  allocatedAgentCode: AgentCode,
+  assignedCredentials: Seq[AssignedCredentials]) {
+  def matches(agentCode: AgentCode, ggCredentialId: String) =
+    allocatedAgentCode == agentCode &&
+    assignedCredentials.exists(c => c.identifier == ggCredentialId)
+}
 
 case class AssignedCredentials(identifier: String)
 
 class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) {
   val url: URL = new URL(baseUrl, "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents")
 
-  def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AgentDetails]] = {
+  def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
     httpPost.POSTString(url.toString, body(utr))
       .map(r => parseResponse(r.body))
   }
 
-  def parseResponse(xmlString: String) : Seq[AgentDetails] = {
+  def parseResponse(xmlString: String): Seq[AssignedAgent] = {
     val xml: Elem = toXmlElement(xmlString)
     val agentDetails = xml \ "AllocatedAgents" \ "AgentDetails"
     agentDetails.map { agency =>
-      val agentCode = (agency \ "AgentCode").text
+      val agentCode = AgentCode((agency \ "AgentCode").text)
 
       val credentials = (agency \ "AssignedCredentials" \ "Credential").map { elem =>
         AssignedCredentials((elem \ "CredentialIdentifier").text)
       }
-      AgentDetails(agentCode, credentials)
+      AssignedAgent(agentCode, credentials)
     }
   }
 

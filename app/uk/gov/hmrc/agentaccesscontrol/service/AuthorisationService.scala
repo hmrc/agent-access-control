@@ -31,7 +31,7 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
     authConnector.currentAgentIdentifiers().flatMap {
       case (Some(saAgentReference), ggCredentialId) =>
         val results = cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
-          ggAuthorisationService.isAuthorisedInGovernmentGateway(saUtr, ggCredentialId)
+          ggAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, saUtr, ggCredentialId)
         results.map { case (cesa, gg) => cesa && gg }
       case (None, _) =>
         Future successful notAuthorised(s"No 6 digit agent code found for agent $agentCode")

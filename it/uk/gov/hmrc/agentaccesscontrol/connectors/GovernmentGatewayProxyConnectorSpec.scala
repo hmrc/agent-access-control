@@ -4,7 +4,7 @@ import java.net.URL
 
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
-import uk.gov.hmrc.domain.SaUtr
+import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.Upstream5xxResponse
 
 import scala.xml.SAXParseException
@@ -21,8 +21,8 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec {
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
 
-      val details: AgentDetails = allocation.head
-      details.agentCode shouldBe "AgentCode"
+      val details: AssignedAgent = allocation.head
+      details.allocatedAgentCode shouldBe AgentCode("AgentCode")
 
       val credentials = details.assignedCredentials.head
       credentials.identifier shouldBe "0000001232456789"
@@ -30,8 +30,8 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec {
       val credentials1 = details.assignedCredentials(1)
       credentials1.identifier shouldBe "98741987654321"
 
-      val details1: AgentDetails = allocation(1)
-      details1.agentCode shouldBe "123ABCD12345"
+      val details1: AssignedAgent = allocation(1)
+      details1.allocatedAgentCode shouldBe AgentCode("123ABCD12345")
 
       val credentials2 = details1.assignedCredentials.head
       credentials2.identifier shouldBe "0000000987654321"
