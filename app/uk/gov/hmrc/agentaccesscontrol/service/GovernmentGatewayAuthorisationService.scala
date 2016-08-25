@@ -25,7 +25,7 @@ import scala.concurrent.Future
 
 class GovernmentGatewayAuthorisationService(val ggProxyConnector: GovernmentGatewayProxyConnector) {
 
-  def isAuthorisedInGovernmentGateway(agentCode: AgentCode, saUtr: SaUtr, ggCredentialId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  def isAuthorisedInGovernmentGateway(agentCode: AgentCode, ggCredentialId: String, saUtr: SaUtr)(implicit hc: HeaderCarrier): Future[Boolean] = {
     ggProxyConnector.getAssignedSaAgents(saUtr) map { assignedAgents =>
       assignedAgents.exists(_.matches(agentCode, ggCredentialId))
     }
