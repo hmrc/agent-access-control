@@ -95,11 +95,22 @@ class AuthorisationControllerISpec extends BaseISpec {
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
       }
-      "the client is not assigned to the agent in GG" in  {
+
+      "the client is not allocated to the agency in GG" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsNotAssignedToClient(clientUtr)
+          .andIsNotAllocatedToClient(clientUtr)
+          .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr).status shouldBe 401
+      }
+
+      "the client is allocated to the agency but not assigned to the agent in GG" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasSaAgentReferenceWithEnrolment(saAgentReference)
+          .andIsAllocatedButNotAssignedToClient(clientUtr)
           .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401

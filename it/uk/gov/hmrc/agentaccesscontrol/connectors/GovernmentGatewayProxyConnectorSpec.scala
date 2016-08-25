@@ -40,7 +40,7 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec {
     "return empty list if there are no matching credentials" in {
       given()
         .agentAdmin("AgentCode")
-        .andIsNotAssignedToClient(SaUtr("1234567890"))
+        .andIsNotAllocatedToClient(SaUtr("1234567890"))
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
 
