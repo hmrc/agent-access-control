@@ -16,19 +16,18 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.connectors.GovernmentGatewayProxyConnector
-import uk.gov.hmrc.domain.SaUtr
+import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 class GovernmentGatewayAuthorisationService(val ggProxyConnector: GovernmentGatewayProxyConnector) {
 
-  def isAuthorisedInGovernmentGateway(saUtr: SaUtr, ggCredentialId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    ggProxyConnector.getAssignedSaAgents(saUtr) map { agentDetails =>
-      agentDetails.exists(agency
-      => agency.assignedCredentials.exists(c => c.identifier == ggCredentialId))
-      }
+  def isAuthorisedInGovernmentGateway(agentCode: AgentCode, ggCredentialId: String, saUtr: SaUtr)(implicit hc: HeaderCarrier): Future[Boolean] = {
+    ggProxyConnector.getAssignedSaAgents(saUtr) map { assignedAgents =>
+      assignedAgents.exists(_.matches(agentCode, ggCredentialId))
     }
+  }
 }

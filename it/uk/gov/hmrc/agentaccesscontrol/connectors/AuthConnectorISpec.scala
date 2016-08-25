@@ -32,7 +32,7 @@ class AuthConnectorISpec extends BaseISpec {
         .agentAdmin("ABCDEF123456").isLoggedIn()
         .andHasSaAgentReferenceWithEnrolment("REF879")
 
-      await(newAuthConnector.currentAgentIdentifiers) shouldBe (Some(SaAgentReference("REF879")), "0000001232456789")
+      await(newAuthConnector().currentAgentIdentifiers) shouldBe ((Some(SaAgentReference("REF879")), "0000001232456789"))
     }
 
     "return None if 6 digit agent reference cannot be found" in {
@@ -40,7 +40,7 @@ class AuthConnectorISpec extends BaseISpec {
         .agentAdmin("ABCDEF123456").isLoggedIn()
         .andHasNoSaAgentReference()
 
-      await(newAuthConnector.currentAgentIdentifiers) shouldBe (None, "0000001232456789")
+      await(newAuthConnector().currentAgentIdentifiers) shouldBe ((None, "0000001232456789"))
     }
 
     "return a failed future if any errors happen" in {
@@ -49,7 +49,7 @@ class AuthConnectorISpec extends BaseISpec {
         .andGettingEnrolmentsFailsWith500()
 
       an[Exception] shouldBe thrownBy {
-        await(newAuthConnector.currentAgentIdentifiers)
+        await(newAuthConnector().currentAgentIdentifiers)
       }
     }
 
