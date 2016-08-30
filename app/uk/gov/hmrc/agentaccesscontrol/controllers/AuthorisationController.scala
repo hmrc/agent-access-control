@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
+import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.Action
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
@@ -33,7 +34,10 @@ class AuthorisationController(override val auditService: AuditService, authorisa
       case authorised if authorised => Ok
       case notAuthorised => Unauthorized
     } recover {
-      case _ => Unauthorized // FYI, there's no such fallback in PAYE auth
+      case e =>
+        // FYI, there's no such fallback in PAYE auth
+        Logger.warn(s"Error checking authorisation for $agentCode, $saUtr, denying access", e)
+        Unauthorized
     }
   }
 }
