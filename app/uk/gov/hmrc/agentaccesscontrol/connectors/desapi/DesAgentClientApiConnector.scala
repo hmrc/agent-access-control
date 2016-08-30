@@ -41,5 +41,5 @@ class DesAgentClientApiConnector(desBaseUrl: String, httpGet: HttpGet) {
     }
 
   private def urlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): String =
-    s"$desBaseUrl/sa/agents/${saAgentReference.value}/client/sa-utr/$saUtr"
+    s"$desBaseUrl/sa/agents/${saAgentReference.value}/client/utr/$saUtr"
 }
