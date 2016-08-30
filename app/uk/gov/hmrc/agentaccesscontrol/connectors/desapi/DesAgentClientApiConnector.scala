@@ -34,12 +34,12 @@ class DesAgentClientApiConnector(desBaseUrl: String, httpGet: HttpGet) {
 
   private implicit val reader = HttpReads.readFromJson[FoundResponse]
 
-  def getAgentClientRelationship(agentCode: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
+  def getAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
       Future[DesAgentClientFlagsApiResponse] =
-    httpGet.GET(urlFor(agentCode, saUtr)) recover {
+    httpGet.GET(urlFor(saAgentReference, saUtr)) recover {
       case _: NotFoundException => NotFoundResponse
     }
 
-  private def urlFor(agentCode: SaAgentReference, saUtr: SaUtr): String =
-    s"$desBaseUrl/sa/agents/${agentCode.value}/client/sa-utr/$saUtr"
+  private def urlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): String =
+    s"$desBaseUrl/sa/agents/${saAgentReference.value}/client/sa-utr/$saUtr"
 }

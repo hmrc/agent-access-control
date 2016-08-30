@@ -34,6 +34,6 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
           ggAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, ggCredentialId, saUtr)
         results.map { case (cesa, gg) => cesa && gg }
       case (None, _) =>
-        Future successful notAuthorised(s"No 6 digit agent code found for agent $agentCode")
+        Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
     }
 }
