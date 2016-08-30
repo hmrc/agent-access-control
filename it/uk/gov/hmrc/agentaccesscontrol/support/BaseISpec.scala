@@ -121,8 +121,7 @@ trait StubUtils {
     val path: String = "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents"
 
     def andIsAssignedToClient(utr: SaUtr): A = {
-      stubFor(post(urlEqualTo(path))
-        .withRequestBody(matching(s".*>$utr<.*"))
+      stubFor(getAssignedAgentsPost(utr)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -164,8 +163,7 @@ trait StubUtils {
     }
 
     def andIsAllocatedButNotAssignedToClient(utr: SaUtr): A = {
-      stubFor(post(urlEqualTo(path))
-        .withRequestBody(matching(s".*>$utr<.*"))
+      stubFor(getAssignedAgentsPost(utr)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -207,8 +205,7 @@ trait StubUtils {
     }
 
     def andIsNotAllocatedToClient(utr: SaUtr): A = {
-      stubFor(post(urlEqualTo(path))
-        .withRequestBody(matching(s".*>$utr<.*"))
+      stubFor(getAssignedAgentsPost(utr)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -218,10 +215,18 @@ trait StubUtils {
           """.stripMargin)))
       this
     }
+
+    private def getAssignedAgentsPost(utr: SaUtr) = {
+      post(urlEqualTo(path))
+        .withRequestBody(matching(s".*>$utr<.*"))
+        .withHeader("Content-Type", equalTo("application/xml; charset=utf-8"))
+    }
+
     def andGovernmentGatewayProxyReturnsAnError500(): A = {
       stubFor(post(urlEqualTo(path)).willReturn(aResponse().withStatus(500)))
       this
     }
+
     def andGovernmentGatewayReturnsUnparseableXml(utr: String): A = {
       stubFor(post(urlEqualTo(path))
         .withRequestBody(matching(s".*>$utr<.*"))

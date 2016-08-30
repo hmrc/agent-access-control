@@ -21,6 +21,8 @@ import javax.xml.XMLConstants
 import javax.xml.parsers.SAXParserFactory
 
 import org.apache.xerces.impl.Constants
+import play.api.http.ContentTypes.XML
+import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost}
@@ -42,7 +44,7 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) {
   val url: URL = new URL(baseUrl, "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents")
 
   def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
-    httpPost.POSTString(url.toString, body(utr))
+    httpPost.POSTString(url.toString, body(utr), Seq(CONTENT_TYPE -> XML))
       .map(r => parseResponse(r.body))
   }
 
