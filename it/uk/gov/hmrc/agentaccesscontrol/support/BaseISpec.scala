@@ -77,7 +77,7 @@ trait StubUtils {
     me: A with AuthStubs[A] =>
 
     def andDesIsDown(): A = {
-      stubFor(get(urlPathMatching("/agents/[^/]+/sa/client/sa-utr/[^/]+")).
+      stubFor(get(urlPathMatching("/sa/agents/[^/]+/client/sa-utr/[^/]+")).
         willReturn(aResponse().withStatus(500)))
       this
     }
@@ -92,7 +92,7 @@ trait StubUtils {
     }
 
     private def matcherForClient(client: SaUtr) =
-      get(urlPathEqualTo(s"/agents/${saAgentReference.get.value}/sa/client/sa-utr/${client.value}"))
+      get(urlPathEqualTo(s"/sa/agents/${saAgentReference.get.value}/client/sa-utr/${client.value}"))
 
     class DesStubBuilder(client: SaUtr) {
       def andIsAuthorisedByOnly648(): A = withFlags(true, false)
