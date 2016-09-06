@@ -35,28 +35,7 @@ class AuthorisationControllerISpec extends BaseISpec {
         authResponseFor(agentCode, clientUtr).status shouldBe 401
       }
 
-      "agent is not enrolled to IR-SA-AGENT" in {
-        given()
-          .agentAdmin(agentCode).isLoggedIn()
-          .andHasSaAgentReference(saAgentReference)
-          .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
-          .andIsAssignedToClient(clientUtr)
-          .andIsNotEnrolledForSA()
-
-        authResponseFor(agentCode, clientUtr).status shouldBe 401
-      }
-
-      "agent is enrolled to IR-SA-AGENT but the enrolment is not activated" in {
-        given()
-          .agentAdmin(agentCode).isLoggedIn()
-          .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
-
-        authResponseFor(agentCode, clientUtr).status shouldBe 401
-      }
-
-      "agent and client has no relation" in {
+      "agent and client has no relation in DES" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
@@ -118,6 +97,17 @@ class AuthorisationControllerISpec extends BaseISpec {
     }
 
     "respond with 200" when {
+
+      "agent is enrolled to IR-SA-AGENT but the enrolment is not activated and the the client has authorised the agent with both 64-8 and i64-8" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr).status shouldBe 200
+      }
+
       "the client has authorised the agent with both 64-8 and i64-8" in  {
         given()
           .agentAdmin(agentCode).isLoggedIn()
