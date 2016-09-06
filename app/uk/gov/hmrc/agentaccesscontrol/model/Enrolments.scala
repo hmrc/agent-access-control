@@ -23,7 +23,6 @@ import scala.concurrent.Future
 
 case class EnrolmentIdentifier(key: String, value: String)
 case class AuthEnrolment(key: String, identifiers: Seq[EnrolmentIdentifier], state: String) {
-  val isActivated: Boolean = state equalsIgnoreCase "Activated"
   def identifier(key: String): Option[String] = identifiers.find(_.key == key).map(_.value)
 }
 
@@ -36,9 +35,9 @@ case class Enrolments(enrolments: Set[AuthEnrolment]) {
 
   def saAgentReferenceOption: Option[SaAgentReference] = saEnrolment.flatMap(_.identifier("IRAgentReference")).map(SaAgentReference)
 
-  private def saEnrolment: Option[AuthEnrolment] = getActivatedEnrolment("IR-SA-AGENT")
+  private def saEnrolment: Option[AuthEnrolment] = getEnrolment("IR-SA-AGENT")
 
-  private def getActivatedEnrolment(key: String): Option[AuthEnrolment] = enrolments.find(e => e.key == key && e.isActivated)
+  private def getEnrolment(key: String): Option[AuthEnrolment] = enrolments.find(e => e.key == key)
 }
 
 object Enrolments {

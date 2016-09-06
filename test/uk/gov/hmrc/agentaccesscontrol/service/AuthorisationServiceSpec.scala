@@ -37,7 +37,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
 
   "isAuthorised" should {
-    "return false if SA agent reference cannot be found" in new Context {
+    "return false if SA agent reference cannot be found (as CESA cannot be checked)" in new Context {
       when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((None, "ggId"))
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
