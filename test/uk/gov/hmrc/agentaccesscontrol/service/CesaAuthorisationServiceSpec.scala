@@ -19,6 +19,8 @@ package uk.gov.hmrc.agentaccesscontrol.service
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.CESA_Decision
+import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model.{FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
@@ -42,6 +44,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         thenReturn(NotFoundResponse)
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
+      verify(mockAuditService).auditEvent(CESA_Decision, agentCode, clientSaUtr, Seq("result" -> false, "response" -> "not-found"))
     }
 
     "return true if the DES API returns 64-8=true and i64-8=true" in new Context {
@@ -49,6 +52,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         thenReturn(FoundResponse(auth64_8 = true, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe true
+      verify(mockAuditService).auditEvent(CESA_Decision, agentCode, clientSaUtr, Seq("result" -> true))
     }
 
     "return false if the DES API returns 64-8=true and i64-8=false" in new Context {
@@ -56,6 +60,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         thenReturn(FoundResponse(auth64_8 = true, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
+      verify(mockAuditService).auditEvent(CESA_Decision, agentCode, clientSaUtr, Seq("result" -> false, "64-8" -> true, "i64-8" -> false))
     }
 
     "return false if the DES API returns 64-8=false and i64-8=true" in new Context {
@@ -63,6 +68,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         thenReturn(FoundResponse(auth64_8 = false, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
+      verify(mockAuditService).auditEvent(CESA_Decision, agentCode, clientSaUtr, Seq("result" -> false, "64-8" -> false, "i64-8" -> true))
     }
 
     "return false if the DES API returns 64-8=false and i64-8=false" in new Context {
@@ -70,6 +76,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         thenReturn(FoundResponse(auth64_8 = false, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
+      verify(mockAuditService).auditEvent(CESA_Decision, agentCode, clientSaUtr, Seq("result" -> false, "64-8" -> false, "i64-8" -> false))
     }
 
     "propagate any errors that happened" in new Context {
@@ -84,6 +91,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   private abstract class Context {
     val mockDesAgentClientApiConnector = mock[DesAgentClientApiConnector]
-    val service = new CesaAuthorisationService(mockDesAgentClientApiConnector)
+    val mockAuditService = mock[AuditService]
+    val service = new CesaAuthorisationService(mockDesAgentClientApiConnector, mockAuditService)
   }
 }
