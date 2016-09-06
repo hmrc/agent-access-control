@@ -32,8 +32,19 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
       case (Some(saAgentReference), ggCredentialId) =>
         val results = cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
           ggAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, ggCredentialId, saUtr)
-        results.map { case (cesa, gg) => cesa && gg }
+        results.map { case (cesa, gg) => {
+          logResult(cesa, gg, agentCode, ggCredentialId, saUtr)
+          cesa && gg
+        } }
       case (None, _) =>
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
     }
+
+  def logResult(cesa: Boolean, gg: Boolean, agentCode: AgentCode, ggCredentialId: String, saUtr: SaUtr) = {
+    (cesa, gg) match {
+      case (true, true) => authorised(s"Access allowed for agentCode=$agentCode ggCredential=$ggCredentialId client=$saUtr")
+      case (_, _) => notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=$ggCredentialId client=$saUtr cesa=$cesa ggw=$gg")
+    }
+  }
+
 }
