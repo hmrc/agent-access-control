@@ -29,7 +29,7 @@ class GovernmentGatewayAuthorisationService(val ggProxyConnector: GovernmentGate
                                             val auditService: AuditService) extends LoggingAuthorisationResults {
 
   def isAuthorisedInGovernmentGateway(agentCode: AgentCode, ggCredentialId: String, saUtr: SaUtr)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    ggProxyConnector.getAssignedSaAgents(saUtr) map { assignedAgents =>
+    ggProxyConnector.getAssignedSaAgents(saUtr, agentCode) map { assignedAgents =>
       val result = assignedAgents.exists(_.matches(agentCode, ggCredentialId))
       logResult(agentCode, ggCredentialId, saUtr, result)
       result

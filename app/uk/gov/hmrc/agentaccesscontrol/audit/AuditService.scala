@@ -66,7 +66,7 @@ trait AuditService {
 }
 
 object AgentAccessControlEvent extends Enumeration {
-  val GGW_Decision,CESA_Decision,AAC_Decision = Value
+  val GGW_Decision,CESA_Decision,AAC_Decision,GGW_Response = Value
 
   type AgentAccessControlEvent = AgentAccessControlEvent.Value
 }
