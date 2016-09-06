@@ -19,26 +19,34 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
-import uk.gov.hmrc.domain.{SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpReads, NotFoundException}
+import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, NotFoundException}
 
 import scala.concurrent.Future
 
-class DesAgentClientApiConnector(desBaseUrl: String, httpGet: HttpGet) {
+class DesAgentClientApiConnector(desBaseUrl: String, httpGet: HttpGet, auditService: AuditService) {
 
   private implicit val foundResponseReads: Reads[FoundResponse] = (
     (__ \ "Auth_64-8").read[Boolean] and
     (__ \ "Auth_i64-8").read[Boolean]
     ) (FoundResponse)
 
-  private implicit val reader = HttpReads.readFromJson[FoundResponse]
-
-  def getAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
-      Future[DesAgentClientFlagsApiResponse] =
-    httpGet.GET(urlFor(saAgentReference, saUtr)) recover {
+  def getAgentClientRelationship(saAgentReference: SaAgentReference, agentCode: AgentCode, saUtr: SaUtr)(implicit hc: HeaderCarrier):
+        Future[DesAgentClientFlagsApiResponse] = {
+    val url: String = urlFor(saAgentReference, saUtr)
+    httpGet.GET(url) map { r =>
+      logResponse(saUtr, agentCode, r.body)
+      foundResponseReads.reads(Json.parse(r.body)).get
+    } recover {
       case _: NotFoundException => NotFoundResponse
     }
+  }
+
+  def logResponse(saUtr: SaUtr, agentCode: AgentCode, body: String)(implicit hc: HeaderCarrier) = {
+    auditService.auditEvent(AgentAccessControlEvent.GGW_Response, agentCode, saUtr, Seq("body" -> body))
+  }
 
   private def urlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): String =
     s"$desBaseUrl/sa/agents/${saAgentReference.value}/client/utr/$saUtr"

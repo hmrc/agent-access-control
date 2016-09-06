@@ -40,7 +40,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   "isAuthorisedInCesa" should {
     "return false if the Agent or the relationship between the Agent and Client was not found in DES" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
+      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
         thenReturn(NotFoundResponse)
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
@@ -48,7 +48,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return true if the DES API returns 64-8=true and i64-8=true" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
+      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
         thenReturn(FoundResponse(auth64_8 = true, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe true
@@ -56,7 +56,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false if the DES API returns 64-8=true and i64-8=false" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
+      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
         thenReturn(FoundResponse(auth64_8 = true, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
@@ -64,7 +64,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false if the DES API returns 64-8=false and i64-8=true" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
+      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
         thenReturn(FoundResponse(auth64_8 = false, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
@@ -72,7 +72,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false if the DES API returns 64-8=false and i64-8=false" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
+      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
         thenReturn(FoundResponse(auth64_8 = false, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
@@ -80,7 +80,7 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "propagate any errors that happened" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
+      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
         thenReturn(Future failed new BadRequestException("bad request"))
 
       intercept[BadRequestException] {

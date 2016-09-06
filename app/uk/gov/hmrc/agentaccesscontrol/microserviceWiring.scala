@@ -46,7 +46,7 @@ object MicroserviceAuthConnector extends AuthConnector with ServicesConfig {
 
 trait ServiceRegistry extends ServicesConfig {
   lazy val auditService: AuditService.type = AuditService
-  lazy val desAgentClientApiConnector = new DesAgentClientApiConnector(baseUrl("des"), WSHttp)
+  lazy val desAgentClientApiConnector = new DesAgentClientApiConnector(baseUrl("des"), WSHttp, auditService)
   lazy val authConnector = new OurAuthConnector(new URL(baseUrl("auth")), WSHttp)
   lazy val cesaAuthorisationService = new CesaAuthorisationService(desAgentClientApiConnector, auditService)
   lazy val ggProxyConnector: GovernmentGatewayProxyConnector =
