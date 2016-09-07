@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
+import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.agentaccesscontrol.connectors.AuthConnector
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -24,7 +25,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
                            authConnector: AuthConnector,
-                           ggAuthorisationService: GovernmentGatewayAuthorisationService)
+                           ggAuthorisationService: GovernmentGatewayAuthorisationService,
+                           auditService: AuditService)
   extends LoggingAuthorisationResults {
 
   def isAuthorised(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
@@ -32,8 +34,23 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
       case (Some(saAgentReference), ggCredentialId) =>
         val results = cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
           ggAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, ggCredentialId, saUtr)
-        results.map { case (cesa, gg) => cesa && gg }
+        results.map { case (cesa, ggw) => {
+          val result = cesa && ggw
+          logResult(cesa, ggw, agentCode, ggCredentialId, saUtr, result)
+          result
+        } }
       case (None, _) =>
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
     }
+
+  def logResult(cesa: Boolean, ggw: Boolean, agentCode: AgentCode, ggCredentialId: String, saUtr: SaUtr, result: Boolean)
+               (implicit hc: HeaderCarrier) = {
+    auditService.auditEvent(AgentAccessControlEvent.AAC_Decision, agentCode, saUtr,
+                            Seq("ggCredentialId" -> ggCredentialId, "result" -> result, "cesa" -> cesa, "ggw" -> ggw))
+    (cesa, ggw) match {
+      case (true, true) => authorised(s"Access allowed for agentCode=$agentCode ggCredential=$ggCredentialId client=$saUtr")
+      case (_, _) => notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=$ggCredentialId client=$saUtr cesa=$cesa ggw=$ggw")
+    }
+  }
+
 }

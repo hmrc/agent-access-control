@@ -16,16 +16,23 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
+import org.mockito.Matchers
+import org.mockito.Matchers.any
+import org.mockito.Mockito.verify
+import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.CESA_Response
+import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.model.{FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
-import uk.gov.hmrc.domain.{SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 
-class DesAgentClientApiConnectorISpec extends BaseISpec {
+class DesAgentClientApiConnectorISpec extends BaseISpec with MockitoSugar {
 
   implicit val headerCarrier = HeaderCarrier()
+  val agentCode = AgentCode("Agent")
 
   "getAgentClientRelationship" should {
     "pass along 64-8 and i64-8 information" when {
@@ -33,25 +40,41 @@ class DesAgentClientApiConnectorISpec extends BaseISpec {
         givenClientIsLoggedIn()
           .andIsRelatedToClientInDes(saUtr).andAuthorisedByBoth648AndI648()
 
-        await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
+        await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
+        verify(auditService).auditEvent(Matchers.eq(CESA_Response),
+                                        Matchers.eq(agentCode),
+                                        Matchers.eq(saUtr),
+                                        any[Seq[(String,Any)]])(any[HeaderCarrier])
       }
       "agent is authorised by only i64-8" in new Context {
         givenClientIsLoggedIn()
           .andIsRelatedToClientInDes(saUtr).andIsAuthorisedByOnlyI648()
 
-        await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = true)
+        await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = true)
+        verify(auditService).auditEvent(Matchers.eq(CESA_Response),
+                                        Matchers.eq(agentCode),
+                                        Matchers.eq(saUtr),
+                                        any[Seq[(String,Any)]])(any[HeaderCarrier])
       }
       "agent is authorised by only 64-8" in new Context {
         givenClientIsLoggedIn()
           .andIsRelatedToClientInDes(saUtr).andIsAuthorisedByOnly648()
 
-        await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = false)
+        await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = false)
+        verify(auditService).auditEvent(Matchers.eq(CESA_Response),
+                                        Matchers.eq(agentCode),
+                                        Matchers.eq(saUtr),
+                                        any[Seq[(String,Any)]])(any[HeaderCarrier])
       }
       "agent is not authorised" in new Context {
         givenClientIsLoggedIn()
           .andIsRelatedToClientInDes(saUtr).butIsNotAuthorised()
 
-        await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = false)
+        await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = false)
+        verify(auditService).auditEvent(Matchers.eq(CESA_Response),
+                                        Matchers.eq(agentCode),
+                                        Matchers.eq(saUtr),
+                                        any[Seq[(String,Any)]])(any[HeaderCarrier])
       }
     }
 
@@ -59,18 +82,19 @@ class DesAgentClientApiConnectorISpec extends BaseISpec {
       givenClientIsLoggedIn()
         .andHasNoRelationInDesWith(saUtr)
 
-      await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe NotFoundResponse
+      await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe NotFoundResponse
     }
 
     "fail in any other cases, like internal server error" in new Context {
       givenClientIsLoggedIn().andDesIsDown()
 
-      an[Exception] should be thrownBy await(connector.getAgentClientRelationship(saAgentReference, saUtr))
+      an[Exception] should be thrownBy await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr))
     }
   }
 
   private abstract class Context {
-    val connector = new DesAgentClientApiConnector(wiremockBaseUrl, WSHttp)
+    val auditService = mock[AuditService]
+    val connector = new DesAgentClientApiConnector(wiremockBaseUrl, WSHttp, auditService)
     val saAgentReference = SaAgentReference("AGENTR")
     val saUtr = SaUtr("SAUTR456")
 

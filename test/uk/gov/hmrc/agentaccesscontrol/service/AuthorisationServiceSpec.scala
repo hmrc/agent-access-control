@@ -19,6 +19,8 @@ package uk.gov.hmrc.agentaccesscontrol.service
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AAC_Decision
+import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.AuthConnector
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
@@ -50,6 +52,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(false)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+      verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
+        Seq("ggCredentialId" -> "ggId", "result" -> false, "cesa" -> false, "ggw" -> true))
     }
 
     "return true if SA agent reference is found and CesaAuthorisationService returns true and GG Authorisation returns true" in new Context {
@@ -59,15 +63,19 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
+      verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
+        Seq("ggCredentialId" -> "ggId", "result" -> true, "cesa" -> true, "ggw" -> true))
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns true and GG Authorisation returns false" in new Context {
       when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((Some(saAgentRef), "ggId"))
-      when(mockGGAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
+      when(mockGGAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(false)
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
-        .thenReturn(false)
+        .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+      verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
+        Seq("ggCredentialId" -> "ggId", "result" -> false, "cesa" -> true, "ggw" -> false))
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns false" in new Context {
@@ -77,6 +85,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(false)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+      verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
+        Seq("ggCredentialId" -> "ggId", "result" -> false, "cesa" -> false, "ggw" -> false))
     }
 
     "propagate any errors that happened" in new Context {
@@ -92,9 +102,11 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     val mockAuthConnector = mock[AuthConnector]
     val mockCesaAuthorisationService = mock[CesaAuthorisationService]
     val mockGGAuthorisationService = mock[GovernmentGatewayAuthorisationService]
+    val mockAuditService = mock[AuditService]
     val authorisationService = new AuthorisationService(
       mockCesaAuthorisationService,
       mockAuthConnector,
-      mockGGAuthorisationService)
+      mockGGAuthorisationService,
+      mockAuditService)
   }
 }

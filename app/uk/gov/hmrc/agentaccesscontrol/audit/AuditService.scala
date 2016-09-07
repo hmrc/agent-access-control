@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.audit
 
 import uk.gov.hmrc.agentaccesscontrol.MicroserviceAuditConnector
-import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -36,16 +36,23 @@ trait AuditService {
 
   protected def auditConnector: AuditConnector
 
-  def auditEvent(event: AgentAccessControlEvent, agentCode: AgentCode, details: Seq[(String, Any)] = Seq.empty)(implicit hc: HeaderCarrier): Future[Unit] = {
-    send(createEvent(event, agentCode, details: _*))
+  def auditEvent(event: AgentAccessControlEvent,
+                 agentCode: AgentCode,
+                 saUtr: SaUtr,
+                 details: Seq[(String, Any)] = Seq.empty)(implicit hc: HeaderCarrier): Future[Unit] = {
+    send(createEvent(event, agentCode, saUtr, details: _*))
   }
 
-  private def createEvent(event: AgentAccessControlEvent, agentCode: AgentCode, details: (String, Any)*)(implicit hc: HeaderCarrier): DataEvent = {
+  private def createEvent(event: AgentAccessControlEvent,
+                          agentCode: AgentCode,
+                          saUtr: SaUtr,
+                          details: (String, Any)*)(implicit hc: HeaderCarrier): DataEvent = {
     DataEvent(
       auditSource = "agent-access-control",
       auditType = event.toString,
       tags = hc.headers.toMap,
-      detail = Map("agent-code" -> agentCode.toString) ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
+      detail = Map("agent-code" -> agentCode.toString, "sa-utr" -> saUtr.toString())
+               ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
     )
   }
 
@@ -59,7 +66,7 @@ trait AuditService {
 }
 
 object AgentAccessControlEvent extends Enumeration {
-  val Foo,Bar,Baz = Value
+  val GGW_Decision,CESA_Decision,AAC_Decision,GGW_Response,CESA_Response = Value
 
   type AgentAccessControlEvent = AgentAccessControlEvent.Value
 }

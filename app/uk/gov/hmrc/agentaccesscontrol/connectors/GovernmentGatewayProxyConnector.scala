@@ -24,6 +24,8 @@ import org.apache.xerces.impl.Constants
 import play.api.http.ContentTypes.XML
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.GGW_Response
+import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost}
 
@@ -40,12 +42,15 @@ case class AssignedAgent(
 
 case class AssignedCredentials(identifier: String)
 
-class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) {
+class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost, auditService: AuditService) {
   val url: URL = new URL(baseUrl, "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents")
 
-  def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
+  def getAssignedSaAgents(utr: SaUtr, agentCode: AgentCode)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
     httpPost.POSTString(url.toString, body(utr), Seq(CONTENT_TYPE -> XML))
-      .map(r => parseResponse(r.body))
+      .map({ r =>
+        logResponse(utr, agentCode, r.body)
+        parseResponse(r.body)
+      })
   }
 
   def parseResponse(xmlString: String): Seq[AssignedAgent] = {
@@ -61,7 +66,10 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) {
     }
   }
 
-
+  def logResponse(utr: SaUtr, agentCode: AgentCode, body: String)(implicit hc: HeaderCarrier): Unit = {
+    // TODO Consider if we need to do anything with large responses
+    auditService.auditEvent(GGW_Response, agentCode, utr, Seq("body" -> body))
+  }
   def toXmlElement(xmlString: String): Elem = {
     val factory = SAXParserFactory.newInstance("org.apache.xerces.jaxp.SAXParserFactoryImpl", this.getClass.getClassLoader)
       factory.setFeature(Constants.SAX_FEATURE_PREFIX + Constants.EXTERNAL_GENERAL_ENTITIES_FEATURE, false)
