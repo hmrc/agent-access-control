@@ -19,7 +19,8 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.CESA_Response
+import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, NotFoundException}
@@ -45,7 +46,7 @@ class DesAgentClientApiConnector(desBaseUrl: String, httpGet: HttpGet, auditServ
   }
 
   def logResponse(saUtr: SaUtr, agentCode: AgentCode, body: String)(implicit hc: HeaderCarrier) = {
-    auditService.auditEvent(AgentAccessControlEvent.GGW_Response, agentCode, saUtr, Seq("body" -> body))
+    auditService.auditEvent(CESA_Response, agentCode, saUtr, Seq("body" -> body))
   }
 
   private def urlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): String =

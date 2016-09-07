@@ -16,8 +16,12 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
+import org.mockito.Matchers
+import org.mockito.Matchers.any
+import org.mockito.Mockito.verify
 import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.CESA_Response
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.model.{FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
@@ -37,24 +41,40 @@ class DesAgentClientApiConnectorISpec extends BaseISpec with MockitoSugar {
           .andIsRelatedToClientInDes(saUtr).andAuthorisedByBoth648AndI648()
 
         await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
+        verify(auditService).auditEvent(Matchers.eq(CESA_Response),
+                                        Matchers.eq(agentCode),
+                                        Matchers.eq(saUtr),
+                                        any[Seq[(String,Any)]])(any[HeaderCarrier])
       }
       "agent is authorised by only i64-8" in new Context {
         givenClientIsLoggedIn()
           .andIsRelatedToClientInDes(saUtr).andIsAuthorisedByOnlyI648()
 
         await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = true)
+        verify(auditService).auditEvent(Matchers.eq(CESA_Response),
+                                        Matchers.eq(agentCode),
+                                        Matchers.eq(saUtr),
+                                        any[Seq[(String,Any)]])(any[HeaderCarrier])
       }
       "agent is authorised by only 64-8" in new Context {
         givenClientIsLoggedIn()
           .andIsRelatedToClientInDes(saUtr).andIsAuthorisedByOnly648()
 
         await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = false)
+        verify(auditService).auditEvent(Matchers.eq(CESA_Response),
+                                        Matchers.eq(agentCode),
+                                        Matchers.eq(saUtr),
+                                        any[Seq[(String,Any)]])(any[HeaderCarrier])
       }
       "agent is not authorised" in new Context {
         givenClientIsLoggedIn()
           .andIsRelatedToClientInDes(saUtr).butIsNotAuthorised()
 
         await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = false)
+        verify(auditService).auditEvent(Matchers.eq(CESA_Response),
+                                        Matchers.eq(agentCode),
+                                        Matchers.eq(saUtr),
+                                        any[Seq[(String,Any)]])(any[HeaderCarrier])
       }
     }
 
