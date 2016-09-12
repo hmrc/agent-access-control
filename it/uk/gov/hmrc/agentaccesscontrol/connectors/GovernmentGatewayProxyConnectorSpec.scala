@@ -22,7 +22,7 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec with MockitoSugar {
   val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp, auditService)
 
   "GovernmentGatewayProxy" should {
-    "return agent allocations" in {
+    "return agency allocations" in {
       given()
         .agentAdmin("AgentCode")
           .andIsAssignedToClient(SaUtr("1234567890"))
@@ -32,17 +32,9 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec with MockitoSugar {
       val details: AssignedAgent = allocation.head
       details.allocatedAgentCode shouldBe AgentCode("AgentCode")
 
-      val credentials = details.assignedCredentials.head
-      credentials.identifier shouldBe "0000001232456789"
-
-      val credentials1 = details.assignedCredentials(1)
-      credentials1.identifier shouldBe "98741987654321"
-
       val details1: AssignedAgent = allocation(1)
       details1.allocatedAgentCode shouldBe AgentCode("123ABCD12345")
 
-      val credentials2 = details1.assignedCredentials.head
-      credentials2.identifier shouldBe "0000000987654321"
       verify(auditService).auditEvent(Matchers.eq(GGW_Response),
                                       Matchers.eq(agentCode),
                                       Matchers.eq(SaUtr("1234567890")),

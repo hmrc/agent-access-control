@@ -21,7 +21,7 @@ import org.mockito.Mockito.{verify, when}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
-import uk.gov.hmrc.agentaccesscontrol.connectors.{AssignedAgent, AssignedCredentials, GovernmentGatewayProxyConnector}
+import uk.gov.hmrc.agentaccesscontrol.connectors.{AssignedAgent, GovernmentGatewayProxyConnector}
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
@@ -40,9 +40,9 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
 
 
   "isAuthorisedInGovernmentGateway " should {
-    "return true if the client is allocated to the agency and assigned to the agent credential" in {
+    "return true if the client is allocated to the agency" in {
       when(ggProxyConnector.getAssignedSaAgents(utr, agentCode)(hc))
-        .thenReturn(Future successful Seq(AssignedAgent(agentCode, Seq(AssignedCredentials("000111333")))))
+        .thenReturn(Future successful Seq(AssignedAgent(agentCode)))
 
       val result = await(service.isAuthorisedInGovernmentGateway(agentCode, "000111333", utr))
 
@@ -50,53 +50,9 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
       verify(auditService).auditEvent(AgentAccessControlEvent.GGW_Decision, agentCode, utr, Seq("ggCredentialId" -> "000111333", "result" -> true))
     }
 
-    "return true if there is more than one agent is assigned to the client" in {
-      when(ggProxyConnector.getAssignedSaAgents(utr, agentCode)(hc)).thenReturn(Future successful
-        Seq(AssignedAgent(agentCode, Seq(AssignedCredentials("000111333"), AssignedCredentials("000111444")))))
-
-      val result = await(service.isAuthorisedInGovernmentGateway(agentCode, "000111444", utr))
-
-      result shouldBe true
-      verify(auditService).auditEvent(AgentAccessControlEvent.GGW_Decision, agentCode, utr, Seq("ggCredentialId" -> "000111444", "result" -> true))
-    }
-
-    "return false if the client is allocated to the agency but not assigned to the agent credential" in {
+    "return false if the client is not allocated to the agency" in {
       when(ggProxyConnector.getAssignedSaAgents(utr, agentCode)(hc))
-        .thenReturn(Future successful Seq(AssignedAgent(agentCode, Seq(AssignedCredentials("000111444")))))
-
-      val result = await(service.isAuthorisedInGovernmentGateway(agentCode, "000111333", utr))
-
-      result shouldBe false
-      verify(auditService).auditEvent(AgentAccessControlEvent.GGW_Decision, agentCode, utr, Seq("ggCredentialId" -> "000111333", "result" -> false))
-    }
-
-    // we don't expect the GG to allow things to be set up like this, so this test is just here to be on the safe side
-    "return false if the client is not allocated to the agency but is assigned to the agent credential" in {
-      when(ggProxyConnector.getAssignedSaAgents(utr, agentCode)(hc))
-        .thenReturn(Future successful Seq(AssignedAgent(agentCode2, Seq(AssignedCredentials("000111333")))))
-
-      val result = await(service.isAuthorisedInGovernmentGateway(agentCode, "000111333", utr))
-
-      result shouldBe false
-      verify(auditService).auditEvent(AgentAccessControlEvent.GGW_Decision, agentCode, utr, Seq("ggCredentialId" -> "000111333", "result" -> false))
-    }
-
-    // we don't expect the GG to allow things to be set up like this, so this test is just here to be on the safe side
-    "return false if client is allocated to the agency and is assigned to the agent credential inside a different agency" in {
-      when(ggProxyConnector.getAssignedSaAgents(utr, agentCode)(hc)).thenReturn(Future successful Seq(
-        AssignedAgent(agentCode, Seq(AssignedCredentials("000111444"))),
-        AssignedAgent(agentCode2, Seq(AssignedCredentials("000111333")))
-      ))
-
-      val result = await(service.isAuthorisedInGovernmentGateway(agentCode, "000111333", utr))
-
-      result shouldBe false
-      verify(auditService).auditEvent(AgentAccessControlEvent.GGW_Decision, agentCode, utr, Seq("ggCredentialId" -> "000111333", "result" -> false))
-    }
-
-    "return false if the client is neither allocated to the agency nor assigned to the agent credential" in {
-      when(ggProxyConnector.getAssignedSaAgents(utr, agentCode)(hc))
-            .thenReturn(Future successful Seq(AssignedAgent(agentCode, Seq(AssignedCredentials("000111333")))))
+            .thenReturn(Future successful Seq(AssignedAgent(agentCode2)))
 
       val result = await(service.isAuthorisedInGovernmentGateway(agentCode, "NonMatchingCred", utr))
 
@@ -107,8 +63,8 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
     "return true there is more than one agency assigned to the client" in {
       when(ggProxyConnector.getAssignedSaAgents(utr, agentCode2)(hc)).thenReturn(
         Future successful Seq(
-          AssignedAgent(agentCode, Seq(AssignedCredentials("000111333"))),
-          AssignedAgent(agentCode2, Seq(AssignedCredentials("000111444")))))
+          AssignedAgent(agentCode),
+          AssignedAgent(agentCode2)))
 
       await(service.isAuthorisedInGovernmentGateway(agentCode2, "000111444", utr)) shouldBe true
       verify(auditService).auditEvent(AgentAccessControlEvent.GGW_Decision, agentCode2, utr, Seq("ggCredentialId" -> "000111444", "result" -> true))
