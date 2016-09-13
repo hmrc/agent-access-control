@@ -21,20 +21,22 @@ import java.net.URL
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.agentaccesscontrol.model.{AuthEnrolment, Enrolments}
 import uk.gov.hmrc.domain.SaAgentReference
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpReads}
+import uk.gov.hmrc.play.http.{Upstream4xxResponse, HeaderCarrier, HttpGet, HttpReads}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
 class AuthConnector(baseUrl: URL, httpGet: HttpGet) {
 
-  def currentAgentIdentifiers()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[(Option[SaAgentReference], String)] =
+  def currentAgentIdentifiers()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[(Option[SaAgentReference], String)]] =
     currentAuthority
       .flatMap({ authority =>
         enrolments(authority)
           .map(e => toSaAgentReference(e))
-          .map(ref => (ref, ggCredentialId(authority)))
-      })
+          .map(ref => Some((ref, ggCredentialId(authority))))
+      }) recover {
+      case ex: Upstream4xxResponse if ex.upstreamResponseCode == 401 => None
+    }
 
 
   private def ggCredentialId(authorityJson: JsValue): String = {

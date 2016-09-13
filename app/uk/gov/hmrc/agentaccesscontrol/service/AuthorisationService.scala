@@ -30,8 +30,9 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
   extends LoggingAuthorisationResults {
 
   def isAuthorised(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
-    authConnector.currentAgentIdentifiers().flatMap {
-      case (Some(saAgentReference), ggCredentialId) =>
+    authConnector.currentAgentIdentifiers()
+      .flatMap {
+      case Some((Some(saAgentReference), ggCredentialId)) =>
         val results = cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
           ggAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, ggCredentialId, saUtr)
         results.map { case (cesa, ggw) => {
@@ -39,8 +40,10 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
           logResult(cesa, ggw, agentCode, ggCredentialId, saUtr, result)
           result
         } }
-      case (None, _) =>
+      case Some((None, _)) =>
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
+      case None =>
+        Future successful notAuthorised(s"Agent $agentCode is not logged in")
     }
 
   def logResult(cesa: Boolean, ggw: Boolean, agentCode: AgentCode, ggCredentialId: String, saUtr: SaUtr, result: Boolean)
