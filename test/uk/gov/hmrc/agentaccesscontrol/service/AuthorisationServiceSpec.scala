@@ -23,7 +23,7 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AAC_Decision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.AuthConnector
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.play.http.{Upstream4xxResponse, BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
@@ -40,13 +40,13 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   "isAuthorised" should {
     "return false if SA agent reference cannot be found (as CESA cannot be checked)" in new Context {
-      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((None, "ggId"))
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn(Some((None, "ggId")))
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns true" in new Context {
-      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((Some(saAgentRef), "ggId"))
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn(Some((Some(saAgentRef), "ggId")))
       when(mockGGAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(false)
@@ -57,7 +57,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return true if SA agent reference is found and CesaAuthorisationService returns true and GG Authorisation returns true" in new Context {
-      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((Some(saAgentRef), "ggId"))
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn(Some((Some(saAgentRef), "ggId")))
       when(mockGGAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(true)
@@ -68,7 +68,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns true and GG Authorisation returns false" in new Context {
-      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((Some(saAgentRef), "ggId"))
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn(Some((Some(saAgentRef), "ggId")))
       when(mockGGAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(false)
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(true)
@@ -79,7 +79,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns false" in new Context {
-      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn((Some(saAgentRef), "ggId"))
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn(Some((Some(saAgentRef), "ggId")))
       when(mockGGAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(false)
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(false)
@@ -87,6 +87,11 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
         Seq("ggCredentialId" -> "ggId", "result" -> false, "cesa" -> false, "ggw" -> false))
+    }
+
+    "return false if user is not logged in" in new Context {
+      when(mockAuthConnector.currentAgentIdentifiers()).thenReturn(None)
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
     }
 
     "propagate any errors that happened" in new Context {

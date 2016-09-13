@@ -66,13 +66,11 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
     }
 
 
-    "return 401 if the AuthorisationService fails" in {
+    "propagate exception if the AuthorisationService fails" in {
 
       whenAuthorisationServiceIsCalled thenReturn(Future failed new IllegalStateException("some error"))
 
-      val response = controller.isAuthorised(AgentCode(""), SaUtr("utr"))(fakeRequest)
-
-      status(response) shouldBe Status.UNAUTHORIZED
+      an[IllegalStateException] shouldBe thrownBy(status(controller.isAuthorised(AgentCode(""), SaUtr("utr"))(fakeRequest)))
     }
   }
 

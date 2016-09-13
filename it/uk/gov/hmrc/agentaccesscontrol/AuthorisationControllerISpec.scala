@@ -86,6 +86,18 @@ class AuthorisationControllerISpec extends BaseISpec {
       }
     }
 
+    "respond with 502 (bad gateway)" when {
+      "DES is down" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andDesIsDown()
+
+        authResponseFor(agentCode, clientUtr).status shouldBe 502
+      }
+    }
+
     "respond with 200" when {
 
       "agent is enrolled to IR-SA-AGENT but the enrolment is not activated and the the client has authorised the agent with both 64-8 and i64-8" in {
