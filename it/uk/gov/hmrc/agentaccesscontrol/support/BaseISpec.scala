@@ -120,6 +120,12 @@ trait StubUtils {
 
     val path: String = "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents"
 
+    def andGGIsDown(clientUtr: SaUtr): A = {
+      stubFor(getAssignedAgentsPost(clientUtr).
+        willReturn(aResponse().withStatus(500)))
+      this
+    }
+
     def andIsAssignedToClient(utr: SaUtr): A = {
       stubFor(getAssignedAgentsPost(utr)
         .willReturn(aResponse()
