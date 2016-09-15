@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
+import com.github.tomakehurst.wiremock.client.WireMock
 import org.mockito.Matchers
 import org.mockito.Matchers.any
 import org.mockito.Mockito.verify
@@ -23,7 +24,7 @@ import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.CESA_Response
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
-import uk.gov.hmrc.agentaccesscontrol.model.{FoundResponse, NotFoundResponse}
+import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -35,6 +36,16 @@ class DesAgentClientApiConnectorISpec extends BaseISpec with MockitoSugar {
   val agentCode = AgentCode("Agent")
 
   "getAgentClientRelationship" should {
+    "request DES API with the correct auth tokens" in new Context {
+      givenClientIsLoggedIn()
+        .andIsRelatedToClientInDes(saUtr, "auth_token_33", "env_33").andAuthorisedByBoth648AndI648()
+
+      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(wiremockBaseUrl, "auth_token_33", "env_33", WSHttp, auditService)
+
+      val response: DesAgentClientFlagsApiResponse = await(connectorWithDifferentHeaders.getAgentClientRelationship(saAgentReference, agentCode, saUtr))
+      response shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
+    }
+
     "pass along 64-8 and i64-8 information" when {
       "agent is authorised by 64-8 and i64-8" in new Context {
         givenClientIsLoggedIn()
@@ -94,7 +105,7 @@ class DesAgentClientApiConnectorISpec extends BaseISpec with MockitoSugar {
 
   private abstract class Context {
     val auditService = mock[AuditService]
-    val connector = new DesAgentClientApiConnector(wiremockBaseUrl, WSHttp, auditService)
+    val connector = new DesAgentClientApiConnector(wiremockBaseUrl, "secret", "test", WSHttp, auditService)
     val saAgentReference = SaAgentReference("AGENTR")
     val saUtr = SaUtr("SAUTR456")
 
