@@ -96,6 +96,16 @@ class AuthorisationControllerISpec extends BaseISpec {
 
         authResponseFor(agentCode, clientUtr).status shouldBe 502
       }
+
+      "GG is down" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
+          .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andGGIsDown(clientUtr)
+
+        authResponseFor(agentCode, clientUtr).status shouldBe 502
+      }
     }
 
     "respond with 200" when {
