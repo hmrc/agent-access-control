@@ -55,7 +55,7 @@ class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String,
 
   private def getWithDesHeaders(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val desHeaderCarrier = hc.copy(
-      authorization = Some(Authorization(authorizationToken)),
+      authorization = Some(Authorization(s"Bearer $authorizationToken")),
       extraHeaders = hc.extraHeaders :+ "env" -> environment)
     httpGet.GET[HttpResponse](url)(implicitly[HttpReads[HttpResponse]], desHeaderCarrier)
   }

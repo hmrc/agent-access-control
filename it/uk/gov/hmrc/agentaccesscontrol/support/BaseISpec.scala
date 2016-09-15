@@ -102,7 +102,7 @@ trait StubUtils {
 
       private def withFlags(auth_64_8: Boolean, auth_i64_8: Boolean): A = {
         stubFor(matcherForClient(client)
-          .withHeader("Authorization", equalTo(authorizationToken))
+          .withHeader("Authorization", equalTo(s"Bearer $authorizationToken"))
           .withHeader("env", equalTo(environment))
           .willReturn(aResponse().withStatus(200).withBody(
           s"""
