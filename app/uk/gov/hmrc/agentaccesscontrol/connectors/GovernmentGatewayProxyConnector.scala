@@ -24,6 +24,7 @@ import org.apache.xerces.impl.Constants
 import play.api.http.ContentTypes.XML
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.GGW_Response
 import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
@@ -39,15 +40,17 @@ case class AssignedAgent(allocatedAgentCode: AgentCode) {
 
 }
 
-class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost, auditService: AuditService) {
+class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost, auditService: AuditService) extends HttpAPIMonitor {
   val url: URL = new URL(baseUrl, "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents")
 
   def getAssignedSaAgents(utr: SaUtr, agentCode: AgentCode)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
-    httpPost.POSTString(url.toString, body(utr), Seq(CONTENT_TYPE -> XML))
+    monitor("GGW-GetAssignedAgents"){
+      httpPost.POSTString(url.toString, body(utr), Seq(CONTENT_TYPE -> XML))
       .map({ r =>
         logResponse(utr, agentCode, r.body)
         parseResponse(r.body)
       })
+    }
   }
 
   def parseResponse(xmlString: String): Seq[AssignedAgent] = {
