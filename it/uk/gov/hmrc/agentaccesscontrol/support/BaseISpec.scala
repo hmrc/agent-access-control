@@ -87,21 +87,24 @@ trait StubUtils {
       this
     }
 
-    def andIsRelatedToClientInDes(clientUtr: SaUtr): DesStubBuilder = {
-      new DesStubBuilder(clientUtr)
+    def andIsRelatedToClientInDes(clientUtr: SaUtr, authorizationHeader: String = "secret", envHeader: String = "test"): DesStubBuilder = {
+      new DesStubBuilder(clientUtr, authorizationHeader, envHeader)
     }
 
     private def matcherForClient(client: SaUtr) =
       get(urlPathEqualTo(s"/sa/agents/${saAgentReference.get.value}/client/${client.value}"))
 
-    class DesStubBuilder(client: SaUtr) {
+    class DesStubBuilder(client: SaUtr, authorizationToken: String, environment: String) {
       def andIsAuthorisedByOnly648(): A = withFlags(true, false)
       def andIsAuthorisedByOnlyI648(): A = withFlags(false, true)
       def butIsNotAuthorised(): A = withFlags(false, false)
       def andAuthorisedByBoth648AndI648(): A = withFlags(true, true)
 
       private def withFlags(auth_64_8: Boolean, auth_i64_8: Boolean): A = {
-        stubFor(matcherForClient(client).willReturn(aResponse().withStatus(200).withBody(
+        stubFor(matcherForClient(client)
+          .withHeader("Authorization", equalTo(s"Bearer $authorizationToken"))
+          .withHeader("env", equalTo(environment))
+          .willReturn(aResponse().withStatus(200).withBody(
           s"""
              |{
              |    "Auth_64-8": $auth_64_8,

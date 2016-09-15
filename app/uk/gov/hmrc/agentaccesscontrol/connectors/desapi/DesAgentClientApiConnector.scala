@@ -23,11 +23,12 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.CESA_Respons
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, NotFoundException}
+import uk.gov.hmrc.play.http.logging.Authorization
+import uk.gov.hmrc.play.http._
 
 import scala.concurrent.Future
 
-class DesAgentClientApiConnector(desBaseUrl: String, httpGet: HttpGet, auditService: AuditService) {
+class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String, environment: String, httpGet: HttpGet, auditService: AuditService) {
 
   private implicit val foundResponseReads: Reads[FoundResponse] = (
     (__ \ "Auth_64-8").read[Boolean] and
@@ -37,7 +38,7 @@ class DesAgentClientApiConnector(desBaseUrl: String, httpGet: HttpGet, auditServ
   def getAgentClientRelationship(saAgentReference: SaAgentReference, agentCode: AgentCode, saUtr: SaUtr)(implicit hc: HeaderCarrier):
         Future[DesAgentClientFlagsApiResponse] = {
     val url: String = urlFor(saAgentReference, saUtr)
-    httpGet.GET(url) map { r =>
+    getWithDesHeaders(url) map { r =>
       logResponse(saUtr, agentCode, r.body)
       foundResponseReads.reads(Json.parse(r.body)).get
     } recover {
@@ -51,4 +52,11 @@ class DesAgentClientApiConnector(desBaseUrl: String, httpGet: HttpGet, auditServ
 
   private def urlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): String =
     s"$desBaseUrl/sa/agents/${saAgentReference.value}/client/$saUtr"
+
+  private def getWithDesHeaders(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    val desHeaderCarrier = hc.copy(
+      authorization = Some(Authorization(s"Bearer $authorizationToken")),
+      extraHeaders = hc.extraHeaders :+ "env" -> environment)
+    httpGet.GET[HttpResponse](url)(implicitly[HttpReads[HttpResponse]], desHeaderCarrier)
+  }
 }
