@@ -25,6 +25,7 @@ import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 import uk.gov.hmrc.play.microservice.bootstrap.DefaultMicroserviceGlobal
 import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
 import net.ceedubs.ficus.Ficus._
+import uk.gov.hmrc.agent.kenshoo.monitoring.MonitoringFilter
 
 object ControllerConfiguration extends ControllerConfig {
   lazy val controllerConfigs = Play.current.configuration.underlying.as[Config]("controllers")
@@ -37,6 +38,10 @@ object AuthParamsControllerConfiguration extends AuthParamsControllerConfig {
 object MicroserviceAuditFilter extends AuditFilter with AppName {
   override val auditConnector = MicroserviceAuditConnector
   override def controllerNeedsAuditing(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsAuditing
+}
+
+object MicroserviceMonitoringFilter extends MonitoringFilter {
+  val urlPatternToNameMapping = Map(".*/sa-auth/agent/\\w+/client/\\w+" -> "Agent-SA-Access-Control")
 }
 
 object MicroserviceLoggingFilter extends LoggingFilter {
@@ -59,6 +64,8 @@ trait MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with Ser
   override val microserviceAuditFilter = MicroserviceAuditFilter
 
   override val authFilter = Some(MicroserviceAuthFilter)
+
+  override def microserviceFilters = defaultMicroserviceFilters ++ Seq(MicroserviceMonitoringFilter)
 
   override def getControllerInstance[A](controllerClass: Class[A]): A = {
     getController(controllerClass)
