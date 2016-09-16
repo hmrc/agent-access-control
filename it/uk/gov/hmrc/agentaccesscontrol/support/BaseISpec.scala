@@ -315,33 +315,10 @@ trait StubUtils {
       stubFor(get(urlPathEqualTo(s"/auth/authority")).willReturn(aResponse().withStatus(200).withBody(
         s"""
            |{
-           |  "new-session":"/auth/oid/$oid/session",
            |  "enrolments":"/auth/oid/$oid/enrolments",
-           |  "uri":"/auth/oid/$oid",
-           |  "loggedInAt":"2016-06-20T10:44:29.634Z",
            |  "credentials":{
            |    "gatewayId":"0000001232456789"
-           |  },
-           |  "accounts":{
-           |    "agent":{
-           |      "link":"/agent/$agentCode",
-           |      "agentCode":"$agentCode",
-           |      "agentUserId":"ZMOQ1hrrP-9ZmnFw0kIA5vlc-mo",
-           |      "agentUserRole":"admin",
-           |      "payeReference":"HZ1234",
-           |      "agentBusinessUtr":"JARN1234567"
-           |    },
-           |    "taxsAgent":{
-           |      "link":"/taxsagent/V3264H",
-           |      "uar":"V3264H"
-           |    }
-           |  },
-           |  "lastUpdated":"2016-06-20T10:44:29.634Z",
-           |  "credentialStrength":"strong",
-           |  "confidenceLevel":50,
-           |  "userDetailsLink":"$wiremockBaseUrl/user-details/id/$oid",
-           |  "levelOfAssurance":"1",
-           |  "previouslyLoggedInAt":"2016-06-20T09:48:37.112Z"
+           |  }
            |}
        """.stripMargin
       )))
