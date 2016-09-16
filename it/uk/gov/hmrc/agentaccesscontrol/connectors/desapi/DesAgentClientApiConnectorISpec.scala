@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
-import com.github.tomakehurst.wiremock.client.WireMock
+import com.kenshoo.play.metrics.MetricsRegistry
 import org.mockito.Matchers
 import org.mockito.Matchers.any
 import org.mockito.Mockito.verify
@@ -100,6 +100,14 @@ class DesAgentClientApiConnectorISpec extends BaseISpec with MockitoSugar {
       givenClientIsLoggedIn().andDesIsDown()
 
       an[Exception] should be thrownBy await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr))
+    }
+    "Metrics are logged for the outbound call" in new Context {
+      val metricsRegistry = MetricsRegistry.defaultRegistry
+      givenClientIsLoggedIn()
+        .andIsRelatedToClientInDes(saUtr).andAuthorisedByBoth648AndI648()
+
+      await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
+      metricsRegistry.getTimers.get("Timer-ConsumedAPI-DES-GetAgentClientRelationship-GET").getCount should be >= 1L
     }
   }
 

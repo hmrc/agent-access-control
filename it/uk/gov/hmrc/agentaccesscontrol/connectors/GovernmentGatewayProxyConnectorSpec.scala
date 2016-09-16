@@ -2,13 +2,14 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
 
+import com.kenshoo.play.metrics.MetricsRegistry
+import org.mockito.Matchers
 import org.mockito.Matchers.any
-import org.mockito.{Matchers, Mockito}
 import org.mockito.Mockito.verify
 import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.GGW_Response
-import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
+import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.{HeaderCarrier, Upstream5xxResponse}
@@ -65,6 +66,15 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec with MockitoSugar {
         .andGovernmentGatewayProxyReturnsAnError500()
 
       an[Upstream5xxResponse] should be thrownBy await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
+    }
+    "record metrics for outbound call" in {
+      val metricsRegistry = MetricsRegistry.defaultRegistry
+      given()
+        .agentAdmin("AgentCode")
+        .andIsAssignedToClient(SaUtr("1234567890"))
+
+      await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
+      metricsRegistry.getTimers().get("Timer-ConsumedAPI-GGW-GetAssignedAgents-POST").getCount should be >= 1L
     }
   }
 }

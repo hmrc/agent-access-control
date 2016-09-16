@@ -18,7 +18,7 @@ private object AppDependencies {
   import play.PlayImport._
   import play.core.PlayVersion
 
-  private val microserviceBootstrapVersion = "4.2.1"
+  private val microserviceBootstrapVersion = "4.4.0"
   private val playAuthVersion = "3.1.0"
   private val playHealthVersion = "1.1.0"
   private val playJsonLoggerVersion = "2.1.1"
@@ -38,7 +38,8 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "play-url-binders" % playUrlBindersVersion,
     "uk.gov.hmrc" %% "play-config" % playConfigVersion,
     "uk.gov.hmrc" %% "play-json-logger" % playJsonLoggerVersion,
-    "uk.gov.hmrc" %% "domain" % domainVersion
+    "uk.gov.hmrc" %% "domain" % domainVersion,
+    "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "1.9.0"
   )
 
   trait TestDependencies {
