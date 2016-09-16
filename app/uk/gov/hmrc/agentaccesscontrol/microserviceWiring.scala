@@ -33,7 +33,7 @@ import uk.gov.hmrc.play.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws._
 
 object WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch with AppName with MonitoredWSHttp {
-  val httpAPIs = Map(".*/sa/agents/\\w+/client/utr/\\w+" -> "DES-GetAgentClientRelationship",
+  val httpAPIs = Map(".*/sa/agents/\\w+/client/\\w+" -> "DES-GetAgentClientRelationship",
                      ".*/auth/authority" -> "AUTH-GetAuthority",
                      ".*/auth/oid/\\w+/enrolments" -> "AUTH-GetEnrolments")
 

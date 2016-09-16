@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
 
+import com.kenshoo.play.metrics.MetricsRegistry
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
 import uk.gov.hmrc.domain.SaAgentReference
@@ -33,6 +34,17 @@ class AuthConnectorISpec extends BaseISpec {
         .andHasSaAgentReferenceWithEnrolment("REF879")
 
       await(newAuthConnector().currentAgentIdentifiers) shouldBe Some((Some(SaAgentReference("REF879")), "0000001232456789"))
+    }
+
+    "record metrics for both /auth/authority and /auth/authority/(oid)/enrolments" in {
+      val metricsRegistry = MetricsRegistry.defaultRegistry
+      given()
+        .agentAdmin("ABCDEF123456").isLoggedIn()
+        .andHasSaAgentReferenceWithEnrolment("REF879")
+
+      await(newAuthConnector().currentAgentIdentifiers) shouldBe Some((Some(SaAgentReference("REF879")), "0000001232456789"))
+      metricsRegistry.getTimers.get("Timer-ConsumedAPI-AUTH-GetAuthority-GET").getCount should be >= 1L
+      metricsRegistry.getTimers.get("Timer-ConsumedAPI-AUTH-GetEnrolments-GET").getCount should be >= 1L
     }
 
     "return None if 6 digit agent reference cannot be found" in {

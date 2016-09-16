@@ -44,7 +44,7 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost, auditSer
   val url: URL = new URL(baseUrl, "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents")
 
   def getAssignedSaAgents(utr: SaUtr, agentCode: AgentCode)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
-    monitor("GGW-GetAssignedAgents"){
+    monitor("ConsumedAPI-GGW-GetAssignedAgents-POST"){
       httpPost.POSTString(url.toString, body(utr), Seq(CONTENT_TYPE -> XML))
       .map({ r =>
         logResponse(utr, agentCode, r.body)
