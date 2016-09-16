@@ -38,10 +38,10 @@ controllers {
 }
 ```
 
-`play-authorisation` library will get the tax regime and the client identifier in that regime from the URL path using
-a pattern. (default: `/([\w]+)/([^/]+)/?.*`, overridable with the _pattern_ conf key; tax regime is also overridable
-with the _account_ conf key) In the example it is going to be sa and the sa utr. Auth service will check if the given
-user is logged in, and if not and the logged-in user is an agent, it will delegate to this service because the
+The `play-authorisation` library will get the tax regime and the client identifier in that regime from the URL path using
+a pattern. (default: `/([\w]+)/([^/]+)/?.*`, override with the _pattern_ conf key; tax regime is also overridable
+with the _account_ configuration key). In the example it is going to be 'SA' and the SA UTR. Auth service will check if the given
+user is logged in, and if the logged-in user is an agent, it will delegate to Agent Access Control as the
 _delegatedAuthRule_ is set to `sa-auth`.
 
 N.B.: all of the above is about how to use this with the current version of `play-authorisation`, 3.3.0.
@@ -50,14 +50,14 @@ N.B.: all of the above is about how to use this with the current version of `pla
 
 ##### GET /agent-access-control/sa-auth/agent/:agentCode/client/:saUtr
 
-Headers: need to contain a valid `Authorizastion` header.
+Headers: need to contain a valid `Authorization` header.
 
 Possible responses:
 
 code | scenario
 ---- | ---
 200 | _saUtr_ is allocated to _agentCode_ for Self-Assessment (GG check) AND the logged in user's agency has a valid authorisation to act on behalf of _saUtr_ for dealing with Self-Assessment (HODs check).
-401 | The conditions above do not meet.
+401 | The conditions are not met.
 502 | In case of any error responses in downstream services.
 504 | In case of a timeout while querying downstream services.
 
