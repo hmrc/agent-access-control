@@ -46,11 +46,10 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost, auditSer
   def getAssignedSaAgents(utr: SaUtr, agentCode: AgentCode)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
     monitor("ConsumedAPI-GGW-GetAssignedAgents-POST"){
       httpPost.POSTString(url.toString, body(utr), Seq(CONTENT_TYPE -> XML))
-      .map({ r =>
+    }.map({ r =>
         logResponse(utr, agentCode, r.body)
         parseResponse(r.body)
-      })
-    }
+    })
   }
 
   def parseResponse(xmlString: String): Seq[AssignedAgent] = {

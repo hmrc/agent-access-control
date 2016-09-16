@@ -19,19 +19,20 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 import java.net.URL
 
 import play.api.libs.json.JsValue
+import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.model.{AuthEnrolment, Enrolments}
 import uk.gov.hmrc.domain.SaAgentReference
-import uk.gov.hmrc.play.http.{Upstream4xxResponse, HeaderCarrier, HttpGet, HttpReads}
+import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpReads, Upstream4xxResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
-class AuthConnector(baseUrl: URL, httpGet: HttpGet) {
+class AuthConnector(baseUrl: URL, httpGet: HttpGet) extends HttpAPIMonitor {
 
   def currentAgentIdentifiers()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[(Option[SaAgentReference], String)]] =
     currentAuthority
       .flatMap({ authority =>
-        enrolments(authority)
+        monitor("ConsumedAPI-AUTH-GetEnrolments-GET") { enrolments(authority) }
           .map(e => toSaAgentReference(e))
           .map(ref => Some((ref, ggCredentialId(authority))))
       }) recover {
