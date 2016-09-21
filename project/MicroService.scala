@@ -24,7 +24,7 @@ trait MicroService {
     import scoverage.ScoverageKeys
     Seq(
       // Semicolon-separated list of regexs matching classes to exclude
-      ScoverageKeys.coverageExcludedPackages := "<empty>;Reverse.*;.*AuthService.*;models/.data/..*;view.*",
+      ScoverageKeys.coverageExcludedPackages := "<empty>;(app|prod|testOnlyDoNotUseInAppConf)\\.Routes;uk\\.gov\\.hmrc\\.BuildInfo;",
       ScoverageKeys.coverageMinimum := 80,
       ScoverageKeys.coverageFailOnMinimum := false,
       ScoverageKeys.coverageHighlighting := true,
