@@ -26,11 +26,8 @@ private object AppDependencies {
   private val playConfigVersion = "2.0.1"
   private val domainVersion = "3.7.0"
   private val hmrcTestVersion = "1.6.0"
-  private val playReactivemongoVersion = "4.8.0"
 
   val compile = Seq(
-    "uk.gov.hmrc" %% "play-reactivemongo" % playReactivemongoVersion,
-
     ws,
     "uk.gov.hmrc" %% "microservice-bootstrap" % microserviceBootstrapVersion,
     "uk.gov.hmrc" %% "play-authorisation" % playAuthVersion,
