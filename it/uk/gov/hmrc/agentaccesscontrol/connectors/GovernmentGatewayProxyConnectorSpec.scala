@@ -23,10 +23,10 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec with MockitoSugar {
   val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp, auditService)
 
   "GovernmentGatewayProxy" should {
-    "return agent allocations" in {
+    "return agent allocations and assignments" in {
       given()
-        .agentAdmin("AgentCode")
-          .andIsAssignedToClient(SaUtr("1234567890"))
+        .agentAdmin("AgentCode", "000000123245678900")
+          .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"))
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
 
@@ -34,7 +34,7 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec with MockitoSugar {
       details.allocatedAgentCode shouldBe AgentCode("AgentCode")
 
       val credentials = details.assignedCredentials.head
-      credentials.identifier shouldBe "0000001232456789"
+      credentials.identifier shouldBe "000000123245678900"
 
       val credentials1 = details.assignedCredentials(1)
       credentials1.identifier shouldBe "98741987654321"
@@ -43,14 +43,14 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec with MockitoSugar {
       details1.allocatedAgentCode shouldBe AgentCode("123ABCD12345")
 
       val credentials2 = details1.assignedCredentials.head
-      credentials2.identifier shouldBe "0000000987654321"
+      credentials2.identifier shouldBe "98741987654322"
       verify(auditService).auditEvent(Matchers.eq(GGW_Response),
                                       Matchers.eq(agentCode),
                                       Matchers.eq(SaUtr("1234567890")),
                                       any[Seq[(String,Any)]])(any[HeaderCarrier])
     }
 
-    "return empty list if there are no matching credentials" in {
+    "return empty list if there are no allocated agencies nor assigned credentials" in {
       given()
         .agentAdmin("AgentCode")
         .andIsNotAllocatedToClient(SaUtr("1234567890"))
@@ -79,7 +79,7 @@ class GovernmentGatewayProxyConnectorSpec extends BaseISpec with MockitoSugar {
       val metricsRegistry = MetricsRegistry.defaultRegistry
       given()
         .agentAdmin("AgentCode")
-        .andIsAssignedToClient(SaUtr("1234567890"))
+        .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"))
 
       await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
       metricsRegistry.getTimers().get("Timer-ConsumedAPI-GGW-GetAssignedAgents-POST").getCount should be >= 1L

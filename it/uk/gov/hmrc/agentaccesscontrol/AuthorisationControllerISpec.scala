@@ -40,7 +40,7 @@ class AuthorisationControllerISpec extends BaseISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr)
           .andHasNoRelationInDesWith(clientUtr)
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
@@ -50,7 +50,7 @@ class AuthorisationControllerISpec extends BaseISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr)
           .andIsRelatedToClientInDes(clientUtr).andIsAuthorisedByOnly648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
@@ -60,7 +60,7 @@ class AuthorisationControllerISpec extends BaseISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr)
           .andIsRelatedToClientInDes(clientUtr).andIsAuthorisedByOnlyI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
@@ -70,7 +70,7 @@ class AuthorisationControllerISpec extends BaseISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr)
           .andIsRelatedToClientInDes(clientUtr).butIsNotAuthorised()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
@@ -102,7 +102,7 @@ class AuthorisationControllerISpec extends BaseISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr)
           .andDesIsDown()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 502
@@ -125,7 +125,7 @@ class AuthorisationControllerISpec extends BaseISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr)
           .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 200
@@ -135,7 +135,7 @@ class AuthorisationControllerISpec extends BaseISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr)
           .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 200
@@ -147,7 +147,7 @@ class AuthorisationControllerISpec extends BaseISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-        .andIsAssignedToClient(clientUtr)
+        .andIsAllocatedAndAssignedToClient(clientUtr)
         .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr).status shouldBe 200

@@ -50,7 +50,7 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
       verify(auditService).auditEvent(AgentAccessControlEvent.GGW_Decision, agentCode, utr, Seq("ggCredentialId" -> "000111333", "result" -> true))
     }
 
-    "return true if there is more than one agent is assigned to the client" in {
+    "return true if there is more than one agent assigned to the client" in {
       when(ggProxyConnector.getAssignedSaAgents(utr, agentCode)(hc)).thenReturn(Future successful
         Seq(AssignedAgent(agentCode, Seq(AssignedCredentials("000111333"), AssignedCredentials("000111444")))))
 
@@ -104,7 +104,7 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
       verify(auditService).auditEvent(AgentAccessControlEvent.GGW_Decision, agentCode, utr, Seq("ggCredentialId" -> "NonMatchingCred", "result" -> false))
     }
 
-    "return true there is more than one agency assigned to the client" in {
+    "return true if the client is allocated to more than one agency, and one of them is matching" in {
       when(ggProxyConnector.getAssignedSaAgents(utr, agentCode2)(hc)).thenReturn(
         Future successful Seq(
           AssignedAgent(agentCode, Seq(AssignedCredentials("000111333"))),
