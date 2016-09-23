@@ -55,8 +55,8 @@ trait StubUtils {
   me: StartAndStopWireMock =>
 
   class PreconditionBuilder {
-    def agentAdmin(agentCode: String): AgentAdmin = {
-      new AgentAdmin(agentCode, oid = "556737e15500005500eaf68e")
+    def agentAdmin(agentCode: String, agentCredId: String = "0000001232456789"): AgentAdmin = {
+      new AgentAdmin(agentCode, agentCredId, oid = "556737e15500005500eaf68e")
     }
 
     def agentAdmin(agentCode: AgentCode): AgentAdmin = {
@@ -69,6 +69,7 @@ trait StubUtils {
   }
 
   class AgentAdmin(override val agentCode: String,
+                   override val agentCredId: String,
                    override val oid: String)
     extends AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with GovernmentGatewayProxyStubs[AgentAdmin]
 
@@ -120,6 +121,7 @@ trait StubUtils {
   trait GovernmentGatewayProxyStubs[A] {
     me: A =>
     def agentCode: String
+    def agentCredId: String
 
     val path: String = "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents"
 
@@ -129,7 +131,7 @@ trait StubUtils {
       this
     }
 
-    def andIsAssignedToClient(utr: SaUtr): A = {
+    def andIsAllocatedAndAssignedToClient(utr: SaUtr): A = {
       stubFor(getAssignedAgentsPost(utr)
         .willReturn(aResponse()
           .withBody(
@@ -143,7 +145,7 @@ trait StubUtils {
                |			<AssignedCredentials>
                |				<Credential>
                |					<CredentialName>GGWCESA tests</CredentialName>
-               |					<CredentialIdentifier>0000001232456789</CredentialIdentifier>
+               |					<CredentialIdentifier>$agentCredId</CredentialIdentifier>
                |					<Role>User</Role>
                |				</Credential>
                |				<Credential>
@@ -160,7 +162,7 @@ trait StubUtils {
                |			<AssignedCredentials>
                |				<Credential>
                |					<CredentialName>GGWCESA test1</CredentialName>
-               |					<CredentialIdentifier>0000000987654321</CredentialIdentifier>
+               |					<CredentialIdentifier>98741987654322</CredentialIdentifier>
                |					<Role>User</Role>
                |				</Credential>
                |			</AssignedCredentials>
@@ -185,12 +187,12 @@ trait StubUtils {
                |			<AssignedCredentials>
                |				<Credential>
                |					<CredentialName>GGWCESA tests</CredentialName>
-               |					<CredentialIdentifier>9999999232456789</CredentialIdentifier>
+               |					<CredentialIdentifier>98741987654323</CredentialIdentifier>
                |					<Role>User</Role>
                |				</Credential>
                |				<Credential>
                |					<CredentialName>GGWCESA tests1</CredentialName>
-               |					<CredentialIdentifier>98741987654321</CredentialIdentifier>
+               |					<CredentialIdentifier>98741987654324</CredentialIdentifier>
                |					<Role>User</Role>
                |				</Credential>
                |			</AssignedCredentials>
@@ -202,7 +204,7 @@ trait StubUtils {
                |			<AssignedCredentials>
                |				<Credential>
                |					<CredentialName>GGWCESA test1</CredentialName>
-               |					<CredentialIdentifier>0000000987654321</CredentialIdentifier>
+               |					<CredentialIdentifier>98741987654325</CredentialIdentifier>
                |					<Role>User</Role>
                |				</Credential>
                |			</AssignedCredentials>
@@ -252,6 +254,7 @@ trait StubUtils {
 
     def oid: String
     def agentCode: String
+    def agentCredId: String
     protected var saAgentReference: Option[SaAgentReference] = None
 
     def andGettingEnrolmentsFailsWith500(): A = {
@@ -317,7 +320,7 @@ trait StubUtils {
            |{
            |  "enrolments":"/auth/oid/$oid/enrolments",
            |  "credentials":{
-           |    "gatewayId":"0000001232456789"
+           |    "gatewayId":"$agentCredId"
            |  }
            |}
        """.stripMargin
