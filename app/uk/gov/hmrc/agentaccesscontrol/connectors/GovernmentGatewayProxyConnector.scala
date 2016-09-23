@@ -33,12 +33,15 @@ import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost}
 import scala.concurrent.Future
 import scala.xml.Elem
 
-case class AssignedAgent(allocatedAgentCode: AgentCode) {
-
+case class AssignedAgent(
+  allocatedAgentCode: AgentCode,
+  assignedCredentials: Seq[AssignedCredentials]) {
   def matches(agentCode: AgentCode, ggCredentialId: String) =
-    allocatedAgentCode == agentCode
-
+    allocatedAgentCode == agentCode &&
+    assignedCredentials.exists(c => c.identifier == ggCredentialId)
 }
+
+case class AssignedCredentials(identifier: String)
 
 class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost, auditService: AuditService) extends HttpAPIMonitor {
   val url: URL = new URL(baseUrl, "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents")
@@ -57,7 +60,11 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost, auditSer
     val agentDetails = xml \ "AllocatedAgents" \ "AgentDetails"
     agentDetails.map { agency =>
       val agentCode = AgentCode((agency \ "AgentCode").text)
-      AssignedAgent(agentCode)
+
+      val credentials = (agency \ "AssignedCredentials" \ "Credential").map { elem =>
+        AssignedCredentials((elem \ "CredentialIdentifier").text)
+      }
+      AssignedAgent(agentCode, credentials)
     }
   }
 
