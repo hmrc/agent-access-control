@@ -28,12 +28,31 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class AuthConnectorISpec extends BaseISpec {
 
   "getSaAgentReference" should {
-    "return sa agent reference" in {
+    "return sa agent reference and other auth details" in {
       given()
         .agentAdmin("ABCDEF123456").isLoggedIn()
         .andHasSaAgentReferenceWithEnrolment("REF879")
 
-      await(newAuthConnector().currentAgentIdentifiers) shouldBe Some((Some(SaAgentReference("REF879")), "0000001232456789"))
+      val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
+      authDetails.saAgentReference shouldBe Some(SaAgentReference("REF879"))
+      authDetails.ggCredentialId shouldBe "0000001232456789"
+      authDetails.affinityGroup shouldBe Some("Agent")
+      authDetails.agentUserRole shouldBe Some("admin")
+    }
+
+    // The auth team are planning to remove accounts, which is where we get
+    // agentUserRole from, and we only extract these fields so that we can
+    // include them in audit logs
+    "handle affinityGroup and agentUserRole being missing" in {
+      given()
+        .agentAdmin("ABCDEF123456").isLoggedIn(onlyUsedByAuditingAuthorityJson = "")
+        .andHasSaAgentReferenceWithEnrolment("REF879")
+
+      val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
+      authDetails.saAgentReference shouldBe Some(SaAgentReference("REF879"))
+      authDetails.ggCredentialId shouldBe "0000001232456789"
+      authDetails.affinityGroup shouldBe None
+      authDetails.agentUserRole shouldBe None
     }
 
     "record metrics for both /auth/authority and /auth/authority/(oid)/enrolments" in {
@@ -42,24 +61,29 @@ class AuthConnectorISpec extends BaseISpec {
         .agentAdmin("ABCDEF123456").isLoggedIn()
         .andHasSaAgentReferenceWithEnrolment("REF879")
 
-      await(newAuthConnector().currentAgentIdentifiers) shouldBe Some((Some(SaAgentReference("REF879")), "0000001232456789"))
+      val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
+      authDetails.saAgentReference shouldBe Some(SaAgentReference("REF879"))
+      authDetails.ggCredentialId shouldBe "0000001232456789"
+
       metricsRegistry.getTimers.get("Timer-ConsumedAPI-AUTH-GetAuthority-GET").getCount should be >= 1L
       metricsRegistry.getTimers.get("Timer-ConsumedAPI-AUTH-GetEnrolments-GET").getCount should be >= 1L
     }
 
-    "return None if 6 digit agent reference cannot be found" in {
+    "return None as the saAgentReference if 6 digit agent reference cannot be found" in {
       given()
         .agentAdmin("ABCDEF123456").isLoggedIn()
         .andHasNoSaAgentReference()
 
-      await(newAuthConnector().currentAgentIdentifiers) shouldBe Some((None, "0000001232456789"))
+      val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
+      authDetails.saAgentReference shouldBe None
+      authDetails.ggCredentialId shouldBe "0000001232456789"
     }
 
     "return None if the user is not logged in" in {
       given()
         .agentAdmin("ABCDEF123456").isNotLoggedIn()
 
-      await(newAuthConnector().currentAgentIdentifiers) shouldBe None
+      await(newAuthConnector().currentAuthDetails) shouldBe None
     }
 
     "return a failed future if any errors happen" in {
@@ -68,7 +92,7 @@ class AuthConnectorISpec extends BaseISpec {
         .andGettingEnrolmentsFailsWith500()
 
       an[Exception] shouldBe thrownBy {
-        await(newAuthConnector().currentAgentIdentifiers)
+        await(newAuthConnector().currentAuthDetails)
       }
     }
 

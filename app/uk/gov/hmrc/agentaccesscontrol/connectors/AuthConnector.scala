@@ -29,12 +29,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AuthConnector(baseUrl: URL, httpGet: HttpGet) extends HttpAPIMonitor {
 
-  def currentAgentIdentifiers()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[(Option[SaAgentReference], String)]] =
+  def currentAuthDetails()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AuthDetails]] =
     currentAuthority
       .flatMap({ authority =>
         monitor("ConsumedAPI-AUTH-GetEnrolments-GET") { enrolments(authority) }
           .map(e => toSaAgentReference(e))
-          .map(ref => Some((ref, ggCredentialId(authority))))
+          .map(ref => Some(AuthDetails(ref, ggCredentialId(authority), affinityGroup(authority), agentUserRole(authority))))
       }) recover {
       case ex: Upstream4xxResponse if ex.upstreamResponseCode == 401 => None
     }
@@ -42,6 +42,14 @@ class AuthConnector(baseUrl: URL, httpGet: HttpGet) extends HttpAPIMonitor {
 
   private def ggCredentialId(authorityJson: JsValue): String = {
     (authorityJson \ "credentials" \ "gatewayId").as[String]
+  }
+
+  private def affinityGroup(authorityJson: JsValue): Option[String] = {
+    (authorityJson \ "affinityGroup").asOpt[String]
+  }
+
+  private def agentUserRole(authorityJson: JsValue): Option[String] = {
+    (authorityJson \ "accounts" \ "agent" \ "agentUserRole").asOpt[String]
   }
 
   private def toSaAgentReference(enrolments: Enrolments): Option[SaAgentReference] =
@@ -61,3 +69,11 @@ class AuthConnector(baseUrl: URL, httpGet: HttpGet) extends HttpAPIMonitor {
     httpGet.GET[T](url(relativeUrl).toString)(rds, hc)
 
 }
+
+
+case class AuthDetails(
+  saAgentReference: Option[SaAgentReference],
+  ggCredentialId: String,
+  affinityGroup: Option[String],
+  agentUserRole: Option[String]
+)
