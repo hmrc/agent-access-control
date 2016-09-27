@@ -23,7 +23,7 @@ import uk.gov.hmrc.agent.kenshoo.monitoring.MonitoredWSHttp
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.{GovernmentGatewayProxyConnector, AuthConnector => OurAuthConnector}
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.controllers.{WhitelistController, AuthorisationController}
+import uk.gov.hmrc.agentaccesscontrol.controllers.{AuthorisationController, WhitelistController}
 import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, CesaAuthorisationService, GovernmentGatewayAuthorisationService}
 import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -39,7 +39,7 @@ object WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch wi
   override val hooks: Seq[HttpHook] = NoneRequired
 }
 
-object MicroserviceAuditConnector extends AuditConnector with RunMode {
+class MicroserviceAuditConnector extends AuditConnector with RunMode {
   override lazy val auditingConfig = LoadAuditingConfig(s"auditing")
 }
 
@@ -49,7 +49,8 @@ object MicroserviceAuthConnector extends AuthConnector with ServicesConfig {
 
 
 trait ServiceRegistry extends ServicesConfig {
-  lazy val auditService: AuditService.type = AuditService
+  lazy val auditConnector: AuditConnector = new MicroserviceAuditConnector
+  lazy val auditService = new AuditService(auditConnector)
   lazy val desAgentClientApiConnector = {
     val desAuthToken = getConfString("des.authorization-token", throw new RuntimeException("Could not find DES authorisation token"))
     val desEnvironment = getConfString("des.environment", throw new RuntimeException("Could not find DES environment"))
