@@ -36,30 +36,22 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
           ggAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, ggCredentialId, saUtr)
         results.map { case (cesa, ggw) => {
           val result = cesa && ggw
-          logResult(agentCode, agentAuthDetails, saUtr, cesa, ggw, result)
+          auditAndLogDecision(agentCode, agentAuthDetails, saUtr, cesa, ggw, result)
           result
         } }
-      case Some(AuthDetails(None, _, _, _)) =>
+      case Some(agentAuthDetails@AuthDetails(None, _, _, _)) =>
+        auditDecision(agentCode, agentAuthDetails, saUtr, result = false)
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
       case None =>
         Future successful notAuthorised("No user is logged in")
     }
 
-  private def logResult(
+  private def auditAndLogDecision(
     agentCode: AgentCode, agentAuthDetails: AuthDetails, saUtr: SaUtr,
     cesa: Boolean, ggw: Boolean, result: Boolean)
     (implicit hc: HeaderCarrier) = {
 
-    val optionalDetails = Seq(
-      agentAuthDetails.saAgentReference.map("saAgentReference" -> _),
-      agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
-      agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
-
-    auditService.auditEvent(
-      AgentAccessControlEvent.AgentAccessControlDecision, agentCode, saUtr,
-      Seq("ggCredentialId" -> agentAuthDetails.ggCredentialId,
-        "result" -> result, "cesa" -> cesa, "ggw" -> ggw)
-      ++ optionalDetails)
+    auditDecision(agentCode, agentAuthDetails, saUtr, result, "cesa" -> cesa, "ggw" -> ggw)
 
     (cesa, ggw) match {
       case (true, true) =>
@@ -69,4 +61,18 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
     }
   }
 
+  def auditDecision(agentCode: AgentCode, agentAuthDetails: AuthDetails, saUtr: SaUtr, result: Boolean, extraDetails: (String, Any)*)
+    (implicit hc: HeaderCarrier): Future[Unit] = {
+    val optionalDetails = Seq(
+      agentAuthDetails.saAgentReference.map("saAgentReference" -> _),
+      agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
+      agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
+
+    auditService.auditEvent(
+      AgentAccessControlEvent.AgentAccessControlDecision, agentCode, saUtr,
+      Seq("ggCredentialId" -> agentAuthDetails.ggCredentialId,
+        "result" -> result)
+      ++ extraDetails
+      ++ optionalDetails)
+  }
 }

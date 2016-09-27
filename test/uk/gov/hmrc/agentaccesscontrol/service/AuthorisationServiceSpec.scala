@@ -43,6 +43,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
+        Seq("ggCredentialId" -> "ggId", "result" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns true" in new Context {
