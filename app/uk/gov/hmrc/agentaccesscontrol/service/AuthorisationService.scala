@@ -51,6 +51,7 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
     (implicit hc: HeaderCarrier) = {
 
     val optionalDetails = Seq(
+      agentAuthDetails.saAgentReference.map("saAgentReference" -> _),
       agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
       agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
 
