@@ -36,8 +36,11 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
           ggAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, ggCredentialId, saUtr)
         results.map { case (cesa, ggw) => {
           val result = cesa && ggw
-          auditAndLogDecision(agentCode, agentAuthDetails, saUtr, cesa, ggw, result)
-          result
+
+          auditDecision(agentCode, agentAuthDetails, saUtr, result, "cesa" -> cesa, "ggw" -> ggw)
+
+          if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
+          else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr cesa=$cesa ggw=$ggw")
         } }
       case Some(agentAuthDetails@AuthDetails(None, _, _, _)) =>
         auditDecision(agentCode, agentAuthDetails, saUtr, result = false)
@@ -46,22 +49,7 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
         Future successful notAuthorised("No user is logged in")
     }
 
-  private def auditAndLogDecision(
-    agentCode: AgentCode, agentAuthDetails: AuthDetails, saUtr: SaUtr,
-    cesa: Boolean, ggw: Boolean, result: Boolean)
-    (implicit hc: HeaderCarrier) = {
-
-    auditDecision(agentCode, agentAuthDetails, saUtr, result, "cesa" -> cesa, "ggw" -> ggw)
-
-    (cesa, ggw) match {
-      case (true, true) =>
-        authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
-      case (_, _) =>
-        notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr cesa=$cesa ggw=$ggw")
-    }
-  }
-
-  def auditDecision(agentCode: AgentCode, agentAuthDetails: AuthDetails, saUtr: SaUtr, result: Boolean, extraDetails: (String, Any)*)
+  private def auditDecision(agentCode: AgentCode, agentAuthDetails: AuthDetails, saUtr: SaUtr, result: Boolean, extraDetails: (String, Any)*)
     (implicit hc: HeaderCarrier): Future[Unit] = {
     val optionalDetails = Seq(
       agentAuthDetails.saAgentReference.map("saAgentReference" -> _),
