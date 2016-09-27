@@ -21,10 +21,10 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 class WhitelistControllerSpec extends UnitSpec {
 
-  "WhitelistController.blocked" should {
-    "respond with 401" in {
+  "WhitelistController.forbidden" should {
+    "respond with 403" in {
       val ctrl = new WhitelistController()
-      status(ctrl.unauthorised(FakeRequest())) shouldBe 401
+      status(ctrl.forbidden(FakeRequest())) shouldBe 403
     }
   }
 }

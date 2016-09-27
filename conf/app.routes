@@ -5,4 +5,4 @@
 GET    /sa-auth/agent/:agentCode/client/:saUtr    @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorised(agentCode: uk.gov.hmrc.domain.AgentCode, saUtr: uk.gov.hmrc.domain.SaUtr)
 
 # For whitelisting
-GET    /unauthorised                              @uk.gov.hmrc.agentaccesscontrol.controllers.WhitelistController.unauthorised
+GET    /forbidden                                 @uk.gov.hmrc.agentaccesscontrol.controllers.WhitelistController.forbidden

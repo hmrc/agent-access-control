@@ -40,10 +40,10 @@ class WhitelistISpec extends BaseISpec {
       authResponseFor(agentCode, clientUtr, None).status shouldBe 501
     }
 
-    "respond with UNAUTHORISED if whitelist is enabled and there is an IP address in header that is not on the list" in {
+    "respond with FORBIDDEN if whitelist is enabled and there is an IP address in header that is not on the list" in {
       givenLoggedInAgentIsAuthorised()
 
-      authResponseFor(agentCode, clientUtr, Some("192.168.1.1")).status shouldBe 401
+      authResponseFor(agentCode, clientUtr, Some("192.168.1.1")).status shouldBe 403
     }
 
     "be enabled if whitelist is enabled and there is an IP address in header that is on the list" in {

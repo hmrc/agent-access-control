@@ -62,12 +62,12 @@ class WhitelistFilter extends AkamaiWhitelistFilter {
   import play.api.Play.current
 
   override val whitelist: Seq[String] = whitelistConfig("microservice.whitelist.ips")
-  override val destination: Call = Call("GET", "/agent-access-control/unauthorised")
+  override val destination: Call = Call("GET", "/agent-access-control/forbidden")
   override val excludedPaths: Seq[Call] = Seq(
     Call("GET", "/ping/ping"),
     Call("GET", "/admin/details"),
     Call("GET", "/admin/metrics"),
-    Call("GET", "/agent-access-control/unauthorised")
+    Call("GET", "/agent-access-control/forbidden")
   )
 
   private def whitelistConfig(key: String): Seq[String] =

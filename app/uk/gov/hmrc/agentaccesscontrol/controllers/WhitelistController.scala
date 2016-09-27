@@ -21,8 +21,8 @@ import uk.gov.hmrc.play.microservice.controller.BaseController
 
 class WhitelistController extends BaseController {
 
-  val unauthorised = Action {
-    Unauthorized
+  val forbidden = Action {
+    Forbidden
   }
 
 }
