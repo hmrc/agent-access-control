@@ -23,7 +23,7 @@ import uk.gov.hmrc.agent.kenshoo.monitoring.MonitoredWSHttp
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.{GovernmentGatewayProxyConnector, AuthConnector => OurAuthConnector}
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController
+import uk.gov.hmrc.agentaccesscontrol.controllers.{WhitelistController, AuthorisationController}
 import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, CesaAuthorisationService, GovernmentGatewayAuthorisationService}
 import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -68,7 +68,8 @@ trait ControllerRegistry {
   registry: ServiceRegistry =>
 
   private lazy val controllers = Map[Class[_], Controller](
-    classOf[AuthorisationController] -> new AuthorisationController(auditService, authorisationService)
+    classOf[AuthorisationController] -> new AuthorisationController(auditService, authorisationService),
+    classOf[WhitelistController] -> new WhitelistController()
   )
 
   def getController[A](controllerClass: Class[A]) : A = controllers(controllerClass).asInstanceOf[A]

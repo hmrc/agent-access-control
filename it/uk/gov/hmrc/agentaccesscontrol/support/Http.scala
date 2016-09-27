@@ -58,7 +58,7 @@ class Resource(path: String)(port: Int) {
 
   def url = s"http://localhost:$port$path"
 
-  def get() =
-    Http.get(url)(HeaderCarrier())
+  def get(trueClientIp: Option[String] = None) =
+    Http.get(url)(HeaderCarrier(trueClientIp = trueClientIp))
 
 }

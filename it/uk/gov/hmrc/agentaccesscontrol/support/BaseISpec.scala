@@ -38,6 +38,8 @@ abstract class BaseISpec extends UnitSpec
 
   implicit val hc = HeaderCarrier()
 
+  protected def additionalConfiguration: Map[String, String] = Map.empty
+
   override implicit lazy val app: FakeApplication = FakeApplication(
     additionalConfiguration = Map(
       configDesHost -> wiremockHost,
@@ -46,7 +48,7 @@ abstract class BaseISpec extends UnitSpec
       configAuthPort -> wiremockPort,
       ggProxyHost -> wiremockHost,
       ggProxyPort -> wiremockPort
-    )
+    ) ++ additionalConfiguration
   )
 
 }
