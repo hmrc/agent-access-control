@@ -55,7 +55,7 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
       agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
 
     auditService.auditEvent(
-      AgentAccessControlEvent.AAC_Decision, agentCode, saUtr,
+      AgentAccessControlEvent.AgentAccessControlDecision, agentCode, saUtr,
       Seq("ggCredentialId" -> agentAuthDetails.ggCredentialId,
         "result" -> result, "cesa" -> cesa, "ggw" -> ggw)
       ++ optionalDetails)

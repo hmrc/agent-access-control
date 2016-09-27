@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol.service
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AAC_Decision
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
@@ -52,7 +52,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(false)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
         Seq("ggCredentialId" -> "ggId", "result" -> false, "cesa" -> false, "ggw" -> true, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
@@ -63,7 +63,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
-      verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
         Seq("ggCredentialId" -> "ggId", "result" -> true, "cesa" -> true, "ggw" -> true, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
@@ -74,7 +74,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
-      verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
         Seq("ggCredentialId" -> "ggId", "result" -> true, "cesa" -> true, "ggw" -> true, "affinityGroup" -> "Organisation", "agentUserRole" -> "assistant"))
     }
 
@@ -85,7 +85,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
-      verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
         Seq("ggCredentialId" -> "ggId", "result" -> true, "cesa" -> true, "ggw" -> true))
     }
 
@@ -96,7 +96,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
         Seq("ggCredentialId" -> "ggId", "result" -> false, "cesa" -> true, "ggw" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
@@ -107,7 +107,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(false)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditEvent(AAC_Decision, agentCode, clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
         Seq("ggCredentialId" -> "ggId", "result" -> false, "cesa" -> false, "ggw" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
