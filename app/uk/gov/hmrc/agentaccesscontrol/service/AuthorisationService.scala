@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.service
 
 import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
-import uk.gov.hmrc.agentaccesscontrol.connectors.AuthConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
@@ -30,28 +30,41 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
   extends LoggingAuthorisationResults {
 
   def isAuthorised(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
-    authConnector.currentAgentIdentifiers().flatMap {
-      case Some((Some(saAgentReference), ggCredentialId)) =>
+    authConnector.currentAuthDetails().flatMap {
+      case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), ggCredentialId, _, _)) =>
         val results = cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
           ggAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, ggCredentialId, saUtr)
         results.map { case (cesa, ggw) => {
           val result = cesa && ggw
-          logResult(cesa, ggw, agentCode, ggCredentialId, saUtr, result)
+          logResult(agentCode, agentAuthDetails, saUtr, cesa, ggw, result)
           result
         } }
-      case Some((None, _)) =>
+      case Some(AuthDetails(None, _, _, _)) =>
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
       case None =>
         Future successful notAuthorised("No user is logged in")
     }
 
-  def logResult(cesa: Boolean, ggw: Boolean, agentCode: AgentCode, ggCredentialId: String, saUtr: SaUtr, result: Boolean)
-               (implicit hc: HeaderCarrier) = {
-    auditService.auditEvent(AgentAccessControlEvent.AAC_Decision, agentCode, saUtr,
-                            Seq("ggCredentialId" -> ggCredentialId, "result" -> result, "cesa" -> cesa, "ggw" -> ggw))
+  private def logResult(
+    agentCode: AgentCode, agentAuthDetails: AuthDetails, saUtr: SaUtr,
+    cesa: Boolean, ggw: Boolean, result: Boolean)
+    (implicit hc: HeaderCarrier) = {
+
+    val optionalDetails = Seq(
+      agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
+      agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
+
+    auditService.auditEvent(
+      AgentAccessControlEvent.AgentAccessControlDecision, agentCode, saUtr,
+      Seq("ggCredentialId" -> agentAuthDetails.ggCredentialId,
+        "result" -> result, "cesa" -> cesa, "ggw" -> ggw)
+      ++ optionalDetails)
+
     (cesa, ggw) match {
-      case (true, true) => authorised(s"Access allowed for agentCode=$agentCode ggCredential=$ggCredentialId client=$saUtr")
-      case (_, _) => notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=$ggCredentialId client=$saUtr cesa=$cesa ggw=$ggw")
+      case (true, true) =>
+        authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
+      case (_, _) =>
+        notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr cesa=$cesa ggw=$ggw")
     }
   }
 

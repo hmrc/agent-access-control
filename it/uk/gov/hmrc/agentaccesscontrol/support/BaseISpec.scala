@@ -314,7 +314,18 @@ trait StubUtils {
       this
     }
 
-    def isLoggedIn(): A = {
+    private val defaultOnlyUsedByAuditingAuthorityJson =
+      s"""
+         |  ,
+         |  "accounts": {
+         |    "agent": {
+         |      "agentUserRole": "admin"
+         |    }
+         |  },
+         |  "affinityGroup": "Agent"
+       """.stripMargin
+
+    def isLoggedIn(onlyUsedByAuditingAuthorityJson: String = defaultOnlyUsedByAuditingAuthorityJson): A = {
       stubFor(get(urlPathEqualTo(s"/auth/authority")).willReturn(aResponse().withStatus(200).withBody(
         s"""
            |{
@@ -322,6 +333,7 @@ trait StubUtils {
            |  "credentials":{
            |    "gatewayId":"$agentCredId"
            |  }
+           |  $onlyUsedByAuditingAuthorityJson
            |}
        """.stripMargin
       )))
