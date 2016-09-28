@@ -19,16 +19,14 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.CESA_Response
-import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.logging.Authorization
 import uk.gov.hmrc.play.http._
+import uk.gov.hmrc.play.http.logging.Authorization
 
 import scala.concurrent.Future
 
-class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String, environment: String, httpGet: HttpGet, auditService: AuditService) {
+class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String, environment: String, httpGet: HttpGet) {
 
   private implicit val foundResponseReads: Reads[FoundResponse] = (
     (__ \ "Auth_64-8").read[Boolean] and
@@ -39,15 +37,10 @@ class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String,
         Future[DesAgentClientFlagsApiResponse] = {
     val url: String = urlFor(saAgentReference, saUtr)
     getWithDesHeaders(url) map { r =>
-      logResponse(saUtr, agentCode, r.body)
       foundResponseReads.reads(Json.parse(r.body)).get
     } recover {
       case _: NotFoundException => NotFoundResponse
     }
-  }
-
-  def logResponse(saUtr: SaUtr, agentCode: AgentCode, body: String)(implicit hc: HeaderCarrier) = {
-    auditService.auditEvent(CESA_Response, agentCode, saUtr, Seq("body" -> body))
   }
 
   private def urlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): String =

@@ -40,7 +40,7 @@ object AuthParamsControllerConfiguration extends AuthParamsControllerConfig {
 }
 
 object MicroserviceAuditFilter extends AuditFilter with AppName {
-  override val auditConnector = MicroserviceAuditConnector
+  override val auditConnector = MicroserviceGlobal.auditConnector
   override def controllerNeedsAuditing(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsAuditing
 }
 
@@ -90,8 +90,6 @@ trait MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with Ser
       Logger.info("Starting microservice with IP whitelist disabled")
       Seq.empty
   }
-
-  override val auditConnector = MicroserviceAuditConnector
 
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
 

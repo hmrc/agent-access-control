@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol.audit
 
-import uk.gov.hmrc.agentaccesscontrol.MicroserviceAuditConnector
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
@@ -26,15 +25,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 
-object AuditService extends AuditService {
-  override protected val auditConnector = MicroserviceAuditConnector
-}
-
-trait AuditService {
+class AuditService(val auditConnector: AuditConnector) {
 
   import AgentAccessControlEvent.AgentAccessControlEvent
-
-  protected def auditConnector: AuditConnector
 
   def auditEvent(event: AgentAccessControlEvent,
                  agentCode: AgentCode,
@@ -66,7 +59,7 @@ trait AuditService {
 }
 
 object AgentAccessControlEvent extends Enumeration {
-  val GGW_Decision,CESA_Decision,AgentAccessControlDecision,GGW_Response,CESA_Response = Value
+  val AgentAccessControlDecision = Value
 
   type AgentAccessControlEvent = AgentAccessControlEvent.Value
 }

@@ -21,10 +21,11 @@ import java.net.URL
 import play.api.mvc.Controller
 import uk.gov.hmrc.agent.kenshoo.monitoring.MonitoredWSHttp
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
-import uk.gov.hmrc.agentaccesscontrol.connectors.{GovernmentGatewayProxyConnector, AuthConnector => OurAuthConnector}
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.controllers.{WhitelistController, AuthorisationController}
+import uk.gov.hmrc.agentaccesscontrol.connectors.{GovernmentGatewayProxyConnector, AuthConnector => OurAuthConnector}
+import uk.gov.hmrc.agentaccesscontrol.controllers.{AuthorisationController, WhitelistController}
 import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, CesaAuthorisationService, GovernmentGatewayAuthorisationService}
+import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.auth.microservice.connectors.AuthConnector
@@ -32,14 +33,18 @@ import uk.gov.hmrc.play.config.{AppName, RunMode, ServicesConfig}
 import uk.gov.hmrc.play.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws._
 
-object WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch with AppName with MonitoredWSHttp {
+trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch with AppName with MonitoredWSHttp with HttpAuditing {
   val httpAPIs = Map(".*/sa/agents/\\w+/client/\\w+" -> "DES-GetAgentClientRelationship",
                      ".*/auth/authority" -> "AUTH-GetAuthority")
 
-  override val hooks: Seq[HttpHook] = NoneRequired
+  override val hooks: Seq[HttpHook] = Seq(AuditingHook)
 }
 
-object MicroserviceAuditConnector extends AuditConnector with RunMode {
+object WSHttp extends WSHttp {
+  override val auditConnector = MicroserviceGlobal.auditConnector
+}
+
+class MicroserviceAuditConnector extends AuditConnector with RunMode {
   override lazy val auditingConfig = LoadAuditingConfig(s"auditing")
 }
 
@@ -49,17 +54,18 @@ object MicroserviceAuthConnector extends AuthConnector with ServicesConfig {
 
 
 trait ServiceRegistry extends ServicesConfig {
-  lazy val auditService: AuditService.type = AuditService
+  lazy val auditConnector: AuditConnector = new MicroserviceAuditConnector
+  lazy val auditService = new AuditService(auditConnector)
   lazy val desAgentClientApiConnector = {
     val desAuthToken = getConfString("des.authorization-token", throw new RuntimeException("Could not find DES authorisation token"))
     val desEnvironment = getConfString("des.environment", throw new RuntimeException("Could not find DES environment"))
-    new DesAgentClientApiConnector(baseUrl("des"), desAuthToken, desEnvironment, WSHttp, auditService)
+    new DesAgentClientApiConnector(baseUrl("des"), desAuthToken, desEnvironment, WSHttp)
   }
   lazy val authConnector = new OurAuthConnector(new URL(baseUrl("auth")), WSHttp)
-  lazy val cesaAuthorisationService = new CesaAuthorisationService(desAgentClientApiConnector, auditService)
+  lazy val cesaAuthorisationService = new CesaAuthorisationService(desAgentClientApiConnector)
   lazy val ggProxyConnector: GovernmentGatewayProxyConnector =
-    new GovernmentGatewayProxyConnector(new URL(baseUrl("government-gateway-proxy")), WSHttp, auditService)
-  lazy val ggAuthorisationService = new GovernmentGatewayAuthorisationService(ggProxyConnector, auditService)
+    new GovernmentGatewayProxyConnector(new URL(baseUrl("government-gateway-proxy")), WSHttp)
+  lazy val ggAuthorisationService = new GovernmentGatewayAuthorisationService(ggProxyConnector)
   lazy val authorisationService: AuthorisationService =
     new AuthorisationService(cesaAuthorisationService, authConnector, ggAuthorisationService, auditService)
 }
