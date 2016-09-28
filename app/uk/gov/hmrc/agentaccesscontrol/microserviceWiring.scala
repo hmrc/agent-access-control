@@ -21,10 +21,11 @@ import java.net.URL
 import play.api.mvc.Controller
 import uk.gov.hmrc.agent.kenshoo.monitoring.MonitoredWSHttp
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
-import uk.gov.hmrc.agentaccesscontrol.connectors.{GovernmentGatewayProxyConnector, AuthConnector => OurAuthConnector}
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.{GovernmentGatewayProxyConnector, AuthConnector => OurAuthConnector}
 import uk.gov.hmrc.agentaccesscontrol.controllers.{AuthorisationController, WhitelistController}
 import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, CesaAuthorisationService, GovernmentGatewayAuthorisationService}
+import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.auth.microservice.connectors.AuthConnector
@@ -32,11 +33,15 @@ import uk.gov.hmrc.play.config.{AppName, RunMode, ServicesConfig}
 import uk.gov.hmrc.play.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws._
 
-object WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch with AppName with MonitoredWSHttp {
+trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch with AppName with MonitoredWSHttp with HttpAuditing {
   val httpAPIs = Map(".*/sa/agents/\\w+/client/\\w+" -> "DES-GetAgentClientRelationship",
                      ".*/auth/authority" -> "AUTH-GetAuthority")
 
-  override val hooks: Seq[HttpHook] = NoneRequired
+  override val hooks: Seq[HttpHook] = Seq(AuditingHook)
+}
+
+object WSHttp extends WSHttp {
+  override val auditConnector = MicroserviceGlobal.auditConnector
 }
 
 class MicroserviceAuditConnector extends AuditConnector with RunMode {
@@ -54,7 +59,7 @@ trait ServiceRegistry extends ServicesConfig {
   lazy val desAgentClientApiConnector = {
     val desAuthToken = getConfString("des.authorization-token", throw new RuntimeException("Could not find DES authorisation token"))
     val desEnvironment = getConfString("des.environment", throw new RuntimeException("Could not find DES environment"))
-    new DesAgentClientApiConnector(baseUrl("des"), desAuthToken, desEnvironment, WSHttp, auditService)
+    new DesAgentClientApiConnector(baseUrl("des"), desAuthToken, desEnvironment, WSHttp)
   }
   lazy val authConnector = new OurAuthConnector(new URL(baseUrl("auth")), WSHttp)
   lazy val cesaAuthorisationService = new CesaAuthorisationService(desAgentClientApiConnector, auditService)

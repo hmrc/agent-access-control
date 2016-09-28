@@ -59,7 +59,7 @@ class AuditService(val auditConnector: AuditConnector) {
 }
 
 object AgentAccessControlEvent extends Enumeration {
-  val GGW_Decision,CESA_Decision,AgentAccessControlDecision,GGW_Response,CESA_Response = Value
+  val GGW_Decision,CESA_Decision,AgentAccessControlDecision,GGW_Response = Value
 
   type AgentAccessControlEvent = AgentAccessControlEvent.Value
 }
