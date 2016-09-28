@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.CESA_Decision
-import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
@@ -25,8 +23,7 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class CesaAuthorisationService(desAgentClientApiConnector: DesAgentClientApiConnector,
-                               auditService: AuditService)
+class CesaAuthorisationService(desAgentClientApiConnector: DesAgentClientApiConnector)
   extends LoggingAuthorisationResults {
 
   def isAuthorisedInCesa(agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)
@@ -40,15 +37,12 @@ class CesaAuthorisationService(desAgentClientApiConnector: DesAgentClientApiConn
                                (implicit headerCarrier: HeaderCarrier): Boolean = {
     response match {
       case NotFoundResponse => {
-        auditService.auditEvent(CESA_Decision, agentCode, saUtr, Seq("result" -> false, "response" -> "not-found"))
         notAuthorised(s"DES API returned not found for agent $agentCode and client $saUtr")
       }
       case FoundResponse(true, true) => {
-        auditService.auditEvent(CESA_Decision, agentCode, saUtr, Seq("result" -> true))
         authorised(s"DES API returned true for both flags for agent $agentCode and client $saUtr")
       }
       case FoundResponse(auth64_8, authI64_8) => {
-        auditService.auditEvent(CESA_Decision, agentCode, saUtr, Seq("result" -> false, "64-8" -> auth64_8, "i64-8" -> authI64_8))
         notAuthorised(s"DES API returned false for at least one flag agent $agentCode and client $saUtr. 64-8=$auth64_8, i64-8=$authI64_8")
       }
     }
