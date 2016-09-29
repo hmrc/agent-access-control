@@ -48,8 +48,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar {
       val sentEvent = captor.getValue.asInstanceOf[DataEvent]
 
       sentEvent.auditType shouldBe "AgentAccessControlDecision"
-      //TODO should be agentCode to match convention
-      sentEvent.detail("agent-code") shouldBe "TESTAGENTCODE"
+      sentEvent.detail("agentCode") shouldBe "TESTAGENTCODE"
       sentEvent.detail("regime") shouldBe "sa"
       sentEvent.detail("regimeId") shouldBe "TESTSAUTR"
       sentEvent.detail("extra1") shouldBe "first extra detail"
