@@ -44,7 +44,7 @@ class AuditService(val auditConnector: AuditConnector) {
       auditSource = "agent-access-control",
       auditType = event.toString,
       tags = hc.headers.toMap,
-      detail = Map("agent-code" -> agentCode.toString, "sa-utr" -> saUtr.toString())
+      detail = Map("agentCode" -> agentCode.toString, "regime" -> "sa", "regimeId" -> saUtr.toString())
                ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
     )
   }
