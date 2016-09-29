@@ -50,7 +50,8 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar {
       sentEvent.auditType shouldBe "AgentAccessControlDecision"
       //TODO should be agentCode to match convention
       sentEvent.detail("agent-code") shouldBe "TESTAGENTCODE"
-      sentEvent.detail("sa-utr") shouldBe "TESTSAUTR"
+      sentEvent.detail("regime") shouldBe "sa"
+      sentEvent.detail("regimeId") shouldBe "TESTSAUTR"
       sentEvent.detail("extra1") shouldBe "first extra detail"
       sentEvent.detail("extra2") shouldBe "second extra detail"
     }
