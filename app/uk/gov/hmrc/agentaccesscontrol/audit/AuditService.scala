@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.audit
 
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -43,8 +44,8 @@ class AuditService(val auditConnector: AuditConnector) {
     DataEvent(
       auditSource = "agent-access-control",
       auditType = event.toString,
-      tags = hc.headers.toMap,
-      detail = Map("agentCode" -> agentCode.toString, "regime" -> "sa", "regimeId" -> saUtr.toString())
+      tags = hc.toAuditTags("-", "-"), //TODO fill in transactionName and path
+      detail = hc.toAuditDetails("agentCode" -> agentCode.toString, "regime" -> "sa", "regimeId" -> saUtr.toString())
                ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
     )
   }
