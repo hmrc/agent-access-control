@@ -23,7 +23,7 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessC
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier, Upstream4xxResponse}
+import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
@@ -44,7 +44,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
-        Seq("ggCredentialId" -> "ggId", "result" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
+        Seq("credId" -> "ggId", "accessGranted" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns true" in new Context {
@@ -55,7 +55,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
-        Seq("ggCredentialId" -> "ggId", "result" -> false, "cesa" -> false, "ggw" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
+        Seq("credId" -> "ggId", "accessGranted" -> false, "cesa" -> false, "ggw" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
     "return true if SA agent reference is found and CesaAuthorisationService returns true and GG Authorisation returns true" in new Context {
@@ -66,7 +66,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
       verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
-        Seq("ggCredentialId" -> "ggId", "result" -> true, "cesa" -> true, "ggw" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
+        Seq("credId" -> "ggId", "accessGranted" -> true, "cesa" -> true, "ggw" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
     "not hard code audited values" in new Context {
@@ -79,7 +79,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
       verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
-        Seq("ggCredentialId" -> "ggId", "result" -> true, "cesa" -> true, "ggw" -> true, "saAgentReference" -> differentSaAgentRef, "affinityGroup" -> "Organisation", "agentUserRole" -> "assistant"))
+        Seq("credId" -> "ggId", "accessGranted" -> true, "cesa" -> true, "ggw" -> true, "saAgentReference" -> differentSaAgentRef, "affinityGroup" -> "Organisation", "agentUserRole" -> "assistant"))
     }
 
     "still work if the fields only used for auditing are removed from the auth record" in new Context {
@@ -90,7 +90,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
       verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
-        Seq("ggCredentialId" -> "ggId", "result" -> true, "cesa" -> true, "ggw" -> true, "saAgentReference" -> saAgentRef))
+        Seq("credId" -> "ggId", "accessGranted" -> true, "cesa" -> true, "ggw" -> true, "saAgentReference" -> saAgentRef))
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns true and GG Authorisation returns false" in new Context {
@@ -101,7 +101,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
-        Seq("ggCredentialId" -> "ggId", "result" -> false, "cesa" -> true, "ggw" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
+        Seq("credId" -> "ggId", "accessGranted" -> false, "cesa" -> true, "ggw" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns false" in new Context {
@@ -112,7 +112,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
-        Seq("ggCredentialId" -> "ggId", "result" -> false, "cesa" -> false, "ggw" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
+        Seq("credId" -> "ggId", "accessGranted" -> false, "cesa" -> false, "ggw" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
     "return false if user is not logged in" in new Context {

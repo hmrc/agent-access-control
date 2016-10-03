@@ -58,8 +58,8 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
 
     auditService.auditEvent(
       AgentAccessControlEvent.AgentAccessControlDecision, agentCode, saUtr,
-      Seq("ggCredentialId" -> agentAuthDetails.ggCredentialId,
-        "result" -> result)
+      Seq("credId" -> agentAuthDetails.ggCredentialId,
+        "accessGranted" -> result)
       ++ extraDetails
       ++ optionalDetails)
   }
