@@ -20,7 +20,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatestplus.play.OneServerPerSuite
 import play.api.test.FakeApplication
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
-import uk.gov.hmrc.domain.{SaUtr, SaAgentReference, AgentCode}
+import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -35,6 +35,8 @@ abstract class BaseISpec extends UnitSpec
   private val configAuthPort = "microservice.services.auth.port"
   private val ggProxyHost = "microservice.services.government-gateway-proxy.host"
   private val ggProxyPort = "microservice.services.government-gateway-proxy.port"
+  private val auditingHost = "auditing.consumer.baseUri.host"
+  private val auditingPort = "auditing.consumer.baseUri.port"
 
   implicit val hc = HeaderCarrier()
 
@@ -47,7 +49,9 @@ abstract class BaseISpec extends UnitSpec
       configAuthHost -> wiremockHost,
       configAuthPort -> wiremockPort,
       ggProxyHost -> wiremockHost,
-      ggProxyPort -> wiremockPort
+      ggProxyPort -> wiremockPort,
+      auditingHost -> wiremockHost,
+      auditingPort -> wiremockPort
     ) ++ additionalConfiguration
   )
 

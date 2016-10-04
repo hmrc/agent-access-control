@@ -33,7 +33,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with MockitoSugar {
 
-  val fakeRequest = FakeRequest("GET", "/sa-auth/agent//client/utr")
+  val fakeRequest = FakeRequest("GET", "/agent-access-control/sa-auth/agent//client/utr")
 
   val auditService = mock[AuditService]
   val authorisationService = mock[AuthorisationService]
