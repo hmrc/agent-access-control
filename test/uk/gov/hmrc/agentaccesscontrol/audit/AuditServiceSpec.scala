@@ -27,7 +27,7 @@ import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{AuditEvent, DataEvent}
 import uk.gov.hmrc.play.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.Authorization
+import uk.gov.hmrc.play.http.logging.{Authorization, RequestId, SessionId}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext
@@ -38,7 +38,11 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
       val mockConnector = mock[AuditConnector]
       val service = new AuditService(mockConnector)
 
-      val hc = HeaderCarrier(authorization = Some(Authorization("test bearer token")))
+      val hc = HeaderCarrier(
+        authorization = Some(Authorization("dummy bearer token")),
+        sessionId = Some(SessionId("dummy session id")),
+        requestId = Some(RequestId("dummy request id"))
+      )
 
       service.auditEvent(
         AgentAccessControlDecision,
@@ -64,10 +68,12 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         sentEvent.detail("extra2") shouldBe "second extra detail"
 
         sentEvent.tags.contains("Authorization") shouldBe false
-        sentEvent.detail("Authorization") shouldBe "test bearer token"
+        sentEvent.detail("Authorization") shouldBe "dummy bearer token"
 
         sentEvent.tags("transactionName") shouldBe "transaction name"
         sentEvent.tags("path") shouldBe "/path"
+        sentEvent.tags("X-Session-ID") shouldBe "dummy session id"
+        sentEvent.tags("X-Request-ID") shouldBe "dummy request id"
       }
     }
   }
