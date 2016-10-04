@@ -16,7 +16,9 @@
 
 package uk.gov.hmrc.agentaccesscontrol.audit
 
+import play.api.mvc.Request
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -30,21 +32,25 @@ class AuditService(val auditConnector: AuditConnector) {
   import AgentAccessControlEvent.AgentAccessControlEvent
 
   def auditEvent(event: AgentAccessControlEvent,
+                 transactionName: String,
                  agentCode: AgentCode,
                  saUtr: SaUtr,
-                 details: Seq[(String, Any)] = Seq.empty)(implicit hc: HeaderCarrier): Future[Unit] = {
-    send(createEvent(event, agentCode, saUtr, details: _*))
+                 details: Seq[(String, Any)] = Seq.empty)
+    (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
+    send(createEvent(event, transactionName, agentCode, saUtr, details: _*))
   }
 
   private def createEvent(event: AgentAccessControlEvent,
+                          transactionName: String,
                           agentCode: AgentCode,
                           saUtr: SaUtr,
-                          details: (String, Any)*)(implicit hc: HeaderCarrier): DataEvent = {
+                          details: (String, Any)*)
+    (implicit hc: HeaderCarrier, request: Request[Any]): DataEvent = {
     DataEvent(
       auditSource = "agent-access-control",
       auditType = event.toString,
-      tags = hc.headers.toMap,
-      detail = Map("agentCode" -> agentCode.toString, "regime" -> "sa", "regimeId" -> saUtr.toString())
+      tags = hc.toAuditTags(transactionName, request.path),
+      detail = hc.toAuditDetails("agentCode" -> agentCode.toString, "regime" -> "sa", "regimeId" -> saUtr.toString())
                ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
     )
   }

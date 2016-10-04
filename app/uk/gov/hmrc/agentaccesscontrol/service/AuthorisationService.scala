@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
+import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
@@ -29,7 +30,8 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
                            auditService: AuditService)
   extends LoggingAuthorisationResults {
 
-  def isAuthorised(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
+  def isAuthorised(agentCode: AgentCode, saUtr: SaUtr)
+    (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
       case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), ggCredentialId, _, _)) =>
         val results = cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
@@ -49,17 +51,21 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
         Future successful notAuthorised("No user is logged in")
     }
 
-  private def auditDecision(agentCode: AgentCode, agentAuthDetails: AuthDetails, saUtr: SaUtr, result: Boolean, extraDetails: (String, Any)*)
-    (implicit hc: HeaderCarrier): Future[Unit] = {
+  private def auditDecision(
+    agentCode: AgentCode, agentAuthDetails: AuthDetails, saUtr: SaUtr,
+    result: Boolean, extraDetails: (String, Any)*)
+    (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
     val optionalDetails = Seq(
       agentAuthDetails.saAgentReference.map("saAgentReference" -> _),
       agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
       agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
 
     auditService.auditEvent(
-      AgentAccessControlEvent.AgentAccessControlDecision, agentCode, saUtr,
-      Seq("ggCredentialId" -> agentAuthDetails.ggCredentialId,
-        "result" -> result)
+      AgentAccessControlEvent.AgentAccessControlDecision,
+      "agent access decision",
+      agentCode, saUtr,
+      Seq("credId" -> agentAuthDetails.ggCredentialId,
+        "accessGranted" -> result)
       ++ extraDetails
       ++ optionalDetails)
   }

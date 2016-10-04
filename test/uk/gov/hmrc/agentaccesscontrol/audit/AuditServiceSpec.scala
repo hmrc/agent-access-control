@@ -19,40 +19,62 @@ package uk.gov.hmrc.agentaccesscontrol.audit
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.any
 import org.mockito.Mockito.verify
+import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
+import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{AuditEvent, DataEvent}
 import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.play.http.logging.{Authorization, RequestId, SessionId}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext
 
-class AuditServiceSpec extends UnitSpec with MockitoSugar {
-  private implicit val hc = HeaderCarrier()
-
+class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
   "auditEvent" should {
     "send an event with the correct fields" in {
       val mockConnector = mock[AuditConnector]
       val service = new AuditService(mockConnector)
 
+      val hc = HeaderCarrier(
+        authorization = Some(Authorization("dummy bearer token")),
+        sessionId = Some(SessionId("dummy session id")),
+        requestId = Some(RequestId("dummy request id"))
+      )
+
       service.auditEvent(
         AgentAccessControlDecision,
+        "transaction name",
         AgentCode("TESTAGENTCODE"), SaUtr("TESTSAUTR"),
-        Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail"))
+        Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
+      )(
+        hc,
+        FakeRequest("GET", "/path")
+      )
 
-      val captor = ArgumentCaptor.forClass(classOf[AuditEvent])
-      verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
-      captor.getValue shouldBe an[DataEvent]
-      val sentEvent = captor.getValue.asInstanceOf[DataEvent]
+      eventually {
+        val captor = ArgumentCaptor.forClass(classOf[AuditEvent])
+        verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
+        captor.getValue shouldBe an[DataEvent]
+        val sentEvent = captor.getValue.asInstanceOf[DataEvent]
 
-      sentEvent.auditType shouldBe "AgentAccessControlDecision"
-      sentEvent.detail("agentCode") shouldBe "TESTAGENTCODE"
-      sentEvent.detail("regime") shouldBe "sa"
-      sentEvent.detail("regimeId") shouldBe "TESTSAUTR"
-      sentEvent.detail("extra1") shouldBe "first extra detail"
-      sentEvent.detail("extra2") shouldBe "second extra detail"
+        sentEvent.auditType shouldBe "AgentAccessControlDecision"
+        sentEvent.detail("agentCode") shouldBe "TESTAGENTCODE"
+        sentEvent.detail("regime") shouldBe "sa"
+        sentEvent.detail("regimeId") shouldBe "TESTSAUTR"
+        sentEvent.detail("extra1") shouldBe "first extra detail"
+        sentEvent.detail("extra2") shouldBe "second extra detail"
+
+        sentEvent.tags.contains("Authorization") shouldBe false
+        sentEvent.detail("Authorization") shouldBe "dummy bearer token"
+
+        sentEvent.tags("transactionName") shouldBe "transaction name"
+        sentEvent.tags("path") shouldBe "/path"
+        sentEvent.tags("X-Session-ID") shouldBe "dummy session id"
+        sentEvent.tags("X-Request-ID") shouldBe "dummy request id"
+      }
     }
   }
 

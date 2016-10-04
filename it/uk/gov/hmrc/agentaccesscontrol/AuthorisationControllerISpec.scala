@@ -17,6 +17,8 @@
 package uk.gov.hmrc.agentaccesscontrol
 
 import com.kenshoo.play.metrics.MetricsRegistry
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
+import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{BaseISpec, Resource}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HttpResponse
@@ -152,6 +154,20 @@ class AuthorisationControllerISpec extends BaseISpec {
 
       authResponseFor(agentCode, clientUtr).status shouldBe 200
       metricsRegistry.getTimers().get("Timer-API-Agent-SA-Access-Control-GET").getCount should be >= 1L
+    }
+
+    "send an AccessControlDecision audit event" in {
+      given()
+        .agentAdmin(agentCode).isLoggedIn()
+        .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
+        .andIsAllocatedAndAssignedToClient(clientUtr)
+        .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+
+      authResponseFor(agentCode, clientUtr).status shouldBe 200
+
+      DataStreamStub.verifyAuditRequestSent(
+        AgentAccessControlDecision,
+        Map("path" -> s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientUtr"))
     }
   }
   
