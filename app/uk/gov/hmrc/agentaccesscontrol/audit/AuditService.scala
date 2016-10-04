@@ -31,20 +31,24 @@ class AuditService(val auditConnector: AuditConnector) {
   import AgentAccessControlEvent.AgentAccessControlEvent
 
   def auditEvent(event: AgentAccessControlEvent,
+                 transactionName: String,
+                 path: String,
                  agentCode: AgentCode,
                  saUtr: SaUtr,
                  details: Seq[(String, Any)] = Seq.empty)(implicit hc: HeaderCarrier): Future[Unit] = {
-    send(createEvent(event, agentCode, saUtr, details: _*))
+    send(createEvent(event, transactionName, path, agentCode, saUtr, details: _*))
   }
 
   private def createEvent(event: AgentAccessControlEvent,
+                          transactionName: String,
+                          path: String,
                           agentCode: AgentCode,
                           saUtr: SaUtr,
                           details: (String, Any)*)(implicit hc: HeaderCarrier): DataEvent = {
     DataEvent(
       auditSource = "agent-access-control",
       auditType = event.toString,
-      tags = hc.toAuditTags("-", "-"), //TODO fill in transactionName and path
+      tags = hc.toAuditTags(transactionName, path),
       detail = hc.toAuditDetails("agentCode" -> agentCode.toString, "regime" -> "sa", "regimeId" -> saUtr.toString())
                ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
     )

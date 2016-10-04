@@ -29,7 +29,7 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
                            auditService: AuditService)
   extends LoggingAuthorisationResults {
 
-  def isAuthorised(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
+  def isAuthorised(agentCode: AgentCode, saUtr: SaUtr, path: String)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
       case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), ggCredentialId, _, _)) =>
         val results = cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
@@ -37,19 +37,21 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
         results.map { case (cesa, ggw) => {
           val result = cesa && ggw
 
-          auditDecision(agentCode, agentAuthDetails, saUtr, result, "cesa" -> cesa, "ggw" -> ggw)
+          auditDecision(agentCode, agentAuthDetails, saUtr, path, result, "cesa" -> cesa, "ggw" -> ggw)
 
           if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
           else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr cesa=$cesa ggw=$ggw")
         } }
       case Some(agentAuthDetails@AuthDetails(None, _, _, _)) =>
-        auditDecision(agentCode, agentAuthDetails, saUtr, result = false)
+        auditDecision(agentCode, agentAuthDetails, saUtr, path, result = false)
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
       case None =>
         Future successful notAuthorised("No user is logged in")
     }
 
-  private def auditDecision(agentCode: AgentCode, agentAuthDetails: AuthDetails, saUtr: SaUtr, result: Boolean, extraDetails: (String, Any)*)
+  private def auditDecision(
+    agentCode: AgentCode, agentAuthDetails: AuthDetails, saUtr: SaUtr, path: String,
+    result: Boolean, extraDetails: (String, Any)*)
     (implicit hc: HeaderCarrier): Future[Unit] = {
     val optionalDetails = Seq(
       agentAuthDetails.saAgentReference.map("saAgentReference" -> _),
@@ -57,7 +59,9 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
       agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
 
     auditService.auditEvent(
-      AgentAccessControlEvent.AgentAccessControlDecision, agentCode, saUtr,
+      AgentAccessControlEvent.AgentAccessControlDecision,
+      "agent access decision", path,
+      agentCode, saUtr,
       Seq("credId" -> agentAuthDetails.ggCredentialId,
         "accessGranted" -> result)
       ++ extraDetails

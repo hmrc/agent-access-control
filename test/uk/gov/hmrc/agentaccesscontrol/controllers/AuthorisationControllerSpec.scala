@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
-import org.mockito.Matchers._
+import org.mockito.Matchers.{eq => eqs, _}
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mock.MockitoSugar
@@ -32,7 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with MockitoSugar {
 
-  val fakeRequest = FakeRequest("GET", "/")
+  val fakeRequest = FakeRequest("GET", "/sa-auth/agent//client/utr")
 
   val auditService = mock[AuditService]
   val authorisationService = mock[AuthorisationService]
@@ -47,7 +47,6 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
   "isAuthorised" should {
 
     "return 401 if the AuthorisationService doesn't permit access" in {
-
       whenAuthorisationServiceIsCalled thenReturn(Future successful false)
 
       val response = controller.isAuthorised(AgentCode(""), SaUtr("utr"))(fakeRequest)
@@ -55,9 +54,7 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
       status (response) shouldBe Status.UNAUTHORIZED
     }
 
-
     "return 200 if the AuthorisationService allows access" in {
-
       whenAuthorisationServiceIsCalled thenReturn(Future successful true)
 
       val response = controller.isAuthorised(AgentCode(""), SaUtr("utr"))(fakeRequest)
@@ -65,6 +62,15 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
       status(response) shouldBe Status.OK
     }
 
+    "pass request path to AuthorisationService" in {
+      whenAuthorisationServiceIsCalled thenReturn(Future successful true)
+
+      val response = controller.isAuthorised(AgentCode(""), SaUtr("utr"))(fakeRequest)
+
+      verify(authorisationService).isAuthorised(any[AgentCode], any[SaUtr], eqs("/sa-auth/agent//client/utr"))(any[ExecutionContext], any[HeaderCarrier])
+
+      status(response) shouldBe Status.OK
+    }
 
     "propagate exception if the AuthorisationService fails" in {
 
@@ -75,5 +81,5 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
   }
 
   def whenAuthorisationServiceIsCalled =
-    when(authorisationService.isAuthorised(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier]))
+    when(authorisationService.isAuthorised(any[AgentCode], any[SaUtr], anyString)(any[ExecutionContext], any[HeaderCarrier]))
 }

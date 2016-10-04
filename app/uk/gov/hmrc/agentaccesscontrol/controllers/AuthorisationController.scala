@@ -29,7 +29,7 @@ import uk.gov.hmrc.play.microservice.controller.BaseController
 class AuthorisationController(override val auditService: AuditService, authorisationService: AuthorisationService) extends BaseController with Audit {
 
   def isAuthorised(agentCode: AgentCode, saUtr: SaUtr) = Action.async { implicit request =>
-    authorisationService.isAuthorised(agentCode, saUtr).map {
+    authorisationService.isAuthorised(agentCode, saUtr, request.path).map {
       case authorised if authorised => Ok
       case notAuthorised => Unauthorized
     }

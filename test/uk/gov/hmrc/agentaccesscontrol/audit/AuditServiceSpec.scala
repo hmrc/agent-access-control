@@ -41,6 +41,8 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
 
       service.auditEvent(
         AgentAccessControlDecision,
+        "transaction name",
+        "/path",
         AgentCode("TESTAGENTCODE"), SaUtr("TESTSAUTR"),
         Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
       )(hc)
@@ -60,6 +62,9 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
 
         sentEvent.tags.contains("Authorization") shouldBe false
         sentEvent.detail("Authorization") shouldBe "test bearer token"
+
+        sentEvent.tags("transactionName") shouldBe "transaction name"
+        sentEvent.tags("path") shouldBe "/path"
       }
     }
   }

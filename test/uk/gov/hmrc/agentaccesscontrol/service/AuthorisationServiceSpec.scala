@@ -42,8 +42,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     "return false if SA agent reference cannot be found (as CESA cannot be checked)" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr, "/request-path")) shouldBe false
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", "/request-path", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
@@ -53,8 +53,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(false)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr, "/request-path")) shouldBe false
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", "/request-path", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesa" -> false, "ggw" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
@@ -64,8 +64,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(true)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
-      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr, "/request-path")) shouldBe true
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", "/request-path", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> true, "cesa" -> true, "ggw" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
@@ -77,8 +77,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, differentSaAgentRef, clientSaUtr))
         .thenReturn(true)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
-      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr, "/request-path")) shouldBe true
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", "/request-path", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> true, "cesa" -> true, "ggw" -> true, "saAgentReference" -> differentSaAgentRef, "affinityGroup" -> "Organisation", "agentUserRole" -> "assistant"))
     }
 
@@ -88,8 +88,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(true)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
-      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr, "/request-path")) shouldBe true
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", "/request-path", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> true, "cesa" -> true, "ggw" -> true, "saAgentReference" -> saAgentRef))
     }
 
@@ -99,8 +99,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(true)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr, "/request-path")) shouldBe false
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", "/request-path", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesa" -> true, "ggw" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
@@ -110,21 +110,21 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(false)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditEvent(AgentAccessControlDecision, agentCode, clientSaUtr,
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr, "/request-path")) shouldBe false
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", "/request-path", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesa" -> false, "ggw" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))
     }
 
     "return false if user is not logged in" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(None)
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+      await(authorisationService.isAuthorised(agentCode, clientSaUtr, "/request-path")) shouldBe false
     }
 
     "propagate any errors that happened" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Future failed new BadRequestException("bad request"))
 
       intercept[BadRequestException] {
-        await(authorisationService.isAuthorised(agentCode, clientSaUtr))
+        await(authorisationService.isAuthorised(agentCode, clientSaUtr, "/request-path"))
       }
     }
   }

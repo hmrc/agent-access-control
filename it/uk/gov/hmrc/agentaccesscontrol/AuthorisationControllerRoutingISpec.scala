@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol
 
-import org.mockito.Matchers.any
+import org.mockito.Matchers.{any, anyString}
 import org.mockito.Mockito.when
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, fixture}
@@ -39,7 +39,7 @@ class AuthorisationControllerRoutingISpec extends fixture.WordSpecLike with Matc
 
   class TestMicroserviceGlobal(isAuthorisedToReturn: Boolean) extends MicroserviceGlobal {
     override lazy val authorisationService: AuthorisationService = mock[AuthorisationService]
-    when(authorisationService.isAuthorised(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier]))
+    when(authorisationService.isAuthorised(any[AgentCode], any[SaUtr], anyString)(any[ExecutionContext], any[HeaderCarrier]))
       .thenReturn(Future successful isAuthorisedToReturn)
   }
 
