@@ -21,6 +21,7 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito.verify
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
+import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -42,10 +43,12 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
       service.auditEvent(
         AgentAccessControlDecision,
         "transaction name",
-        "/path",
         AgentCode("TESTAGENTCODE"), SaUtr("TESTSAUTR"),
         Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
-      )(hc)
+      )(
+        hc,
+        FakeRequest("GET", "/path")
+      )
 
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[AuditEvent])

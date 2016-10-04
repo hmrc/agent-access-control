@@ -20,6 +20,7 @@ import org.mockito.Matchers.{eq => eqs, _}
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mock.MockitoSugar
+import play.api.mvc.Request
 import play.api.test.FakeRequest
 import play.mvc.Http.Status
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
@@ -62,12 +63,12 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
       status(response) shouldBe Status.OK
     }
 
-    "pass request path to AuthorisationService" in {
+    "pass request to AuthorisationService" in {
       whenAuthorisationServiceIsCalled thenReturn(Future successful true)
 
       val response = controller.isAuthorised(AgentCode(""), SaUtr("utr"))(fakeRequest)
 
-      verify(authorisationService).isAuthorised(any[AgentCode], any[SaUtr], eqs("/sa-auth/agent//client/utr"))(any[ExecutionContext], any[HeaderCarrier])
+      verify(authorisationService).isAuthorised(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], eqs(fakeRequest))
 
       status(response) shouldBe Status.OK
     }
@@ -81,5 +82,5 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
   }
 
   def whenAuthorisationServiceIsCalled =
-    when(authorisationService.isAuthorised(any[AgentCode], any[SaUtr], anyString)(any[ExecutionContext], any[HeaderCarrier]))
+    when(authorisationService.isAuthorised(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], any[Request[Any]]))
 }
