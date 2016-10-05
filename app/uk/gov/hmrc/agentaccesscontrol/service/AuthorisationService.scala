@@ -39,7 +39,7 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
         results.map { case (cesa, ggw) => {
           val result = cesa && ggw
 
-          auditDecision(agentCode, agentAuthDetails, saUtr, result, "cesa" -> cesa, "ggw" -> ggw)
+          auditDecision(agentCode, agentAuthDetails, saUtr, result, "cesaResult" -> cesa, "gatewayResult" -> ggw)
 
           if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
           else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr cesa=$cesa ggw=$ggw")
