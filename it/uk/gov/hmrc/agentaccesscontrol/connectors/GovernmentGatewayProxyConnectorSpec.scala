@@ -5,13 +5,15 @@ import java.net.URL
 import com.kenshoo.play.metrics.MetricsRegistry
 import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
-import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
+import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
-import uk.gov.hmrc.play.http.Upstream5xxResponse
+import uk.gov.hmrc.play.http.{HeaderCarrier, Upstream5xxResponse}
 
 import scala.xml.SAXParseException
 
-class GovernmentGatewayProxyConnectorSpec extends BaseISpec with MockitoSugar {
+class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
+
+  implicit val hc = HeaderCarrier()
 
   val agentCode = AgentCode("AgentCode")
   val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp)

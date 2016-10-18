@@ -19,11 +19,11 @@ package uk.gov.hmrc.agentaccesscontrol
 import com.kenshoo.play.metrics.MetricsRegistry
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HttpResponse
 
-class AuthorisationControllerISpec extends BaseISpec {
+class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
 
   val agentCode = AgentCode("ABCDEF123456")
   val saAgentReference = SaAgentReference("ABC456")

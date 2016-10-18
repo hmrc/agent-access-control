@@ -18,11 +18,11 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import java.util.Base64
 
-import uk.gov.hmrc.agentaccesscontrol.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HttpResponse
 
-class WhitelistISpec extends BaseISpec {
+class WhitelistISpec extends WireMockWithOneServerPerSuiteISpec {
 
   val agentCode = AgentCode("ABCDEF123456")
   val saAgentReference = SaAgentReference("ABC456")

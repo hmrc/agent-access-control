@@ -1,11 +1,11 @@
 package uk.gov.hmrc.agentaccesscontrol
 
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
-import uk.gov.hmrc.agentaccesscontrol.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.http.HttpResponse
 
-class MtdAuthorisationISpec extends BaseISpec {
+class MtdAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   val agentCode = AgentCode("A11112222A")
   val arn = Arn("01234567890")
   val clientId = MtdSaClientId("12345677890")

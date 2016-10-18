@@ -17,51 +17,50 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import org.scalatestplus.play.OneServerPerSuite
+import org.scalatestplus.play.{OneAppPerSuite, OneServerPerSuite}
 import play.api.test.FakeApplication
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
-abstract class BaseISpec extends UnitSpec
-    with StartAndStopWireMock
-    with StubUtils
-    with OneServerPerSuite {
+abstract class WireMockISpec extends UnitSpec
+  with StartAndStopWireMock
+  with StubUtils {
 
-  private val configDesHost = "microservice.services.des.host"
-  private val configDesPort = "microservice.services.des.port"
-  private val configAuthHost = "microservice.services.auth.host"
-  private val configAuthPort = "microservice.services.auth.port"
-  private val ggProxyHost = "microservice.services.government-gateway-proxy.host"
-  private val ggProxyPort = "microservice.services.government-gateway-proxy.port"
-  private val auditingHost = "auditing.consumer.baseUri.host"
-  private val auditingPort = "auditing.consumer.baseUri.port"
-  private val agenciesHost = "microservice.services.agencies-fake.host"
-  private val agenciesPort = "microservice.services.agencies-fake.port"
-  private val relationshipsHost = "microservice.services.agent-client-relationships.host"
-  private val relationshipsPort = "microservice.services.agent-client-relationships.port"
+  protected val wireMockAppConfiguration: Map[String, Any] = Map(
+    "microservice.services.des.host" -> wiremockHost,
+    "microservice.services.des.port" -> wiremockPort,
+    "microservice.services.auth.host" -> wiremockHost,
+    "microservice.services.auth.port" -> wiremockPort,
+    "microservice.services.government-gateway-proxy.host" -> wiremockHost,
+    "microservice.services.government-gateway-proxy.port" -> wiremockPort,
+    "auditing.consumer.baseUri.host" -> wiremockHost,
+    "auditing.consumer.baseUri.port" -> wiremockPort,
+    "microservice.services.agencies-fake.host" -> wiremockHost,
+    "microservice.services.agencies-fake.port" -> wiremockPort,
+    "microservice.services.agent-client-relationships.host" -> wiremockHost,
+    "microservice.services.agent-client-relationships.port" -> wiremockPort
+  )
+}
 
-  implicit val hc = HeaderCarrier()
+abstract class WireMockWithOneAppPerSuiteISpec extends WireMockISpec
+  with OneAppPerSuite {
 
   protected def additionalConfiguration: Map[String, String] = Map.empty
 
   override implicit lazy val app: FakeApplication = FakeApplication(
-    additionalConfiguration = Map(
-      configDesHost -> wiremockHost,
-      configDesPort -> wiremockPort,
-      configAuthHost -> wiremockHost,
-      configAuthPort -> wiremockPort,
-      ggProxyHost -> wiremockHost,
-      ggProxyPort -> wiremockPort,
-      auditingHost -> wiremockHost,
-      auditingPort -> wiremockPort,
-      agenciesHost -> wiremockHost,
-      agenciesPort -> wiremockPort,
-      relationshipsHost -> wiremockHost,
-      relationshipsPort -> wiremockPort
-    ) ++ additionalConfiguration
+    additionalConfiguration = wireMockAppConfiguration ++ additionalConfiguration
+  )
+}
+
+abstract class WireMockWithOneServerPerSuiteISpec extends WireMockISpec
+  with OneServerPerSuite {
+
+  protected def additionalConfiguration: Map[String, String] = Map.empty
+
+  override implicit lazy val app: FakeApplication = FakeApplication(
+    additionalConfiguration = wireMockAppConfiguration ++ additionalConfiguration
   )
 }
 
