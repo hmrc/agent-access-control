@@ -25,7 +25,7 @@ import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
-import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
+import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
@@ -34,7 +34,7 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 import scala.concurrent.ExecutionContext
 
 
-class DesAgentClientApiConnectorISpec extends BaseISpec with MockitoSugar {
+class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
 
   implicit val headerCarrier = HeaderCarrier()
   val agentCode = AgentCode("Agent")

@@ -20,12 +20,15 @@ import java.net.URL
 
 import com.kenshoo.play.metrics.MetricsRegistry
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
-import uk.gov.hmrc.agentaccesscontrol.support.BaseISpec
+import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain.SaAgentReference
+import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class AuthConnectorISpec extends BaseISpec {
+class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
+
+  implicit val hc = HeaderCarrier()
 
   "getSaAgentReference" should {
     "return sa agent reference and other auth details" in {
