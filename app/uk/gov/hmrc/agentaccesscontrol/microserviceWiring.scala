@@ -22,9 +22,10 @@ import play.api.mvc.Controller
 import uk.gov.hmrc.agent.kenshoo.monitoring.MonitoredWSHttp
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{AgenciesConnector, RelationshipsConnector}
 import uk.gov.hmrc.agentaccesscontrol.connectors.{GovernmentGatewayProxyConnector, AuthConnector => OurAuthConnector}
 import uk.gov.hmrc.agentaccesscontrol.controllers.{AuthorisationController, WhitelistController}
-import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, CesaAuthorisationService, GovernmentGatewayAuthorisationService}
+import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, CesaAuthorisationService, GovernmentGatewayAuthorisationService, MtdAuthorisationService}
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -68,13 +69,16 @@ trait ServiceRegistry extends ServicesConfig {
   lazy val ggAuthorisationService = new GovernmentGatewayAuthorisationService(ggProxyConnector)
   lazy val authorisationService: AuthorisationService =
     new AuthorisationService(cesaAuthorisationService, authConnector, ggAuthorisationService, auditService)
+  lazy val agenciesConnector = new AgenciesConnector(new URL(baseUrl("agencies-fake")), WSHttp)
+  lazy val relationshipsConnector = new RelationshipsConnector(new URL(baseUrl("agent-client-relationships")), WSHttp)
+  lazy val mtdAuthorisationService = new MtdAuthorisationService(agenciesConnector, relationshipsConnector)
 }
 
 trait ControllerRegistry {
   registry: ServiceRegistry =>
 
   private lazy val controllers = Map[Class[_], Controller](
-    classOf[AuthorisationController] -> new AuthorisationController(auditService, authorisationService),
+    classOf[AuthorisationController] -> new AuthorisationController(auditService, authorisationService, mtdAuthorisationService),
     classOf[WhitelistController] -> new WhitelistController()
   )
 

@@ -20,6 +20,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatestplus.play.OneServerPerSuite
 import play.api.test.FakeApplication
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
+import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
@@ -37,6 +38,10 @@ abstract class BaseISpec extends UnitSpec
   private val ggProxyPort = "microservice.services.government-gateway-proxy.port"
   private val auditingHost = "auditing.consumer.baseUri.host"
   private val auditingPort = "auditing.consumer.baseUri.port"
+  private val agenciesHost = "microservice.services.agencies-fake.host"
+  private val agenciesPort = "microservice.services.agencies-fake.port"
+  private val relationshipsHost = "microservice.services.agent-client-relationships.host"
+  private val relationshipsPort = "microservice.services.agent-client-relationships.port"
 
   implicit val hc = HeaderCarrier()
 
@@ -51,10 +56,13 @@ abstract class BaseISpec extends UnitSpec
       ggProxyHost -> wiremockHost,
       ggProxyPort -> wiremockPort,
       auditingHost -> wiremockHost,
-      auditingPort -> wiremockPort
+      auditingPort -> wiremockPort,
+      agenciesHost -> wiremockHost,
+      agenciesPort -> wiremockPort,
+      relationshipsHost -> wiremockHost,
+      relationshipsPort -> wiremockPort
     ) ++ additionalConfiguration
   )
-
 }
 
 trait StubUtils {
@@ -68,6 +76,10 @@ trait StubUtils {
     def agentAdmin(agentCode: AgentCode): AgentAdmin = {
       agentAdmin(agentCode.value)
     }
+
+    def mtdAgency(agentCode: AgentCode, arn: Arn): MtdAgency = {
+      new MtdAgency(agentCode.value, arn.value)
+    }
   }
 
   def given() = {
@@ -79,8 +91,12 @@ trait StubUtils {
                    override val oid: String)
     extends AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with GovernmentGatewayProxyStubs[AgentAdmin]
 
+  class MtdAgency(override val agentCode: String,
+                  override val arn: String)
+    extends AgenciesStub[MtdAgency] with RelationshipsStub[MtdAgency]
 
-  trait DesStub[A] {
+
+trait DesStub[A] {
     me: A with AuthStubs[A] =>
 
     def andDesIsDown(): A = {
@@ -347,5 +363,59 @@ trait StubUtils {
     }
   }
 
+  trait AgenciesStub[A] {
+    me: A =>
+    def agentCode: String
+    def arn: String
 
+    def isAnMtdAgency(): A =  {
+      stubFor(get(urlPathEqualTo(s"/agencies-fake/agencies/agentcode/$agentCode"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withBody(
+                  s"""
+                    |{
+                    |   "arn": "$arn"
+                    |}
+                  """.stripMargin)))
+      this
+    }
+
+
+    def isNotAnMtdAgency(): A = {
+      stubFor(get(urlPathEqualTo(s"/agencies-fake/agencies/agentcode/$agentCode"))
+        .willReturn(aResponse()
+          .withStatus(404)))
+
+      this
+    }
+  }
+
+  trait RelationshipsStub[A] {
+    me: A =>
+    def arn: String
+
+    def andHasARelationshipWith(mtdClientId: MtdSaClientId): A =  {
+      stubFor(get(urlEqualTo(s"/agent-client-relationships/relationships/mtd-sa/${mtdClientId.value}/$arn"))
+              .willReturn(aResponse()
+                .withStatus(200)
+                .withBody(
+                  s"""
+                     |{
+                     |  "agentCode": "$arn",
+                     |  "clientRegimeId": "${mtdClientId.value}"
+                     |}
+                   """.stripMargin)))
+      this
+    }
+
+
+    def andHasNoRelationshipWith(mtdClientId: MtdSaClientId): A = {
+      stubFor(get(urlEqualTo(s"/agent-client-relationships/relationships/mtd-sa/${mtdClientId.value}/$arn"))
+        .willReturn(aResponse()
+          .withStatus(404)))
+
+      this
+    }
+  }
 }

@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentaccesscontrol.binders
+package uk.gov.hmrc.agentaccesscontrol.model
 
-import uk.gov.hmrc.agentaccesscontrol.model.MtdSaClientId
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
-import uk.gov.hmrc.play.binders.SimpleObjectBinder
+import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites}
 
-object PathBinders {
-  implicit object AgentCodeBinder extends SimpleObjectBinder[AgentCode](AgentCode.apply, _.value)
-  implicit object SaUtrBinder extends SimpleObjectBinder[SaUtr](SaUtr.apply, _.value)
-  implicit object MtdSaClientIdBinder extends SimpleObjectBinder[MtdSaClientId](MtdSaClientId.apply, _.value)
+case class MtdSaClientId(value: String)
+object MtdSaClientId{
+  implicit val reads = new SimpleObjectReads[MtdSaClientId]("clientRegimeId", MtdSaClientId.apply)
+  implicit val writes = new SimpleObjectWrites[MtdSaClientId](_.value)
 }
+
+case class Arn(value: String)
+object Arn {
+  implicit val reads = new SimpleObjectReads[Arn]("arn", Arn.apply)
+  implicit val writes = new SimpleObjectWrites[Arn](_.value)
+}
+
+
