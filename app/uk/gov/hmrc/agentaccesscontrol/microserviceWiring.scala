@@ -36,7 +36,9 @@ import uk.gov.hmrc.play.http.ws._
 
 trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch with AppName with MonitoredWSHttp with HttpAuditing {
   val httpAPIs = Map(".*/sa/agents/\\w+/client/\\w+" -> "DES-GetAgentClientRelationship",
-                     ".*/auth/authority" -> "AUTH-GetAuthority")
+                     ".*/auth/authority" -> "AUTH-GetAuthority",
+                     ".*/agencies/agentcode/\\w+" -> "AGENCIES-GetAgencyByAgentCode",
+                     ".*/relationships/mtd-sa/.*" -> "RELATIONSHIPS-GetAgentClientRelationship")
 
   override val hooks: Seq[HttpHook] = Seq(AuditingHook)
 }
