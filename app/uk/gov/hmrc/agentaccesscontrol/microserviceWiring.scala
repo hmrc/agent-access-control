@@ -73,7 +73,7 @@ trait ServiceRegistry extends ServicesConfig {
     new AuthorisationService(cesaAuthorisationService, authConnector, ggAuthorisationService, auditService)
   lazy val agenciesConnector = new AgenciesConnector(new URL(baseUrl("agencies-fake")), WSHttp)
   lazy val relationshipsConnector = new RelationshipsConnector(new URL(baseUrl("agent-client-relationships")), WSHttp)
-  lazy val mtdAuthorisationService = new MtdAuthorisationService(agenciesConnector, relationshipsConnector)
+  lazy val mtdAuthorisationService = new MtdAuthorisationService(agenciesConnector, relationshipsConnector, auditService)
 }
 
 trait ControllerRegistry {

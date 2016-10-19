@@ -116,5 +116,5 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
     when(authorisationService.isAuthorised(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], any[Request[Any]]))
 
   def whenMtdAuthorisationServiceIsCalled =
-    when(mtdAuthorisationService.authoriseForSa(any[AgentCode], any[MtdSaClientId])(any[ExecutionContext], any[HeaderCarrier]))
+    when(mtdAuthorisationService.authoriseForSa(any[AgentCode], any[MtdSaClientId])(any[ExecutionContext], any[HeaderCarrier], any[Request[_]]))
 }

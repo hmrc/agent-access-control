@@ -60,7 +60,7 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
       agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
       agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
 
-    auditService.auditEvent(
+    auditService.auditSaEvent(
       AgentAccessControlEvent.AgentAccessControlDecision,
       "agent access decision",
       agentCode, saUtr,

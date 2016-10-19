@@ -44,7 +44,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         requestId = Some(RequestId("dummy request id"))
       )
 
-      service.auditEvent(
+      service.auditSaEvent(
         AgentAccessControlDecision,
         "transaction name",
         AgentCode("TESTAGENTCODE"), SaUtr("TESTSAUTR"),

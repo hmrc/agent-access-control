@@ -1,7 +1,9 @@
 package uk.gov.hmrc.agentaccesscontrol
 
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
-import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
+import uk.gov.hmrc.agentaccesscontrol.support.{WireMockWithOneServerPerSuiteISpec, Resource}
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.http.HttpResponse
 
@@ -40,9 +42,20 @@ class MtdAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
 
         status shouldBe 401
       }
+
+      "send an AccessControlDecision audit event" in {
+        given()
+          .mtdAgency(agentCode, arn)
+          .isAnMtdAgency()
+          .andHasARelationshipWith(clientId)
+
+        authResponseFor(agentCode, clientId).status shouldBe 200
+
+        DataStreamStub.verifyAuditRequestSent(
+          AgentAccessControlDecision,
+          Map("path" -> s"/agent-access-control/mtd-sa-auth/agent/$agentCode/client/${clientId.value}"))
+      }
     }
-
-
   }
 
   def authResponseFor(agentCode: AgentCode, mtdSaClientId: MtdSaClientId): HttpResponse =
