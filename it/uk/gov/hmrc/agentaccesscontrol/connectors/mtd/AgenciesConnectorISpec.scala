@@ -2,6 +2,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
 import java.net.URL
 
+import com.kenshoo.play.metrics.MetricsRegistry
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.model.Arn
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
@@ -22,6 +23,16 @@ class AgenciesConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
       await(connector.fetchAgencyRecord(agentCode))
 
       anOutboundCallShouldBeAudited(agentCode)
+    }
+    "record metrics" in new Context {
+      val metricsRegistry = MetricsRegistry.defaultRegistry
+
+      given().mtdAgency(agentCode, arn)
+        .isAnMtdAgency()
+
+      await(connector.fetchAgencyRecord(agentCode))
+
+      metricsRegistry.getTimers.get("Timer-ConsumedAPI-AGENCIES-GetAgencyByAgentCode-GET").getCount should be >= 1L
     }
   }
 

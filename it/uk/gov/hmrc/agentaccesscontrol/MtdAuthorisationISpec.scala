@@ -1,5 +1,6 @@
 package uk.gov.hmrc.agentaccesscontrol
 
+import com.kenshoo.play.metrics.MetricsRegistry
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
@@ -54,6 +55,18 @@ class MtdAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         DataStreamStub.verifyAuditRequestSent(
           AgentAccessControlDecision,
           Map("path" -> s"/agent-access-control/mtd-sa-auth/agent/$agentCode/client/${clientId.value}"))
+      }
+
+      "record metrics for access control request" in {
+        val metricsRegistry = MetricsRegistry.defaultRegistry
+        given()
+          .mtdAgency(agentCode, arn)
+          .isAnMtdAgency()
+          .andHasARelationshipWith(clientId)
+
+        authResponseFor(agentCode, clientId).status shouldBe 200
+
+        metricsRegistry.getTimers().get("Timer-API-Agent-MTD-SA-Access-Control-GET").getCount should be >= 1L
       }
     }
   }
