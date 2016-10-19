@@ -27,18 +27,19 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MtdAuthorisationService(agenciesConnector: AgenciesConnector,
                               relationshipsConnector: RelationshipsConnector,
-                              auditService: AuditService) {
+                              auditService: AuditService) extends LoggingAuthorisationResults {
 
   def authoriseForSa(agentCode: AgentCode, mtdSaClientId: MtdSaClientId)
                     (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[_]): Future[Boolean] = {
     agenciesConnector.fetchAgencyRecord(agentCode) flatMap  {
       case Some(agency) => hasRelationship(agency.arn, mtdSaClientId) map { result =>
         auditDecision(agentCode, mtdSaClientId, result, "arn" -> agency.arn)
-        result
+        if (result) authorised(s"Access allowed for agentCode=$agentCode client=${mtdSaClientId.value}")
+        else notAuthorised(s"Access not allowed for agentCode=$agentCode client=${mtdSaClientId.value}")
       }
       case None =>
         auditDecision(agentCode, mtdSaClientId, result = false)
-        Future successful false
+        Future successful notAuthorised(s"No MTD agency record for agentCode $agentCode")
     }
   }
 
