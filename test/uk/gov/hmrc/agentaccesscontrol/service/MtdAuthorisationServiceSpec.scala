@@ -21,6 +21,7 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mock.MockitoSugar
 import play.api.test.FakeRequest
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{AgenciesConnector, AgencyRecord, Relationship, RelationshipsConnector}
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
@@ -72,11 +73,42 @@ class MtdAuthorisationServiceSpec extends UnitSpec with MockitoSugar with Before
 
       result shouldBe false
     }
+
+    "audit appropriate values" when {
+      "decision is made to allow access" in {
+        whenAgenciesConnectorIsCalled thenReturn Some(AgencyRecord(arn))
+        whenRelationshipsConnectorIsCalled thenReturn Some(Relationship(arn.value, clientId.value))
+
+        await(service.authoriseForSa(agentCode, clientId))
+
+        verify(auditService)
+          .auditMtdEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientId, Seq("accessGranted" -> true, "arn" -> arn))(hc, fakeRequest)
+      }
+
+      "decision is made to deny access" in {
+        whenAgenciesConnectorIsCalled thenReturn Some(AgencyRecord(arn))
+        whenRelationshipsConnectorIsCalled thenReturn None
+
+        await(service.authoriseForSa(agentCode, clientId))
+
+        verify(auditService)
+          .auditMtdEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientId, Seq("accessGranted" -> false, "arn" -> arn))(hc, fakeRequest)
+      }
+
+      "no agent record exists" in {
+        whenAgenciesConnectorIsCalled thenReturn None
+
+        await(service.authoriseForSa(agentCode, clientId))
+
+        verify(auditService)
+          .auditMtdEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientId, Seq("accessGranted" -> false))(hc, fakeRequest)
+      }
+    }
   }
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    reset(agenciesConnector, relationshipsConnector)
+    reset(agenciesConnector, relationshipsConnector, auditService)
   }
 
   def whenRelationshipsConnectorIsCalled =
