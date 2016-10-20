@@ -20,6 +20,9 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mock.MockitoSugar
+import play.api.test.FakeRequest
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
+import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{AgenciesConnector, AgencyRecord, Relationship, RelationshipsConnector}
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
 import uk.gov.hmrc.domain.AgentCode
@@ -31,17 +34,17 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class MtdAuthorisationServiceSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
-  val agenciesConnector: AgenciesConnector = mock[AgenciesConnector]
-  val relationshipsConnector: RelationshipsConnector = mock[RelationshipsConnector]
+  val agenciesConnector = mock[AgenciesConnector]
+  val relationshipsConnector = mock[RelationshipsConnector]
+  val auditService = mock[AuditService]
 
-  val service = new MtdAuthorisationService(agenciesConnector, relationshipsConnector)
+  val service = new MtdAuthorisationService(agenciesConnector, relationshipsConnector, auditService)
 
   val agentCode = AgentCode("agentCode")
   val arn = Arn("arn")
   val clientId = MtdSaClientId("clientId")
   implicit val hc = HeaderCarrier()
-
-
+  implicit val fakeRequest = FakeRequest("GET", "/agent-access-control/mtd-sa-auth/agent/arn/client/utr")
 
   "authoriseForSa" should {
     "allow access for agent with a client relationship" in {
@@ -70,11 +73,42 @@ class MtdAuthorisationServiceSpec extends UnitSpec with MockitoSugar with Before
 
       result shouldBe false
     }
+
+    "audit appropriate values" when {
+      "decision is made to allow access" in {
+        whenAgenciesConnectorIsCalled thenReturn Some(AgencyRecord(arn))
+        whenRelationshipsConnectorIsCalled thenReturn Some(Relationship(arn.value, clientId.value))
+
+        await(service.authoriseForSa(agentCode, clientId))
+
+        verify(auditService)
+          .auditMtdEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientId, Seq("accessGranted" -> true, "arn" -> arn))(hc, fakeRequest)
+      }
+
+      "decision is made to deny access" in {
+        whenAgenciesConnectorIsCalled thenReturn Some(AgencyRecord(arn))
+        whenRelationshipsConnectorIsCalled thenReturn None
+
+        await(service.authoriseForSa(agentCode, clientId))
+
+        verify(auditService)
+          .auditMtdEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientId, Seq("accessGranted" -> false, "arn" -> arn))(hc, fakeRequest)
+      }
+
+      "no agent record exists" in {
+        whenAgenciesConnectorIsCalled thenReturn None
+
+        await(service.authoriseForSa(agentCode, clientId))
+
+        verify(auditService)
+          .auditMtdEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientId, Seq("accessGranted" -> false))(hc, fakeRequest)
+      }
+    }
   }
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    reset(agenciesConnector, relationshipsConnector)
+    reset(agenciesConnector, relationshipsConnector, auditService)
   }
 
   def whenRelationshipsConnectorIsCalled =

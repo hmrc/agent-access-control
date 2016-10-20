@@ -1,7 +1,10 @@
 package uk.gov.hmrc.agentaccesscontrol
 
+import com.kenshoo.play.metrics.MetricsRegistry
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
-import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
+import uk.gov.hmrc.agentaccesscontrol.support.{WireMockWithOneServerPerSuiteISpec, Resource}
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.http.HttpResponse
 
@@ -33,16 +36,38 @@ class MtdAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
 
       "there is no relationship between the agency and client" in {
         given().mtdAgency(agentCode, arn)
-            .isAnMtdAgency()
-            .andHasNoRelationshipWith(clientId)
+          .isAnMtdAgency()
+          .andHasNoRelationshipWith(clientId)
 
         val status = authResponseFor(agentCode, clientId).status
 
         status shouldBe 401
       }
     }
+    "send an AccessControlDecision audit event" in {
+      given()
+        .mtdAgency(agentCode, arn)
+        .isAnMtdAgency()
+        .andHasARelationshipWith(clientId)
 
+      authResponseFor(agentCode, clientId).status shouldBe 200
 
+      DataStreamStub.verifyAuditRequestSent(
+        AgentAccessControlDecision,
+        Map("path" -> s"/agent-access-control/mtd-sa-auth/agent/$agentCode/client/${clientId.value}"))
+    }
+
+    "record metrics for access control request" in {
+      val metricsRegistry = MetricsRegistry.defaultRegistry
+      given()
+        .mtdAgency(agentCode, arn)
+        .isAnMtdAgency()
+        .andHasARelationshipWith(clientId)
+
+      authResponseFor(agentCode, clientId).status shouldBe 200
+
+      metricsRegistry.getTimers().get("Timer-API-Agent-MTD-SA-Access-Control-GET").getCount should be >= 1L
+    }
   }
 
   def authResponseFor(agentCode: AgentCode, mtdSaClientId: MtdSaClientId): HttpResponse =

@@ -36,7 +36,9 @@ import uk.gov.hmrc.play.http.ws._
 
 trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch with AppName with MonitoredWSHttp with HttpAuditing {
   val httpAPIs = Map(".*/sa/agents/\\w+/client/\\w+" -> "DES-GetAgentClientRelationship",
-                     ".*/auth/authority" -> "AUTH-GetAuthority")
+                     ".*/auth/authority" -> "AUTH-GetAuthority",
+                     ".*/agencies/agentcode/\\w+" -> "AGENCIES-GetAgencyByAgentCode",
+                     ".*/relationships/mtd-sa/.*" -> "RELATIONSHIPS-GetAgentClientRelationship")
 
   override val hooks: Seq[HttpHook] = Seq(AuditingHook)
 }
@@ -71,7 +73,7 @@ trait ServiceRegistry extends ServicesConfig {
     new AuthorisationService(cesaAuthorisationService, authConnector, ggAuthorisationService, auditService)
   lazy val agenciesConnector = new AgenciesConnector(new URL(baseUrl("agencies-fake")), WSHttp)
   lazy val relationshipsConnector = new RelationshipsConnector(new URL(baseUrl("agent-client-relationships")), WSHttp)
-  lazy val mtdAuthorisationService = new MtdAuthorisationService(agenciesConnector, relationshipsConnector)
+  lazy val mtdAuthorisationService = new MtdAuthorisationService(agenciesConnector, relationshipsConnector, auditService)
 }
 
 trait ControllerRegistry {

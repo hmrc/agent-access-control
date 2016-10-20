@@ -17,17 +17,13 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
 import com.kenshoo.play.metrics.MetricsRegistry
-import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{any, eq => eqs}
-import org.mockito.Mockito.{verify, when}
-import org.scalatest.concurrent.Eventually
+import org.mockito.Mockito.when
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.Json
-import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
 
@@ -106,11 +102,7 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
     }
   }
 
-  private abstract class Context extends Eventually {
-    val mockAuditConnector = mock[AuditConnector]
-    val wsHttp = new WSHttp {
-      override def auditConnector = mockAuditConnector
-    }
+  private abstract class Context extends MockAuditingContext {
 
     val connector = new DesAgentClientApiConnector(wiremockBaseUrl, "secret", "test", wsHttp)
     val saAgentReference = SaAgentReference("AGENTR")
@@ -122,21 +114,15 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
         .andHasSaAgentReferenceWithEnrolment(saAgentReference)
 
     def outboundCallToDesShouldBeAudited(auth64_8: Boolean, authI64_8: Boolean): Unit = {
-      // HttpAuditing.AuditingHook does the auditing asynchronously, so we need
-      // to use eventually to avoid a race condition in this test
-      eventually {
-        val captor = ArgumentCaptor.forClass(classOf[MergedDataEvent])
-        verify(mockAuditConnector).sendMergedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
-        val event: MergedDataEvent = captor.getValue
+      val event: MergedDataEvent = capturedEvent()
 
-        event.auditType shouldBe "OutboundCall"
+      event.auditType shouldBe "OutboundCall"
 
-        event.request.tags("path") shouldBe s"$wiremockBaseUrl/sa/agents/$saAgentReference/client/$saUtr"
+      event.request.tags("path") shouldBe s"$wiremockBaseUrl/sa/agents/$saAgentReference/client/$saUtr"
 
-        val responseJson = Json.parse(event.response.detail("responseMessage"))
-        (responseJson \ "Auth_64-8").as[Boolean] shouldBe auth64_8
-        (responseJson \ "Auth_i64-8").as[Boolean] shouldBe authI64_8
-      }
+      val responseJson = Json.parse(event.response.detail("responseMessage"))
+      (responseJson \ "Auth_64-8").as[Boolean] shouldBe auth64_8
+      (responseJson \ "Auth_i64-8").as[Boolean] shouldBe authI64_8
     }
   }
 }

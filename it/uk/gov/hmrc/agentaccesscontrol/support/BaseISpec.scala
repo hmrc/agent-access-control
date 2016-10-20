@@ -17,12 +17,21 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import org.mockito.Mockito.verify
+import org.mockito.{ArgumentCaptor, Matchers}
+import org.scalatest.concurrent.Eventually
+import org.scalatest.mock.MockitoSugar
 import org.scalatestplus.play.{OneAppPerSuite, OneServerPerSuite}
 import play.api.test.FakeApplication
-import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
+import uk.gov.hmrc.agentaccesscontrol.{StartAndStopWireMock, WSHttp}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.MergedDataEvent
+import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
+
+import scala.concurrent.ExecutionContext
 
 abstract class WireMockISpec extends UnitSpec
   with StartAndStopWireMock
@@ -401,7 +410,7 @@ trait DesStub[A] {
                 .withBody(
                   s"""
                      |{
-                     |  "agentCode": "$arn",
+                     |  "arn": "$arn",
                      |  "clientRegimeId": "${mtdClientId.value}"
                      |}
                    """.stripMargin)))
@@ -415,6 +424,23 @@ trait DesStub[A] {
           .withStatus(404)))
 
       this
+    }
+  }
+
+  trait MockAuditingContext extends MockitoSugar with Eventually {
+    val mockAuditConnector = mock[AuditConnector]
+    val wsHttp = new WSHttp {
+      override def auditConnector = mockAuditConnector
+    }
+
+    def capturedEvent() = {
+      // HttpAuditing.AuditingHook does the auditing asynchronously, so we need
+      // to use eventually to avoid a race condition in this test
+      eventually {
+        val captor = ArgumentCaptor.forClass(classOf[MergedDataEvent])
+        verify(mockAuditConnector).sendMergedEvent(captor.capture())(Matchers.any[HeaderCarrier], Matchers.any[ExecutionContext])
+        captor.getValue
+      }
     }
   }
 }

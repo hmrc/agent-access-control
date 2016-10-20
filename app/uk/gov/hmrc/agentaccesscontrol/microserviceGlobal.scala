@@ -45,7 +45,8 @@ object MicroserviceAuditFilter extends AuditFilter with AppName {
 }
 
 object MicroserviceMonitoringFilter extends MonitoringFilter {
-  val urlPatternToNameMapping = Map(".*/sa-auth/agent/\\w+/client/\\w+" -> "Agent-SA-Access-Control")
+  val urlPatternToNameMapping = Map(".*/sa-auth/agent/\\w+/client/\\w+" -> "Agent-SA-Access-Control",
+                                    ".*/mtd-sa-auth/agent/\\w+/client/\\w+" -> "Agent-MTD-SA-Access-Control")
 }
 
 object MicroserviceLoggingFilter extends LoggingFilter {
