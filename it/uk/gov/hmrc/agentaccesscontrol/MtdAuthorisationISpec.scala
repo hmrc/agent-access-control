@@ -36,38 +36,37 @@ class MtdAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
 
       "there is no relationship between the agency and client" in {
         given().mtdAgency(agentCode, arn)
-            .isAnMtdAgency()
-            .andHasNoRelationshipWith(clientId)
+          .isAnMtdAgency()
+          .andHasNoRelationshipWith(clientId)
 
         val status = authResponseFor(agentCode, clientId).status
 
         status shouldBe 401
       }
+    }
+    "send an AccessControlDecision audit event" in {
+      given()
+        .mtdAgency(agentCode, arn)
+        .isAnMtdAgency()
+        .andHasARelationshipWith(clientId)
 
-      "send an AccessControlDecision audit event" in {
-        given()
-          .mtdAgency(agentCode, arn)
-          .isAnMtdAgency()
-          .andHasARelationshipWith(clientId)
+      authResponseFor(agentCode, clientId).status shouldBe 200
 
-        authResponseFor(agentCode, clientId).status shouldBe 200
+      DataStreamStub.verifyAuditRequestSent(
+        AgentAccessControlDecision,
+        Map("path" -> s"/agent-access-control/mtd-sa-auth/agent/$agentCode/client/${clientId.value}"))
+    }
 
-        DataStreamStub.verifyAuditRequestSent(
-          AgentAccessControlDecision,
-          Map("path" -> s"/agent-access-control/mtd-sa-auth/agent/$agentCode/client/${clientId.value}"))
-      }
+    "record metrics for access control request" in {
+      val metricsRegistry = MetricsRegistry.defaultRegistry
+      given()
+        .mtdAgency(agentCode, arn)
+        .isAnMtdAgency()
+        .andHasARelationshipWith(clientId)
 
-      "record metrics for access control request" in {
-        val metricsRegistry = MetricsRegistry.defaultRegistry
-        given()
-          .mtdAgency(agentCode, arn)
-          .isAnMtdAgency()
-          .andHasARelationshipWith(clientId)
+      authResponseFor(agentCode, clientId).status shouldBe 200
 
-        authResponseFor(agentCode, clientId).status shouldBe 200
-
-        metricsRegistry.getTimers().get("Timer-API-Agent-MTD-SA-Access-Control-GET").getCount should be >= 1L
-      }
+      metricsRegistry.getTimers().get("Timer-API-Agent-MTD-SA-Access-Control-GET").getCount should be >= 1L
     }
   }
 
