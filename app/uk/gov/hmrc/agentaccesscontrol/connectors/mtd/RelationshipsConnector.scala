@@ -24,7 +24,7 @@ import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class Relationship(agentCode: String, clientRegimeId: String)
+case class Relationship(arn: String, clientRegimeId: String)
 object Relationship {
   implicit val jsonReads = Json.reads[Relationship]
 }

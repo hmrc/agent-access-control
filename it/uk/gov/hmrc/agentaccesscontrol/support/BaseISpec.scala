@@ -410,7 +410,7 @@ trait DesStub[A] {
                 .withBody(
                   s"""
                      |{
-                     |  "agentCode": "$arn",
+                     |  "arn": "$arn",
                      |  "clientRegimeId": "${mtdClientId.value}"
                      |}
                    """.stripMargin)))

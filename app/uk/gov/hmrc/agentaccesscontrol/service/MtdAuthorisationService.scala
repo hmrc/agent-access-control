@@ -34,8 +34,8 @@ class MtdAuthorisationService(agenciesConnector: AgenciesConnector,
     agenciesConnector.fetchAgencyRecord(agentCode) flatMap  {
       case Some(agency) => hasRelationship(agency.arn, mtdSaClientId) map { result =>
         auditDecision(agentCode, mtdSaClientId, result, "arn" -> agency.arn)
-        if (result) authorised(s"Access allowed for agentCode=$agentCode client=${mtdSaClientId.value}")
-        else notAuthorised(s"Access not allowed for agentCode=$agentCode client=${mtdSaClientId.value}")
+        if (result) authorised(s"Access allowed for agentCode=$agentCode arn=${agency.arn.value} client=${mtdSaClientId.value}")
+        else notAuthorised(s"Access not allowed for agentCode=$agentCode arn=${agency.arn.value} client=${mtdSaClientId.value}")
       }
       case None =>
         auditDecision(agentCode, mtdSaClientId, result = false)
