@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol.service
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{AgenciesConnector, RelationshipsConnector}
-import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
+import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.http.HeaderCarrier
 
@@ -29,7 +29,7 @@ class MtdAuthorisationService(agenciesConnector: AgenciesConnector,
                               relationshipsConnector: RelationshipsConnector,
                               auditService: AuditService) extends LoggingAuthorisationResults {
 
-  def authoriseForSa(agentCode: AgentCode, mtdSaClientId: MtdSaClientId)
+  def authoriseForSa(agentCode: AgentCode, mtdSaClientId: MtdClientId)
                     (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[_]): Future[Boolean] = {
     agenciesConnector.fetchAgencyRecord(agentCode) flatMap  {
       case Some(agency) => hasRelationship(agency.arn, mtdSaClientId) map { result =>
@@ -43,12 +43,12 @@ class MtdAuthorisationService(agenciesConnector: AgenciesConnector,
     }
   }
 
-  private def hasRelationship(arn: Arn, mtdSaClientId: MtdSaClientId)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
+  private def hasRelationship(arn: Arn, mtdSaClientId: MtdClientId)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
     relationshipsConnector.fetchRelationship(arn, mtdSaClientId) map { _.isDefined }
   }
 
   private def auditDecision(
-                             agentCode: AgentCode, mtdSaClientId: MtdSaClientId,
+                             agentCode: AgentCode, mtdSaClientId: MtdClientId,
                              result: Boolean, extraDetails: (String, Any)*)
                            (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
 

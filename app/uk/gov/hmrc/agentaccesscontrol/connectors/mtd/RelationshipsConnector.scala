@@ -19,23 +19,23 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 import java.net.URL
 
 import play.api.libs.json._
-import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
+import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class Relationship(arn: String, clientRegimeId: String)
+case class Relationship(arn: String, clientId: String)
 object Relationship {
   implicit val jsonReads = Json.reads[Relationship]
 }
 
 class RelationshipsConnector(baseUrl: URL, httpGet: HttpGet) {
 
-  def fetchRelationship(arn: Arn, mtdSaClientId: MtdSaClientId)
+  def fetchRelationship(arn: Arn, mtdSaClientId: MtdClientId)
                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Relationship]] = {
     httpGet.GET[Option[Relationship]](relationshipUrl(arn, mtdSaClientId).toString)
   }
 
-  private def relationshipUrl(arn: Arn, mtdSaClientId: MtdSaClientId) =
+  private def relationshipUrl(arn: Arn, mtdSaClientId: MtdClientId) =
           new URL(baseUrl, s"/agent-client-relationships/relationships/mtd-sa/${mtdSaClientId.value}/${arn.value}")
 }

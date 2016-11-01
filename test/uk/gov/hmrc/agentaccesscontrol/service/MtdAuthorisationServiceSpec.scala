@@ -24,7 +24,7 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{AgenciesConnector, AgencyRecord, Relationship, RelationshipsConnector}
-import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
+import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
@@ -42,7 +42,7 @@ class MtdAuthorisationServiceSpec extends UnitSpec with MockitoSugar with Before
 
   val agentCode = AgentCode("agentCode")
   val arn = Arn("arn")
-  val clientId = MtdSaClientId("clientId")
+  val clientId = MtdClientId("clientId")
   implicit val hc = HeaderCarrier()
   implicit val fakeRequest = FakeRequest("GET", "/agent-access-control/mtd-sa-auth/agent/arn/client/utr")
 
@@ -62,7 +62,7 @@ class MtdAuthorisationServiceSpec extends UnitSpec with MockitoSugar with Before
       val result = await(service.authoriseForSa(agentCode, clientId))
 
       result shouldBe false
-      verify(relationshipsConnector, never).fetchRelationship(any[Arn], any[MtdSaClientId])(any[ExecutionContext], any[HeaderCarrier])
+      verify(relationshipsConnector, never).fetchRelationship(any[Arn], any[MtdClientId])(any[ExecutionContext], any[HeaderCarrier])
     }
 
     "deny access for a mtd agent without a client relationship" in {
@@ -112,7 +112,7 @@ class MtdAuthorisationServiceSpec extends UnitSpec with MockitoSugar with Before
   }
 
   def whenRelationshipsConnectorIsCalled =
-    when(relationshipsConnector.fetchRelationship(any[Arn], any[MtdSaClientId])(any[ExecutionContext], any[HeaderCarrier]))
+    when(relationshipsConnector.fetchRelationship(any[Arn], any[MtdClientId])(any[ExecutionContext], any[HeaderCarrier]))
 
   def whenAgenciesConnectorIsCalled =
     when(agenciesConnector.fetchAgencyRecord(any[AgentCode])(any[ExecutionContext], any[HeaderCarrier]))

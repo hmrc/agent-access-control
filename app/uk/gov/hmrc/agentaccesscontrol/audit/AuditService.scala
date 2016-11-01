@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.audit
 
 import play.api.mvc.Request
-import uk.gov.hmrc.agentaccesscontrol.model.MtdSaClientId
+import uk.gov.hmrc.agentaccesscontrol.model.MtdClientId
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -44,7 +44,7 @@ class AuditService(val auditConnector: AuditConnector) {
   def auditMtdEvent(event: AgentAccessControlEvent,
                    transactionName: String,
                    agentCode: AgentCode,
-                   mtdSaClientId: MtdSaClientId,
+                   mtdSaClientId: MtdClientId,
                    details: Seq[(String, Any)] = Seq.empty)
                   (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
     send(createEvent(event, transactionName, agentCode, "mtd-sa", mtdSaClientId.value, details: _*))

@@ -2,7 +2,7 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import com.kenshoo.play.metrics.MetricsRegistry
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
-import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
+import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{WireMockWithOneServerPerSuiteISpec, Resource}
 import uk.gov.hmrc.domain.AgentCode
@@ -11,7 +11,7 @@ import uk.gov.hmrc.play.http.HttpResponse
 class MtdAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   val agentCode = AgentCode("A11112222A")
   val arn = Arn("01234567890")
-  val clientId = MtdSaClientId("12345677890")
+  val clientId = MtdClientId("12345677890")
 
   "/agent-access-control/sa-auth/agent/:agentCode/client/:mtdSaClientId" should {
     "grant access when the agency and client are registered for MTD and have a relationship" in {
@@ -70,6 +70,6 @@ class MtdAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     }
   }
 
-  def authResponseFor(agentCode: AgentCode, mtdSaClientId: MtdSaClientId): HttpResponse =
+  def authResponseFor(agentCode: AgentCode, mtdSaClientId: MtdClientId): HttpResponse =
     new Resource(s"/agent-access-control/mtd-sa-auth/agent/${agentCode.value}/client/${mtdSaClientId.value}")(port).get()
 }

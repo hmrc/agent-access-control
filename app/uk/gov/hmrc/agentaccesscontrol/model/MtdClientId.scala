@@ -18,10 +18,10 @@ package uk.gov.hmrc.agentaccesscontrol.model
 
 import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites}
 
-case class MtdSaClientId(value: String)
-object MtdSaClientId{
-  implicit val reads = new SimpleObjectReads[MtdSaClientId]("clientRegimeId", MtdSaClientId.apply)
-  implicit val writes = new SimpleObjectWrites[MtdSaClientId](_.value)
+case class MtdClientId(value: String)
+object MtdClientId{
+  implicit val reads = new SimpleObjectReads[MtdClientId]("clientId", MtdClientId.apply)
+  implicit val writes = new SimpleObjectWrites[MtdClientId](_.value)
 }
 
 case class Arn(value: String)

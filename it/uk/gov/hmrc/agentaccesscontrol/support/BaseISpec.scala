@@ -23,7 +23,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import org.scalatestplus.play.{OneAppPerSuite, OneServerPerSuite}
 import play.api.test.FakeApplication
-import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdSaClientId}
+import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
 import uk.gov.hmrc.agentaccesscontrol.{StartAndStopWireMock, WSHttp}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -403,7 +403,7 @@ trait DesStub[A] {
     me: A =>
     def arn: String
 
-    def andHasARelationshipWith(mtdClientId: MtdSaClientId): A =  {
+    def andHasARelationshipWith(mtdClientId: MtdClientId): A =  {
       stubFor(get(urlEqualTo(s"/agent-client-relationships/relationships/mtd-sa/${mtdClientId.value}/$arn"))
               .willReturn(aResponse()
                 .withStatus(200)
@@ -411,14 +411,14 @@ trait DesStub[A] {
                   s"""
                      |{
                      |  "arn": "$arn",
-                     |  "clientRegimeId": "${mtdClientId.value}"
+                     |  "clientId": "${mtdClientId.value}"
                      |}
                    """.stripMargin)))
       this
     }
 
 
-    def andHasNoRelationshipWith(mtdClientId: MtdSaClientId): A = {
+    def andHasNoRelationshipWith(mtdClientId: MtdClientId): A = {
       stubFor(get(urlEqualTo(s"/agent-client-relationships/relationships/mtd-sa/${mtdClientId.value}/$arn"))
         .willReturn(aResponse()
           .withStatus(404)))

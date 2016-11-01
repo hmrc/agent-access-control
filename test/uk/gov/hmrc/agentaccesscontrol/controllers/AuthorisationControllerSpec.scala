@@ -24,7 +24,7 @@ import play.api.mvc.Request
 import play.api.test.FakeRequest
 import play.mvc.Http.Status
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
-import uk.gov.hmrc.agentaccesscontrol.model.MtdSaClientId
+import uk.gov.hmrc.agentaccesscontrol.model.MtdClientId
 import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdAuthorisationService}
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -89,7 +89,7 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
 
       whenMtdAuthorisationServiceIsCalled thenReturn(Future successful false)
 
-      val response = controller.isAuthorisedForMtdSa(AgentCode(""), MtdSaClientId("utr"))(fakeRequest)
+      val response = controller.isAuthorisedForMtdSa(AgentCode(""), MtdClientId("utr"))(fakeRequest)
 
       status (response) shouldBe Status.UNAUTHORIZED
     }
@@ -99,7 +99,7 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
 
       whenMtdAuthorisationServiceIsCalled thenReturn(Future successful true)
 
-      val response = controller.isAuthorisedForMtdSa(AgentCode(""), MtdSaClientId("utr"))(fakeRequest)
+      val response = controller.isAuthorisedForMtdSa(AgentCode(""), MtdClientId("utr"))(fakeRequest)
 
       status(response) shouldBe Status.OK
     }
@@ -109,12 +109,12 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
 
       whenMtdAuthorisationServiceIsCalled thenReturn(Future failed new IllegalStateException("some error"))
 
-      an[IllegalStateException] shouldBe thrownBy(status(controller.isAuthorisedForMtdSa(AgentCode(""), MtdSaClientId("utr"))(fakeRequest)))
+      an[IllegalStateException] shouldBe thrownBy(status(controller.isAuthorisedForMtdSa(AgentCode(""), MtdClientId("utr"))(fakeRequest)))
     }
   }
   def whenAuthorisationServiceIsCalled =
     when(authorisationService.isAuthorised(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], any[Request[Any]]))
 
   def whenMtdAuthorisationServiceIsCalled =
-    when(mtdAuthorisationService.authoriseForSa(any[AgentCode], any[MtdSaClientId])(any[ExecutionContext], any[HeaderCarrier], any[Request[_]]))
+    when(mtdAuthorisationService.authoriseForSa(any[AgentCode], any[MtdClientId])(any[ExecutionContext], any[HeaderCarrier], any[Request[_]]))
 }

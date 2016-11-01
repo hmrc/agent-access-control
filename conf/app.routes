@@ -1,6 +1,6 @@
 # microservice specific routes
-GET    /sa-auth/agent/:agentCode/client/:saUtr              @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForSa(agentCode: uk.gov.hmrc.domain.AgentCode, saUtr: uk.gov.hmrc.domain.SaUtr)
-GET    /mtd-sa-auth/agent/:agentCode/client/:mtdSaClientId  @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForMtdSa(agentCode: uk.gov.hmrc.domain.AgentCode, mtdSaClientId: uk.gov.hmrc.agentaccesscontrol.model.MtdSaClientId)
+GET    /sa-auth/agent/:agentCode/client/:saUtr                  @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForSa(agentCode: uk.gov.hmrc.domain.AgentCode, saUtr: uk.gov.hmrc.domain.SaUtr)
+GET    /mtd-sa-auth/agent/:agentCode/client/:mtdClientId        @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForMtdSa(agentCode: uk.gov.hmrc.domain.AgentCode, mtdClientId: uk.gov.hmrc.agentaccesscontrol.model.MtdClientId)
 
 # For whitelisting
-GET    /forbidden                                 @uk.gov.hmrc.agentaccesscontrol.controllers.WhitelistController.forbidden
+GET    /forbidden                                               @uk.gov.hmrc.agentaccesscontrol.controllers.WhitelistController.forbidden
