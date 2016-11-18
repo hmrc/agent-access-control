@@ -46,13 +46,13 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) extends 
 
   def getAssignedSaAgents(utr: SaUtr, agentCode: AgentCode)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
     monitor("ConsumedAPI-GGW-GetAssignedAgents-POST"){
-      httpPost.POSTString(url.toString, body(utr), Seq(CONTENT_TYPE -> XML))
+      httpPost.POSTString(url.toString, body(utr.toString, "IR-SA"), Seq(CONTENT_TYPE -> XML))
     }.map({ r =>
         parseResponse(r.body)
     })
   }
 
-  def parseResponse(xmlString: String): Seq[AssignedAgent] = {
+  private def parseResponse(xmlString: String): Seq[AssignedAgent] = {
     val xml: Elem = toXmlElement(xmlString)
     val agentDetails = xml \ "AllocatedAgents" \ "AgentDetails"
     agentDetails.map { agency =>
@@ -65,7 +65,7 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) extends 
     }
   }
 
-  def toXmlElement(xmlString: String): Elem = {
+  private def toXmlElement(xmlString: String): Elem = {
     val factory = SAXParserFactory.newInstance("org.apache.xerces.jaxp.SAXParserFactoryImpl", this.getClass.getClassLoader)
       factory.setFeature(Constants.SAX_FEATURE_PREFIX + Constants.EXTERNAL_GENERAL_ENTITIES_FEATURE, false)
       factory.setFeature(Constants.SAX_FEATURE_PREFIX + Constants.EXTERNAL_PARAMETER_ENTITIES_FEATURE, false)
@@ -76,10 +76,10 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) extends 
     XML.loadString(xmlString)
   }
 
-  def body(utr: SaUtr): String =
+  private def body(utr: String, service: String): String =
     <GsoAdminGetAssignedAgentsXmlInput xmlns="urn:GSO-System-Services:external:2.13.3:GsoAdminGetAssignedAgentsXmlInput">
       <DelegatedAccessIdentifier>HMRC</DelegatedAccessIdentifier>
-      <ServiceName>IR-SA</ServiceName>
+      <ServiceName>{ service }</ServiceName>
       <Identifiers><Identifier IdentifierType="utr">{ utr }</Identifier></Identifiers>
     </GsoAdminGetAssignedAgentsXmlInput>.toString()
 }

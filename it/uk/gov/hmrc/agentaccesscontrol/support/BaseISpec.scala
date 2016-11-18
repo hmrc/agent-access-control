@@ -155,14 +155,14 @@ trait DesStub[A] {
 
     val path: String = "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents"
 
-    def andGGIsDown(clientUtr: SaUtr): A = {
-      stubFor(getAssignedAgentsPost(clientUtr).
+    def andGGIsDown(clientUtr: SaUtr, service: String): A = {
+      stubFor(getAssignedAgentsPost(clientUtr.toString, service).
         willReturn(aResponse().withStatus(500)))
       this
     }
 
-    def andIsAllocatedAndAssignedToClient(utr: SaUtr): A = {
-      stubFor(getAssignedAgentsPost(utr)
+    def andIsAllocatedAndAssignedToClient(utr: SaUtr, service: String): A = {
+      stubFor(getAssignedAgentsPost(utr.toString, service)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -203,8 +203,8 @@ trait DesStub[A] {
       this
     }
 
-    def andIsAllocatedButNotAssignedToClient(utr: SaUtr): A = {
-      stubFor(getAssignedAgentsPost(utr)
+    def andIsAllocatedButNotAssignedToClient(utr: SaUtr, service: String): A = {
+      stubFor(getAssignedAgentsPost(utr.toString, service)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -245,8 +245,8 @@ trait DesStub[A] {
       this
     }
 
-    def andIsNotAllocatedToClient(utr: SaUtr): A = {
-      stubFor(getAssignedAgentsPost(utr)
+    def andIsNotAllocatedToClient(utr: SaUtr, service: String): A = {
+      stubFor(getAssignedAgentsPost(utr.toString, service)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -257,9 +257,9 @@ trait DesStub[A] {
       this
     }
 
-    private def getAssignedAgentsPost(utr: SaUtr) = {
+    private def getAssignedAgentsPost(utr: String, service: String) = {
       post(urlEqualTo(path))
-        .withRequestBody(matching(s".*>$utr<.*"))
+        .withRequestBody(matching(s".*>$service<.*>$utr<.*"))
         .withHeader("Content-Type", equalTo("application/xml; charset=utf-8"))
     }
 
@@ -268,9 +268,8 @@ trait DesStub[A] {
       this
     }
 
-    def andGovernmentGatewayReturnsUnparseableXml(utr: String): A = {
-      stubFor(post(urlEqualTo(path))
-        .withRequestBody(matching(s".*>$utr<.*"))
+    def andGovernmentGatewayReturnsUnparseableXml(utr: String, service: String): A = {
+      stubFor(getAssignedAgentsPost(utr, service)
         .willReturn(aResponse()
           .withBody(
             s"""

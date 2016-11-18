@@ -28,6 +28,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
   val agentCode = AgentCode("ABCDEF123456")
   val saAgentReference = SaAgentReference("ABC456")
   val clientUtr = SaUtr("123")
+  val saService = "IR-SA"
 
   "/agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
     "respond with 401" when {
@@ -42,7 +43,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr, saService)
           .andHasNoRelationInDesWith(clientUtr)
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
@@ -52,7 +53,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr, saService)
           .andIsRelatedToClientInDes(clientUtr).andIsAuthorisedByOnly648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
@@ -62,7 +63,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr, saService)
           .andIsRelatedToClientInDes(clientUtr).andIsAuthorisedByOnlyI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
@@ -72,7 +73,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr, saService)
           .andIsRelatedToClientInDes(clientUtr).butIsNotAuthorised()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
@@ -82,7 +83,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsNotAllocatedToClient(clientUtr)
+          .andIsNotAllocatedToClient(clientUtr, saService)
           .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
@@ -92,7 +93,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedButNotAssignedToClient(clientUtr)
+          .andIsAllocatedButNotAssignedToClient(clientUtr, saService)
           .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
@@ -104,7 +105,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr, saService)
           .andDesIsDown()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 502
@@ -115,7 +116,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
           .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
-          .andGGIsDown(clientUtr)
+          .andGGIsDown(clientUtr, saService)
 
         authResponseFor(agentCode, clientUtr).status shouldBe 502
       }
@@ -127,7 +128,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr, saService)
           .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 200
@@ -137,7 +138,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAllocatedAndAssignedToClient(clientUtr, saService)
           .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 200
@@ -149,7 +150,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-        .andIsAllocatedAndAssignedToClient(clientUtr)
+        .andIsAllocatedAndAssignedToClient(clientUtr, saService)
         .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr).status shouldBe 200
@@ -160,7 +161,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-        .andIsAllocatedAndAssignedToClient(clientUtr)
+        .andIsAllocatedAndAssignedToClient(clientUtr, saService)
         .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr).status shouldBe 200

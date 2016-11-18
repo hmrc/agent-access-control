@@ -27,6 +27,7 @@ class WhitelistISpec extends WireMockWithOneServerPerSuiteISpec {
   val agentCode = AgentCode("ABCDEF123456")
   val saAgentReference = SaAgentReference("ABC456")
   val clientUtr = SaUtr("123")
+  val saService = "IR-SA"
 
   override protected def additionalConfiguration: Map[String, String] = Map(
     "microservice.whitelist.enabled" -> "true",
@@ -77,7 +78,7 @@ class WhitelistISpec extends WireMockWithOneServerPerSuiteISpec {
     given()
       .agentAdmin(agentCode).isLoggedIn()
       .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-      .andIsAllocatedAndAssignedToClient(clientUtr)
+      .andIsAllocatedAndAssignedToClient(clientUtr, saService)
       .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
   }
 

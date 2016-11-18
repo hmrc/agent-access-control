@@ -17,12 +17,13 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
 
   val agentCode = AgentCode("AgentCode")
   val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp)
+  val saService = "IR-SA"
 
   "GovernmentGatewayProxy" should {
     "return agent allocations and assignments" in {
       given()
         .agentAdmin("AgentCode", "000000123245678900")
-          .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"))
+          .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"), saService)
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
 
@@ -45,7 +46,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
     "return empty list if there are no allocated agencies nor assigned credentials" in {
       given()
         .agentAdmin("AgentCode")
-        .andIsNotAllocatedToClient(SaUtr("1234567890"))
+        .andIsNotAllocatedToClient(SaUtr("1234567890"), saService)
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
 
@@ -55,7 +56,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
     "throw exception for invalid XML" in {
       given()
         .agentAdmin("AgentCode")
-        .andGovernmentGatewayReturnsUnparseableXml("1234567890")
+        .andGovernmentGatewayReturnsUnparseableXml("1234567890", saService)
 
       an[SAXParseException] should be thrownBy await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
     }
@@ -72,7 +73,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
       val metricsRegistry = MetricsRegistry.defaultRegistry
       given()
         .agentAdmin("AgentCode")
-        .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"))
+        .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"), saService)
 
       await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
       metricsRegistry.getTimers().get("Timer-ConsumedAPI-GGW-GetAssignedAgents-POST").getCount should be >= 1L
