@@ -22,8 +22,7 @@ import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AssignedAgent, AssignedCredentials, GovernmentGatewayProxyConnector}
-import uk.gov.hmrc.agentaccesscontrol.model.PayeUtr
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -36,7 +35,7 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
   val agentCode = AgentCode("12AAAAA3A456")
   val agentCode2 = AgentCode("23BBBBB4B567")
   val saUtr = SaUtr("S123456789")
-  val payeUtr = PayeUtr("P123456789")
+  val empRef = EmpRef("123", "43567890")
   implicit val hc = new HeaderCarrier()
 
 
@@ -58,17 +57,17 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
 
   "isAuthorisedForPayeInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
-        when(ggProxyConnector.getAssignedPayeAgents(payeUtr)(hc)),
-        (credId: String) => service.isAuthorisedForPayeInGovernmentGateway(agentCode, credId, payeUtr)
+        when(ggProxyConnector.getAssignedPayeAgents(empRef)(hc)),
+        (credId: String) => service.isAuthorisedForPayeInGovernmentGateway(agentCode, credId, empRef)
     )
 
     "return true if the client is allocated to more than one agency, and one of them is matching" in {
-      when(ggProxyConnector.getAssignedPayeAgents(payeUtr)(hc)).thenReturn(
+      when(ggProxyConnector.getAssignedPayeAgents(empRef)(hc)).thenReturn(
         Future successful Seq(
           AssignedAgent(agentCode, Seq(AssignedCredentials("000111333"))),
           AssignedAgent(agentCode2, Seq(AssignedCredentials("000111444")))))
 
-      await(service.isAuthorisedForPayeInGovernmentGateway(agentCode2, "000111444", payeUtr)) shouldBe true
+      await(service.isAuthorisedForPayeInGovernmentGateway(agentCode2, "000111444", empRef)) shouldBe true
     }
   }
 

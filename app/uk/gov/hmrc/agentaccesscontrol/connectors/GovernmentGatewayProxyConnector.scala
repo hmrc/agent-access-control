@@ -25,8 +25,7 @@ import play.api.http.ContentTypes.XML
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.agentaccesscontrol.model.PayeUtr
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost}
 
 import scala.concurrent.Future
@@ -47,15 +46,15 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) extends 
 
   def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
     monitor("ConsumedAPI-GGW-GetAssignedAgents-POST"){
-      httpPost.POSTString(url.toString, body(utr.value, "IR-SA"), Seq(CONTENT_TYPE -> XML))
+      httpPost.POSTString(url.toString, saBody(utr), Seq(CONTENT_TYPE -> XML))
     }.map({ r =>
         parseResponse(r.body)
     })
   }
 
-  def getAssignedPayeAgents(utr: PayeUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
+  def getAssignedPayeAgents(empRef: EmpRef)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
     monitor("ConsumedAPI-GGW-GetAssignedAgents-POST"){
-      httpPost.POSTString(url.toString, body(utr.value, "IR-PAYE"), Seq(CONTENT_TYPE -> XML))
+      httpPost.POSTString(url.toString, payeBody(empRef), Seq(CONTENT_TYPE -> XML))
     }.map({ r =>
         parseResponse(r.body)
     })
@@ -85,10 +84,20 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) extends 
     XML.loadString(xmlString)
   }
 
-  private def body(utr: String, service: String): String =
+  private def saBody(utr: SaUtr): String =
     <GsoAdminGetAssignedAgentsXmlInput xmlns="urn:GSO-System-Services:external:2.13.3:GsoAdminGetAssignedAgentsXmlInput">
       <DelegatedAccessIdentifier>HMRC</DelegatedAccessIdentifier>
-      <ServiceName>{ service }</ServiceName>
+      <ServiceName>IR-SA</ServiceName>
       <Identifiers><Identifier IdentifierType="utr">{ utr }</Identifier></Identifiers>
+    </GsoAdminGetAssignedAgentsXmlInput>.toString()
+
+  private def payeBody(empRef: EmpRef): String =
+    <GsoAdminGetAssignedAgentsXmlInput xmlns="urn:GSO-System-Services:external:2.13.3:GsoAdminGetAssignedAgentsXmlInput">
+      <DelegatedAccessIdentifier>HMRC</DelegatedAccessIdentifier>
+      <ServiceName>IR-SA</ServiceName>
+      <Identifiers>
+        <Identifier IdentifierType="taxofficenumber">{ empRef.taxOfficeNumber }</Identifier>
+        <Identifier IdentifierType="taxofficereference">{ empRef.taxOfficeReference }</Identifier>
+      </Identifiers>
     </GsoAdminGetAssignedAgentsXmlInput>.toString()
 }

@@ -5,9 +5,8 @@ import java.net.URL
 import com.kenshoo.play.metrics.MetricsRegistry
 import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
-import uk.gov.hmrc.agentaccesscontrol.model.PayeUtr
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, SaUtr, EmpRef}
 import uk.gov.hmrc.play.http.{HeaderCarrier, Upstream5xxResponse}
 
 import scala.xml.SAXParseException
@@ -17,14 +16,12 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
   implicit val hc = HeaderCarrier()
 
   val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp)
-  val saService = "IR-SA"
-  val payeService = "IR-PAYE"
 
   "GovernmentGatewayProxy" should {
     "return sa agent allocations and assignments" in {
       given()
         .agentAdmin("AgentCode", "000000123245678900")
-          .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"), saService)
+          .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"))
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
 
@@ -47,9 +44,9 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
     "return paye agent allocations and assignments" in {
       given()
         .agentAdmin("AgentCode", "000000123245678900")
-          .andIsAllocatedAndAssignedToClient(PayeUtr("1234567890"), payeService)
+          .andIsAllocatedAndAssignedToClient(EmpRef("123", "4567890"))
 
-      val allocation = await(connector.getAssignedPayeAgents(PayeUtr("1234567890")))
+      val allocation = await(connector.getAssignedPayeAgents(EmpRef("123", "4567890")))
 
       val details: AssignedAgent = allocation.head
       details.allocatedAgentCode shouldBe AgentCode("AgentCode")
@@ -70,7 +67,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
     "return empty list if there are no allocated agencies nor assigned credentials" in {
       given()
         .agentAdmin("AgentCode")
-        .andIsNotAllocatedToClient(SaUtr("1234567890"), saService)
+        .andIsNotAllocatedToClient(SaUtr("1234567890"))
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
 
@@ -80,7 +77,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
     "throw exception for invalid XML" in {
       given()
         .agentAdmin("AgentCode")
-        .andGovernmentGatewayReturnsUnparseableXml("1234567890", saService)
+        .andGovernmentGatewayReturnsUnparseableXml(SaUtr("1234567890"))
 
       an[SAXParseException] should be thrownBy await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
     }
@@ -97,7 +94,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
       val metricsRegistry = MetricsRegistry.defaultRegistry
       given()
         .agentAdmin("AgentCode")
-        .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"), saService)
+        .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"))
 
       await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
       metricsRegistry.getTimers().get("Timer-ConsumedAPI-GGW-GetAssignedAgents-POST").getCount should be >= 1L
