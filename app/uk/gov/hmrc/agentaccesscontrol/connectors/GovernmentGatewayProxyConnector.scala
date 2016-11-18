@@ -45,7 +45,7 @@ case class AssignedCredentials(identifier: String)
 class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) extends HttpAPIMonitor {
   val url: URL = new URL(baseUrl, "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents")
 
-  def getAssignedSaAgents(utr: SaUtr, agentCode: AgentCode)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
+  def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
     monitor("ConsumedAPI-GGW-GetAssignedAgents-POST"){
       httpPost.POSTString(url.toString, body(utr.value, "IR-SA"), Seq(CONTENT_TYPE -> XML))
     }.map({ r =>
@@ -53,7 +53,7 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) extends 
     })
   }
 
-  def getAssignedPayeAgents(utr: PayeUtr, agentCode: AgentCode)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
+  def getAssignedPayeAgents(utr: PayeUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
     monitor("ConsumedAPI-GGW-GetAssignedAgents-POST"){
       httpPost.POSTString(url.toString, body(utr.value, "IR-PAYE"), Seq(CONTENT_TYPE -> XML))
     }.map({ r =>

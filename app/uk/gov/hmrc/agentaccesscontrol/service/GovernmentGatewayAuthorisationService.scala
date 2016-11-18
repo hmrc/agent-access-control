@@ -27,13 +27,13 @@ import scala.concurrent.Future
 class GovernmentGatewayAuthorisationService(val ggProxyConnector: GovernmentGatewayProxyConnector) extends LoggingAuthorisationResults {
 
   def isAuthorisedForSaInGovernmentGateway(agentCode: AgentCode, ggCredentialId: String, saUtr: SaUtr)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    ggProxyConnector.getAssignedSaAgents(saUtr, agentCode) map { assignedAgents =>
+    ggProxyConnector.getAssignedSaAgents(saUtr) map { assignedAgents =>
       assignedAgents.exists(_.matches(agentCode, ggCredentialId))
     }
   }
 
   def isAuthorisedForPayeInGovernmentGateway(agentCode: AgentCode, ggCredentialId: String, payeUtr: PayeUtr)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    ggProxyConnector.getAssignedPayeAgents(payeUtr, agentCode) map { assignedAgents =>
+    ggProxyConnector.getAssignedPayeAgents(payeUtr) map { assignedAgents =>
       assignedAgents.exists(_.matches(agentCode, ggCredentialId))
     }
   }

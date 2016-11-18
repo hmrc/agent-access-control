@@ -16,7 +16,6 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
 
   implicit val hc = HeaderCarrier()
 
-  val agentCode = AgentCode("AgentCode")
   val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp)
   val saService = "IR-SA"
   val payeService = "IR-PAYE"
@@ -27,7 +26,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
         .agentAdmin("AgentCode", "000000123245678900")
           .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"), saService)
 
-      val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
+      val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
 
       val details: AssignedAgent = allocation.head
       details.allocatedAgentCode shouldBe AgentCode("AgentCode")
@@ -50,7 +49,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
         .agentAdmin("AgentCode", "000000123245678900")
           .andIsAllocatedAndAssignedToClient(PayeUtr("1234567890"), payeService)
 
-      val allocation = await(connector.getAssignedPayeAgents(PayeUtr("1234567890"), agentCode))
+      val allocation = await(connector.getAssignedPayeAgents(PayeUtr("1234567890")))
 
       val details: AssignedAgent = allocation.head
       details.allocatedAgentCode shouldBe AgentCode("AgentCode")
@@ -73,7 +72,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
         .agentAdmin("AgentCode")
         .andIsNotAllocatedToClient(SaUtr("1234567890"), saService)
 
-      val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
+      val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
 
       allocation shouldBe empty
     }
@@ -83,7 +82,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
         .agentAdmin("AgentCode")
         .andGovernmentGatewayReturnsUnparseableXml("1234567890", saService)
 
-      an[SAXParseException] should be thrownBy await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
+      an[SAXParseException] should be thrownBy await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
     }
 
     "throw exception when HTTP error" in {
@@ -91,7 +90,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
         .agentAdmin("AgentCode")
         .andGovernmentGatewayProxyReturnsAnError500()
 
-      an[Upstream5xxResponse] should be thrownBy await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
+      an[Upstream5xxResponse] should be thrownBy await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
     }
 
     "record metrics for outbound call" in {
@@ -100,7 +99,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
         .agentAdmin("AgentCode")
         .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"), saService)
 
-      await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
+      await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
       metricsRegistry.getTimers().get("Timer-ConsumedAPI-GGW-GetAssignedAgents-POST").getCount should be >= 1L
     }
   }

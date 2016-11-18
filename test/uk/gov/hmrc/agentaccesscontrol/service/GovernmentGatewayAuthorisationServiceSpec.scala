@@ -42,12 +42,12 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
 
   "isAuthorisedForSaInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
-        when(ggProxyConnector.getAssignedSaAgents(saUtr, agentCode)(hc)),
+        when(ggProxyConnector.getAssignedSaAgents(saUtr)(hc)),
         (credId: String) => service.isAuthorisedForSaInGovernmentGateway(agentCode, credId, saUtr)
     )
 
     "return true if the client is allocated to more than one agency, and one of them is matching" in {
-      when(ggProxyConnector.getAssignedSaAgents(saUtr, agentCode2)(hc)).thenReturn(
+      when(ggProxyConnector.getAssignedSaAgents(saUtr)(hc)).thenReturn(
         Future successful Seq(
           AssignedAgent(agentCode, Seq(AssignedCredentials("000111333"))),
           AssignedAgent(agentCode2, Seq(AssignedCredentials("000111444")))))
@@ -58,12 +58,12 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
 
   "isAuthorisedForPayeInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
-        when(ggProxyConnector.getAssignedPayeAgents(payeUtr, agentCode)(hc)),
+        when(ggProxyConnector.getAssignedPayeAgents(payeUtr)(hc)),
         (credId: String) => service.isAuthorisedForPayeInGovernmentGateway(agentCode, credId, payeUtr)
     )
 
     "return true if the client is allocated to more than one agency, and one of them is matching" in {
-      when(ggProxyConnector.getAssignedPayeAgents(payeUtr, agentCode2)(hc)).thenReturn(
+      when(ggProxyConnector.getAssignedPayeAgents(payeUtr)(hc)).thenReturn(
         Future successful Seq(
           AssignedAgent(agentCode, Seq(AssignedCredentials("000111333"))),
           AssignedAgent(agentCode2, Seq(AssignedCredentials("000111444")))))
