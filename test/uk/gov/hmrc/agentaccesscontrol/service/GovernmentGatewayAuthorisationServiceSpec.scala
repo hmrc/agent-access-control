@@ -32,7 +32,7 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
 
   val ggProxyConnector = mock[GovernmentGatewayProxyConnector]
   val service = new GovernmentGatewayAuthorisationService(ggProxyConnector)
-  val agentCode = AgentCode("12AAAAA3A456")
+  val agentCode1 = AgentCode("12AAAAA3A456")
   val agentCode2 = AgentCode("23BBBBB4B567")
   val saUtr = SaUtr("S123456789")
   val empRef = EmpRef("123", "43567890")
@@ -42,60 +42,42 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
   "isAuthorisedForSaInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
         when(ggProxyConnector.getAssignedSaAgents(saUtr)(hc)),
-        (credId: String) => service.isAuthorisedForSaInGovernmentGateway(agentCode, credId, saUtr)
+        (agentCode: AgentCode, credId: String) => service.isAuthorisedForSaInGovernmentGateway(agentCode, credId, saUtr)
     )
-
-    "return true if the client is allocated to more than one agency, and one of them is matching" in {
-      when(ggProxyConnector.getAssignedSaAgents(saUtr)(hc)).thenReturn(
-        Future successful Seq(
-          AssignedAgent(agentCode, Seq(AssignedCredentials("000111333"))),
-          AssignedAgent(agentCode2, Seq(AssignedCredentials("000111444")))))
-
-      await(service.isAuthorisedForSaInGovernmentGateway(agentCode2, "000111444", saUtr)) shouldBe true
-    }
   }
 
   "isAuthorisedForPayeInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
         when(ggProxyConnector.getAssignedPayeAgents(empRef)(hc)),
-        (credId: String) => service.isAuthorisedForPayeInGovernmentGateway(agentCode, credId, empRef)
+        (agentCode: AgentCode, credId: String) => service.isAuthorisedForPayeInGovernmentGateway(agentCode, credId, empRef)
     )
-
-    "return true if the client is allocated to more than one agency, and one of them is matching" in {
-      when(ggProxyConnector.getAssignedPayeAgents(empRef)(hc)).thenReturn(
-        Future successful Seq(
-          AssignedAgent(agentCode, Seq(AssignedCredentials("000111333"))),
-          AssignedAgent(agentCode2, Seq(AssignedCredentials("000111444")))))
-
-      await(service.isAuthorisedForPayeInGovernmentGateway(agentCode2, "000111444", empRef)) shouldBe true
-    }
   }
 
   private def aGovernmentGatewayAssignmentCheck(
     whenGovernmentGatewayIsCalled: => OngoingStubbing[Future[Seq[AssignedAgent]]],
-    assignmentCheck: String => Future[Boolean]
+    assignmentCheck: (AgentCode, String) => Future[Boolean]
   ) {
     "return true if the client is allocated to the agency and assigned to the agent credential" in {
-      whenGovernmentGatewayIsCalled thenReturn(Future successful Seq(AssignedAgent(agentCode, Seq(AssignedCredentials("000111333")))))
+      whenGovernmentGatewayIsCalled thenReturn(Future successful Seq(AssignedAgent(agentCode1, Seq(AssignedCredentials("000111333")))))
 
-      val result = await(assignmentCheck("000111333"))
+      val result = await(assignmentCheck(agentCode1, "000111333"))
 
       result shouldBe true
     }
 
     "return true if there is more than one agent assigned to the client" in {
       whenGovernmentGatewayIsCalled thenReturn(Future successful
-        Seq(AssignedAgent(agentCode, Seq(AssignedCredentials("000111333"), AssignedCredentials("000111444")))))
+        Seq(AssignedAgent(agentCode1, Seq(AssignedCredentials("000111333"), AssignedCredentials("000111444")))))
 
-      val result = await(assignmentCheck("000111444"))
+      val result = await(assignmentCheck(agentCode1, "000111444"))
 
       result shouldBe true
     }
 
     "return false if the client is allocated to the agency but not assigned to the agent credential" in {
-      whenGovernmentGatewayIsCalled thenReturn(Future successful Seq(AssignedAgent(agentCode, Seq(AssignedCredentials("000111444")))))
+      whenGovernmentGatewayIsCalled thenReturn(Future successful Seq(AssignedAgent(agentCode1, Seq(AssignedCredentials("000111444")))))
 
-      val result = await(assignmentCheck("000111333"))
+      val result = await(assignmentCheck(agentCode1, "000111333"))
 
       result shouldBe false
     }
@@ -104,7 +86,7 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
     "return false if the client is not allocated to the agency but is assigned to the agent credential" in {
       whenGovernmentGatewayIsCalled thenReturn(Future successful Seq(AssignedAgent(agentCode2, Seq(AssignedCredentials("000111333")))))
 
-      val result = await(assignmentCheck("000111333"))
+      val result = await(assignmentCheck(agentCode1, "000111333"))
 
       result shouldBe false
     }
@@ -112,27 +94,36 @@ class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSug
     // we don't expect the GG to allow things to be set up like this, so this test is just here to be on the safe side
     "return false if client is allocated to the agency and is assigned to the agent credential inside a different agency" in {
       whenGovernmentGatewayIsCalled thenReturn(Future successful Seq(
-        AssignedAgent(agentCode, Seq(AssignedCredentials("000111444"))),
+        AssignedAgent(agentCode1, Seq(AssignedCredentials("000111444"))),
         AssignedAgent(agentCode2, Seq(AssignedCredentials("000111333")))
       ))
 
-      val result = await(assignmentCheck("000111333"))
+      val result = await(assignmentCheck(agentCode1, "000111333"))
 
       result shouldBe false
     }
 
     "return false if the client is neither allocated to the agency nor assigned to the agent credential" in {
-      whenGovernmentGatewayIsCalled thenReturn(Future successful Seq(AssignedAgent(agentCode, Seq(AssignedCredentials("000111333")))))
+      whenGovernmentGatewayIsCalled thenReturn(Future successful Seq(AssignedAgent(agentCode1, Seq(AssignedCredentials("000111333")))))
 
-      val result = await(assignmentCheck("NonMatchingCred"))
+      val result = await(assignmentCheck(agentCode1, "NonMatchingCred"))
 
       result shouldBe false
     }
 
-    "throw exception if government gateway proxy fails" in {
-      whenGovernmentGatewayIsCalled thenThrow(new RuntimeException())
+    "return true if the client is allocated to more than one agency, and one of them is matching" in {
+      whenGovernmentGatewayIsCalled thenReturn(
+        Future successful Seq(
+          AssignedAgent(agentCode1, Seq(AssignedCredentials("000111333"))),
+          AssignedAgent(agentCode2, Seq(AssignedCredentials("000111444")))))
 
-      an[RuntimeException] should be thrownBy await(assignmentCheck("NonMatchingCred"))
+      await(assignmentCheck(agentCode2, "000111444")) shouldBe true
+    }
+
+    "throw exception if government gateway proxy fails" in {
+      whenGovernmentGatewayIsCalled thenThrow new RuntimeException()
+
+      an[RuntimeException] should be thrownBy await(assignmentCheck(agentCode1, "NonMatchingCred"))
     }
   }
 
