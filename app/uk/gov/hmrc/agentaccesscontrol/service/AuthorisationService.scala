@@ -35,7 +35,7 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
     authConnector.currentAuthDetails().flatMap {
       case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), ggCredentialId, _, _)) =>
         val results = cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
-          ggAuthorisationService.isAuthorisedInGovernmentGateway(agentCode, ggCredentialId, saUtr)
+          ggAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, ggCredentialId, saUtr)
         results.map { case (cesa, ggw) => {
           val result = cesa && ggw
 
