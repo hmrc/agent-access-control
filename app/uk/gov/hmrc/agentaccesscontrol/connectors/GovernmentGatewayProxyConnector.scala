@@ -25,6 +25,7 @@ import play.api.http.ContentTypes.XML
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
+import uk.gov.hmrc.agentaccesscontrol.model.PayeUtr
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost}
 
@@ -46,7 +47,15 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) extends 
 
   def getAssignedSaAgents(utr: SaUtr, agentCode: AgentCode)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
     monitor("ConsumedAPI-GGW-GetAssignedAgents-POST"){
-      httpPost.POSTString(url.toString, body(utr.toString, "IR-SA"), Seq(CONTENT_TYPE -> XML))
+      httpPost.POSTString(url.toString, body(utr.value, "IR-SA"), Seq(CONTENT_TYPE -> XML))
+    }.map({ r =>
+        parseResponse(r.body)
+    })
+  }
+
+  def getAssignedPayeAgents(utr: PayeUtr, agentCode: AgentCode)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {
+    monitor("ConsumedAPI-GGW-GetAssignedAgents-POST"){
+      httpPost.POSTString(url.toString, body(utr.value, "IR-PAYE"), Seq(CONTENT_TYPE -> XML))
     }.map({ r =>
         parseResponse(r.body)
     })

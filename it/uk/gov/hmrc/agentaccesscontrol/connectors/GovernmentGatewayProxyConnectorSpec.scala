@@ -5,6 +5,7 @@ import java.net.URL
 import com.kenshoo.play.metrics.MetricsRegistry
 import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
+import uk.gov.hmrc.agentaccesscontrol.model.PayeUtr
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.http.{HeaderCarrier, Upstream5xxResponse}
@@ -18,14 +19,38 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
   val agentCode = AgentCode("AgentCode")
   val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp)
   val saService = "IR-SA"
+  val payeService = "IR-PAYE"
 
   "GovernmentGatewayProxy" should {
-    "return agent allocations and assignments" in {
+    "return sa agent allocations and assignments" in {
       given()
         .agentAdmin("AgentCode", "000000123245678900")
           .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"), saService)
 
       val allocation = await(connector.getAssignedSaAgents(new SaUtr("1234567890"), agentCode))
+
+      val details: AssignedAgent = allocation.head
+      details.allocatedAgentCode shouldBe AgentCode("AgentCode")
+
+      val credentials = details.assignedCredentials.head
+      credentials.identifier shouldBe "000000123245678900"
+
+      val credentials1 = details.assignedCredentials(1)
+      credentials1.identifier shouldBe "98741987654321"
+
+      val details1: AssignedAgent = allocation(1)
+      details1.allocatedAgentCode shouldBe AgentCode("123ABCD12345")
+
+      val credentials2 = details1.assignedCredentials.head
+      credentials2.identifier shouldBe "98741987654322"
+    }
+
+    "return paye agent allocations and assignments" in {
+      given()
+        .agentAdmin("AgentCode", "000000123245678900")
+          .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"), payeService)
+
+      val allocation = await(connector.getAssignedPayeAgents(new PayeUtr("1234567890"), agentCode))
 
       val details: AssignedAgent = allocation.head
       details.allocatedAgentCode shouldBe AgentCode("AgentCode")
