@@ -113,19 +113,19 @@ trait DesStub[A] {
       this
     }
 
-    def andHasNoRelationInDesWith(client: TaxIdentifier): A = {
+    def andHasNoRelationInDesWith(client: SaUtr): A = {
       stubFor(matcherForClient(client).willReturn(aResponse().withStatus(404)))
       this
     }
 
-    def andIsRelatedToClientInDes(clientUtr: TaxIdentifier, authorizationHeader: String = "secret", envHeader: String = "test"): DesStubBuilder = {
+    def andIsRelatedToClientInDes(clientUtr: SaUtr, authorizationHeader: String = "secret", envHeader: String = "test"): DesStubBuilder = {
       new DesStubBuilder(clientUtr, authorizationHeader, envHeader)
     }
 
-    private def matcherForClient(client: TaxIdentifier) =
+    private def matcherForClient(client: SaUtr) =
       get(urlPathEqualTo(s"/sa/agents/${saAgentReference.get.value}/client/${client.value}"))
 
-    class DesStubBuilder(client: TaxIdentifier, authorizationToken: String, environment: String) {
+    class DesStubBuilder(client: SaUtr, authorizationToken: String, environment: String) {
       def andIsAuthorisedByOnly648(): A = withFlags(true, false)
       def andIsAuthorisedByOnlyI648(): A = withFlags(false, true)
       def butIsNotAuthorised(): A = withFlags(false, false)
