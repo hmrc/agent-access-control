@@ -48,9 +48,9 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
     "return paye agent allocations and assignments" in {
       given()
         .agentAdmin("AgentCode", "000000123245678900")
-          .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"), payeService)
+          .andIsAllocatedAndAssignedToClient(PayeUtr("1234567890"), payeService)
 
-      val allocation = await(connector.getAssignedPayeAgents(new PayeUtr("1234567890"), agentCode))
+      val allocation = await(connector.getAssignedPayeAgents(PayeUtr("1234567890"), agentCode))
 
       val details: AssignedAgent = allocation.head
       details.allocatedAgentCode shouldBe AgentCode("AgentCode")

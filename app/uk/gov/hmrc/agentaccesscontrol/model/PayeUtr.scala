@@ -16,5 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.model
 
-case class PayeUtr(value: String)
+import uk.gov.hmrc.domain.TaxIdentifier
+
+case class PayeUtr(value: String) extends TaxIdentifier
 

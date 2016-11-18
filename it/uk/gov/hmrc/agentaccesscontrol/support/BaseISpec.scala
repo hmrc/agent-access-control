@@ -25,7 +25,7 @@ import org.scalatestplus.play.{OneAppPerSuite, OneServerPerSuite}
 import play.api.test.FakeApplication
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
 import uk.gov.hmrc.agentaccesscontrol.{StartAndStopWireMock, WSHttp}
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, TaxIdentifier}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -113,19 +113,19 @@ trait DesStub[A] {
       this
     }
 
-    def andHasNoRelationInDesWith(client: SaUtr): A = {
+    def andHasNoRelationInDesWith(client: TaxIdentifier): A = {
       stubFor(matcherForClient(client).willReturn(aResponse().withStatus(404)))
       this
     }
 
-    def andIsRelatedToClientInDes(clientUtr: SaUtr, authorizationHeader: String = "secret", envHeader: String = "test"): DesStubBuilder = {
+    def andIsRelatedToClientInDes(clientUtr: TaxIdentifier, authorizationHeader: String = "secret", envHeader: String = "test"): DesStubBuilder = {
       new DesStubBuilder(clientUtr, authorizationHeader, envHeader)
     }
 
-    private def matcherForClient(client: SaUtr) =
+    private def matcherForClient(client: TaxIdentifier) =
       get(urlPathEqualTo(s"/sa/agents/${saAgentReference.get.value}/client/${client.value}"))
 
-    class DesStubBuilder(client: SaUtr, authorizationToken: String, environment: String) {
+    class DesStubBuilder(client: TaxIdentifier, authorizationToken: String, environment: String) {
       def andIsAuthorisedByOnly648(): A = withFlags(true, false)
       def andIsAuthorisedByOnlyI648(): A = withFlags(false, true)
       def butIsNotAuthorised(): A = withFlags(false, false)
@@ -155,14 +155,14 @@ trait DesStub[A] {
 
     val path: String = "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents"
 
-    def andGGIsDown(clientUtr: SaUtr, service: String): A = {
-      stubFor(getAssignedAgentsPost(clientUtr.toString, service).
+    def andGGIsDown(clientUtr: TaxIdentifier, service: String): A = {
+      stubFor(getAssignedAgentsPost(clientUtr.value, service).
         willReturn(aResponse().withStatus(500)))
       this
     }
 
-    def andIsAllocatedAndAssignedToClient(utr: SaUtr, service: String): A = {
-      stubFor(getAssignedAgentsPost(utr.toString, service)
+    def andIsAllocatedAndAssignedToClient(utr: TaxIdentifier, service: String): A = {
+      stubFor(getAssignedAgentsPost(utr.value, service)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -203,8 +203,8 @@ trait DesStub[A] {
       this
     }
 
-    def andIsAllocatedButNotAssignedToClient(utr: SaUtr, service: String): A = {
-      stubFor(getAssignedAgentsPost(utr.toString, service)
+    def andIsAllocatedButNotAssignedToClient(utr: TaxIdentifier, service: String): A = {
+      stubFor(getAssignedAgentsPost(utr.value, service)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -245,8 +245,8 @@ trait DesStub[A] {
       this
     }
 
-    def andIsNotAllocatedToClient(utr: SaUtr, service: String): A = {
-      stubFor(getAssignedAgentsPost(utr.toString, service)
+    def andIsNotAllocatedToClient(utr: TaxIdentifier, service: String): A = {
+      stubFor(getAssignedAgentsPost(utr.value, service)
         .willReturn(aResponse()
           .withBody(
             s"""
