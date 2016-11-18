@@ -25,7 +25,7 @@ import org.scalatestplus.play.{OneAppPerSuite, OneServerPerSuite}
 import play.api.test.FakeApplication
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
 import uk.gov.hmrc.agentaccesscontrol.{StartAndStopWireMock, WSHttp}
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr, TaxIdentifier}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -155,14 +155,14 @@ trait DesStub[A] {
 
     val path: String = "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents"
 
-    def andGGIsDown(clientUtr: SaUtr): A = {
-      stubFor(getAssignedAgentsPost(clientUtr).
+    def andGGIsDown(id: TaxIdentifier): A = {
+      stubFor(getAssignedAgentsPost(id).
         willReturn(aResponse().withStatus(500)))
       this
     }
 
-    def andIsAllocatedAndAssignedToClient(utr: SaUtr): A = {
-      stubFor(getAssignedAgentsPost(utr)
+    def andIsAllocatedAndAssignedToClient(id: TaxIdentifier): A = {
+      stubFor(getAssignedAgentsPost(id)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -203,8 +203,8 @@ trait DesStub[A] {
       this
     }
 
-    def andIsAllocatedButNotAssignedToClient(utr: SaUtr): A = {
-      stubFor(getAssignedAgentsPost(utr)
+    def andIsAllocatedButNotAssignedToClient(id: TaxIdentifier): A = {
+      stubFor(getAssignedAgentsPost(id)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -245,8 +245,8 @@ trait DesStub[A] {
       this
     }
 
-    def andIsNotAllocatedToClient(utr: SaUtr): A = {
-      stubFor(getAssignedAgentsPost(utr)
+    def andIsNotAllocatedToClient(id: TaxIdentifier): A = {
+      stubFor(getAssignedAgentsPost(id)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -257,9 +257,12 @@ trait DesStub[A] {
       this
     }
 
-    private def getAssignedAgentsPost(utr: SaUtr) = {
-      post(urlEqualTo(path))
+    private def getAssignedAgentsPost(id: TaxIdentifier) = id match {
+      case utr: SaUtr => post(urlEqualTo(path))
         .withRequestBody(matching(s".*>$utr<.*"))
+        .withHeader("Content-Type", equalTo("application/xml; charset=utf-8"))
+      case empRef: EmpRef => post(urlEqualTo(path))
+        .withRequestBody(matching(s".*>${empRef.taxOfficeNumber}<.*>${empRef.taxOfficeReference}<.*"))
         .withHeader("Content-Type", equalTo("application/xml; charset=utf-8"))
     }
 
@@ -268,9 +271,8 @@ trait DesStub[A] {
       this
     }
 
-    def andGovernmentGatewayReturnsUnparseableXml(utr: String): A = {
-      stubFor(post(urlEqualTo(path))
-        .withRequestBody(matching(s".*>$utr<.*"))
+    def andGovernmentGatewayReturnsUnparseableXml(id: TaxIdentifier): A = {
+      stubFor(getAssignedAgentsPost(id)
         .willReturn(aResponse()
           .withBody(
             s"""
