@@ -78,7 +78,7 @@ class WhitelistISpec extends WireMockWithOneServerPerSuiteISpec {
       .agentAdmin(agentCode).isLoggedIn()
       .andHasSaAgentReferenceWithEnrolment(saAgentReference)
       .andIsAllocatedAndAssignedToClient(clientUtr)
-      .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+      .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
   }
 
   def authResponseFor(agentCode: AgentCode, clientSaUtr: SaUtr, trueClientIp: Option[String]): HttpResponse =

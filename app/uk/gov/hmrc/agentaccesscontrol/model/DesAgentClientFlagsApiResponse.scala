@@ -19,4 +19,5 @@ package uk.gov.hmrc.agentaccesscontrol.model
 sealed trait DesAgentClientFlagsApiResponse
 
 case class FoundResponse(auth64_8: Boolean, authI64_8: Boolean) extends DesAgentClientFlagsApiResponse
+case class PayeFoundResponse(auth64_8: Boolean, authOAA: Boolean) extends DesAgentClientFlagsApiResponse
 object NotFoundResponse extends DesAgentClientFlagsApiResponse

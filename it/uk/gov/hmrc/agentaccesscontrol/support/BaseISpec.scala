@@ -110,6 +110,8 @@ trait DesStub[A] {
     def andDesIsDown(): A = {
       stubFor(get(urlPathMatching("/sa/agents/[^/]+/client/[^/]+")).
         willReturn(aResponse().withStatus(500)))
+      stubFor(get(urlPathMatching("/agents/regime/PAYE/agentref/[^/]+/clientref/[^/]+")).
+        willReturn(aResponse().withStatus(500)))
       this
     }
 
@@ -118,14 +120,26 @@ trait DesStub[A] {
       this
     }
 
-    def andIsRelatedToClientInDes(clientUtr: SaUtr, authorizationHeader: String = "secret", envHeader: String = "test"): DesStubBuilder = {
-      new DesStubBuilder(clientUtr, authorizationHeader, envHeader)
+    def andHasNoRelationInDesWith(client: EmpRef): A = {
+      stubFor(matcherForClient(client).willReturn(aResponse().withStatus(404)))
+      this
+    }
+
+    def andIsRelatedToSaClientInDes(clientUtr: SaUtr, authorizationHeader: String = "secret", envHeader: String = "test"): SaDesStubBuilder = {
+      new SaDesStubBuilder(clientUtr, authorizationHeader, envHeader)
+    }
+
+    def andIsRelatedToPayeClientInDes(empRef: EmpRef, authorizationHeader: String = "secret", envHeader: String = "test"): PayeDesStubBuilder = {
+      new PayeDesStubBuilder(empRef, authorizationHeader, envHeader)
     }
 
     private def matcherForClient(client: SaUtr) =
       get(urlPathEqualTo(s"/sa/agents/${saAgentReference.get.value}/client/${client.value}"))
 
-    class DesStubBuilder(client: SaUtr, authorizationToken: String, environment: String) {
+    private def matcherForClient(empRef: EmpRef) =
+      get(urlPathEqualTo(s"/agents/regime/PAYE/agentref/$agentCode/clientref/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"))
+
+    class SaDesStubBuilder(client: SaUtr, authorizationToken: String, environment: String) {
       def andIsAuthorisedByOnly648(): A = withFlags(true, false)
       def andIsAuthorisedByOnlyI648(): A = withFlags(false, true)
       def butIsNotAuthorised(): A = withFlags(false, false)
@@ -140,6 +154,27 @@ trait DesStub[A] {
              |{
              |    "Auth_64-8": $auth_64_8,
              |    "Auth_i64-8": $auth_i64_8
+             |}
+        """.stripMargin)))
+        DesStub.this
+      }
+    }
+
+    class PayeDesStubBuilder(client: EmpRef, authorizationToken: String, environment: String) {
+      def andIsAuthorisedByOnly648(): A = withFlags(true, false)
+      def andIsAuthorisedByOnlyOAA(): A = withFlags(false, true)
+      def butIsNotAuthorised(): A = withFlags(false, false)
+      def andAuthorisedByBoth648AndOAA(): A = withFlags(true, true)
+
+      private def withFlags(auth_64_8: Boolean, auth_oaa: Boolean): A = {
+        stubFor(matcherForClient(client)
+          .withHeader("Authorization", equalTo(s"Bearer $authorizationToken"))
+          .withHeader("Environment", equalTo(environment))
+          .willReturn(aResponse().withStatus(200).withBody(
+          s"""
+             |{
+             |    "Auth_64-8": $auth_64_8,
+             |    "Auth_OAA": $auth_oaa
              |}
         """.stripMargin)))
         DesStub.this

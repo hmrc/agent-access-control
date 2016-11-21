@@ -53,7 +53,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAllocatedAndAssignedToClient(clientUtr)
-          .andIsRelatedToClientInDes(clientUtr).andIsAuthorisedByOnly648()
+          .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnly648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
       }
@@ -63,7 +63,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAllocatedAndAssignedToClient(clientUtr)
-          .andIsRelatedToClientInDes(clientUtr).andIsAuthorisedByOnlyI648()
+          .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnlyI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
       }
@@ -73,7 +73,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAllocatedAndAssignedToClient(clientUtr)
-          .andIsRelatedToClientInDes(clientUtr).butIsNotAuthorised()
+          .andIsRelatedToSaClientInDes(clientUtr).butIsNotAuthorised()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
       }
@@ -83,7 +83,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsNotAllocatedToClient(clientUtr)
-          .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
       }
@@ -93,7 +93,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAllocatedButNotAssignedToClient(clientUtr)
-          .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 401
       }
@@ -114,7 +114,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
           .andGGIsDown(clientUtr)
 
         authResponseFor(agentCode, clientUtr).status shouldBe 502
@@ -128,7 +128,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
           .andIsAllocatedAndAssignedToClient(clientUtr)
-          .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 200
       }
@@ -138,7 +138,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAllocatedAndAssignedToClient(clientUtr)
-          .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr).status shouldBe 200
       }
@@ -150,7 +150,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
         .andIsAllocatedAndAssignedToClient(clientUtr)
-        .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+        .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr).status shouldBe 200
       metricsRegistry.getTimers().get("Timer-API-Agent-SA-Access-Control-GET").getCount should be >= 1L
@@ -161,7 +161,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
         .andIsAllocatedAndAssignedToClient(clientUtr)
-        .andIsRelatedToClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+        .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr).status shouldBe 200
 
