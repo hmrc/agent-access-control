@@ -20,7 +20,7 @@ import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.model.{FoundResponse, NotFoundResponse}
+import uk.gov.hmrc.agentaccesscontrol.model.{SaFoundResponse, SaNotFoundResponse}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -39,35 +39,35 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   "isAuthorisedInCesa" should {
     "return false if the Agent or the relationship between the Agent and Client was not found in DES" in new Context {
       when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(NotFoundResponse)
+        thenReturn(SaNotFoundResponse)
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return true if the DES API returns 64-8=true and i64-8=true" in new Context {
       when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = true, authI64_8 = true))
+        thenReturn(SaFoundResponse(auth64_8 = true, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe true
     }
 
     "return false if the DES API returns 64-8=true and i64-8=false" in new Context {
       when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = true, authI64_8 = false))
+        thenReturn(SaFoundResponse(auth64_8 = true, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return false if the DES API returns 64-8=false and i64-8=true" in new Context {
       when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = false, authI64_8 = true))
+        thenReturn(SaFoundResponse(auth64_8 = false, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return false if the DES API returns 64-8=false and i64-8=false" in new Context {
       when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = false, authI64_8 = false))
+        thenReturn(SaFoundResponse(auth64_8 = false, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }

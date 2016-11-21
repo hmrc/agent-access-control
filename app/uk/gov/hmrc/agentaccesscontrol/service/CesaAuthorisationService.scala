@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.service
 
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
+import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
@@ -33,16 +33,16 @@ class CesaAuthorisationService(desAgentClientApiConnector: DesAgentClientApiConn
       .map(handleDesResponse(agentCode, saUtr, _))
   }
 
-  private def handleDesResponse(agentCode: AgentCode, saUtr: SaUtr, response: DesAgentClientFlagsApiResponse)
+  private def handleDesResponse(agentCode: AgentCode, saUtr: SaUtr, response: SaDesAgentClientFlagsApiResponse)
                                (implicit headerCarrier: HeaderCarrier): Boolean = {
     response match {
-      case NotFoundResponse => {
+      case SaNotFoundResponse => {
         notAuthorised(s"DES API returned not found for agent $agentCode and client $saUtr")
       }
-      case FoundResponse(true, true) => {
+      case SaFoundResponse(true, true) => {
         authorised(s"DES API returned true for both flags for agent $agentCode and client $saUtr")
       }
-      case FoundResponse(auth64_8, authI64_8) => {
+      case SaFoundResponse(auth64_8, authI64_8) => {
         notAuthorised(s"DES API returned false for at least one flag agent $agentCode and client $saUtr. 64-8=$auth64_8, i64-8=$authI64_8")
       }
     }

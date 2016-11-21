@@ -21,17 +21,17 @@ import scala.concurrent.Future
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse, PayeFoundResponse}
+import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.domain.{EmpRef, AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
 
 class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String, environment: String, httpGet: HttpGet) {
 
-  private implicit val foundResponseReads: Reads[FoundResponse] = (
+  private implicit val foundResponseReads: Reads[SaFoundResponse] = (
     (__ \ "Auth_64-8").read[Boolean] and
     (__ \ "Auth_i64-8").read[Boolean]
-    ) (FoundResponse)
+    ) (SaFoundResponse)
 
   private implicit val payeFoundResponseReads: Reads[PayeFoundResponse] = (
     (__ \ "Auth_64-8").read[Boolean] and
@@ -39,22 +39,22 @@ class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String,
     ) (PayeFoundResponse)
 
   def getAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
-        Future[DesAgentClientFlagsApiResponse] = {
+        Future[SaDesAgentClientFlagsApiResponse] = {
     val url: String = saUrlFor(saAgentReference, saUtr)
     getWithDesHeaders(url) map { r =>
       foundResponseReads.reads(Json.parse(r.body)).get
     } recover {
-      case _: NotFoundException => NotFoundResponse
+      case _: NotFoundException => SaNotFoundResponse
     }
   }
 
   def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(implicit hc: HeaderCarrier):
-        Future[DesAgentClientFlagsApiResponse] = {
+        Future[PayeDesAgentClientFlagsApiResponse] = {
     val url: String = payeUrlFor(agentCode, empRef)
     getWithDesHeaders(url) map { r =>
       payeFoundResponseReads.reads(Json.parse(r.body)).get
     } recover {
-      case _: NotFoundException => NotFoundResponse
+      case _: NotFoundException => PayeNotFoundResponse
     }
   }
 
