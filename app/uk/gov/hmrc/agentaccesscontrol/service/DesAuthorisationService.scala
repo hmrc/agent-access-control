@@ -18,22 +18,30 @@ package uk.gov.hmrc.agentaccesscontrol.service
 
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model._
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class CesaAuthorisationService(desAgentClientApiConnector: DesAgentClientApiConnector)
+class DesAuthorisationService(desAgentClientApiConnector: DesAgentClientApiConnector)
   extends LoggingAuthorisationResults {
 
   def isAuthorisedInCesa(agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)
     (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
     desAgentClientApiConnector
       .getAgentClientRelationship(saAgentReference, saUtr)
-      .map(handleDesResponse(agentCode, saUtr, _))
+      .map(handleCesaResponse(agentCode, saUtr, _))
   }
 
-  private def handleDesResponse(agentCode: AgentCode, saUtr: SaUtr, response: SaDesAgentClientFlagsApiResponse)
+  def isAuthorisedInEBS(agentCode: AgentCode, empRef: EmpRef)
+    (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
+    desAgentClientApiConnector
+      .getPayeAgentClientRelationship(agentCode, empRef)
+      .map(handleEBSResponse(agentCode, empRef, _))
+
+  }
+
+  private def handleCesaResponse(agentCode: AgentCode, saUtr: SaUtr, response: SaDesAgentClientFlagsApiResponse)
                                (implicit headerCarrier: HeaderCarrier): Boolean = {
     response match {
       case SaNotFoundResponse => {
@@ -47,4 +55,17 @@ class CesaAuthorisationService(desAgentClientApiConnector: DesAgentClientApiConn
       }
     }
   }
+
+  private def handleEBSResponse(agentCode: AgentCode, empRef: EmpRef, response: PayeDesAgentClientFlagsApiResponse)
+                               (implicit headerCarrier: HeaderCarrier): Boolean = {
+    response match {
+      case PayeNotFoundResponse =>
+        notAuthorised(s"DES API returned not found for agent $agentCode and client $empRef")
+      case PayeFoundResponse(true, _) =>
+        authorised(s"DES API returned true for auth64-8 for agent $agentCode and client $empRef")
+      case PayeFoundResponse(false, _) =>
+        notAuthorised(s"DES API returned false for auth64-8 flag agent $agentCode and client $empRef")
+    }
+  }
+
 }

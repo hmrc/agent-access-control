@@ -24,7 +24,7 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
+class AuthorisationService(desAuthorisationService: DesAuthorisationService,
                            authConnector: AuthConnector,
                            ggAuthorisationService: GovernmentGatewayAuthorisationService,
                            auditService: AuditService)
@@ -34,7 +34,7 @@ class AuthorisationService(cesaAuthorisationService: CesaAuthorisationService,
     (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
       case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), ggCredentialId, _, _)) =>
-        val results = cesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
+        val results = desAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
           ggAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, ggCredentialId, saUtr)
         results.map { case (cesa, ggw) => {
           val result = cesa && ggw
