@@ -33,7 +33,7 @@ class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String,
     (__ \ "Auth_i64-8").read[Boolean]
     ) (FoundResponse)
 
-  def getAgentClientRelationship(saAgentReference: SaAgentReference, agentCode: AgentCode, saUtr: SaUtr)(implicit hc: HeaderCarrier):
+  def getAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
         Future[DesAgentClientFlagsApiResponse] = {
     val url: String = urlFor(saAgentReference, saUtr)
     getWithDesHeaders(url) map { r =>

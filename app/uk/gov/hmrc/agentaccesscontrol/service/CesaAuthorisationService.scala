@@ -29,7 +29,7 @@ class CesaAuthorisationService(desAgentClientApiConnector: DesAgentClientApiConn
   def isAuthorisedInCesa(agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)
     (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
     desAgentClientApiConnector
-      .getAgentClientRelationship(saAgentReference, agentCode, saUtr)
+      .getAgentClientRelationship(saAgentReference, saUtr)
       .map(handleDesResponse(agentCode, saUtr, _))
   }
 

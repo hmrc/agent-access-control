@@ -33,7 +33,6 @@ import scala.concurrent.ExecutionContext
 class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
 
   implicit val headerCarrier = HeaderCarrier()
-  val agentCode = AgentCode("Agent")
 
   "getAgentClientRelationship" should {
     "request DES API with the correct auth tokens" in new Context {
@@ -42,7 +41,7 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
 
       val connectorWithDifferentHeaders = new DesAgentClientApiConnector(wiremockBaseUrl, "auth_token_33", "env_33", wsHttp)
 
-      val response: DesAgentClientFlagsApiResponse = await(connectorWithDifferentHeaders.getAgentClientRelationship(saAgentReference, agentCode, saUtr))
+      val response: DesAgentClientFlagsApiResponse = await(connectorWithDifferentHeaders.getAgentClientRelationship(saAgentReference, saUtr))
       response shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
     }
 
@@ -53,28 +52,28 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
 
         when(mockAuditConnector.sendMergedEvent(any[MergedDataEvent])(eqs(headerCarrier), any[ExecutionContext])).thenThrow(new RuntimeException("EXCEPTION!"))
 
-        await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
+        await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
         outboundCallToDesShouldBeAudited(auth64_8 = true, authI64_8 = true)
       }
       "agent is authorised by only i64-8" in new Context {
         givenClientIsLoggedIn()
           .andIsRelatedToClientInDes(saUtr).andIsAuthorisedByOnlyI648()
 
-        await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = true)
+        await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = true)
         outboundCallToDesShouldBeAudited(auth64_8 = false, authI64_8 = true)
       }
       "agent is authorised by only 64-8" in new Context {
         givenClientIsLoggedIn()
           .andIsRelatedToClientInDes(saUtr).andIsAuthorisedByOnly648()
 
-        await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = false)
+        await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = false)
         outboundCallToDesShouldBeAudited(auth64_8 = true, authI64_8 = false)
       }
       "agent is not authorised" in new Context {
         givenClientIsLoggedIn()
           .andIsRelatedToClientInDes(saUtr).butIsNotAuthorised()
 
-        await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = false)
+        await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = false, authI64_8 = false)
         outboundCallToDesShouldBeAudited(auth64_8 = false, authI64_8 = false)
       }
     }
@@ -83,13 +82,13 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
       givenClientIsLoggedIn()
         .andHasNoRelationInDesWith(saUtr)
 
-      await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe NotFoundResponse
+      await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe NotFoundResponse
     }
 
     "fail in any other cases, like internal server error" in new Context {
       givenClientIsLoggedIn().andDesIsDown()
 
-      an[Exception] should be thrownBy await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr))
+      an[Exception] should be thrownBy await(connector.getAgentClientRelationship(saAgentReference, saUtr))
     }
 
     "Metrics are logged for the outbound call" in new Context {
@@ -97,7 +96,7 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
       givenClientIsLoggedIn()
         .andIsRelatedToClientInDes(saUtr).andAuthorisedByBoth648AndI648()
 
-      await(connector.getAgentClientRelationship(saAgentReference, agentCode, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
+      await(connector.getAgentClientRelationship(saAgentReference, saUtr)) shouldBe FoundResponse(auth64_8 = true, authI64_8 = true)
       metricsRegistry.getTimers.get("Timer-ConsumedAPI-DES-GetAgentClientRelationship-GET").getCount should be >= 1L
     }
   }
