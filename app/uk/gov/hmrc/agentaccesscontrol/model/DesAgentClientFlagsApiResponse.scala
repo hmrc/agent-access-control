@@ -22,5 +22,5 @@ object SaNotFoundResponse extends SaDesAgentClientFlagsApiResponse
 
 sealed trait PayeDesAgentClientFlagsApiResponse
 
-case class PayeFoundResponse(auth64_8: Boolean, authOAA: Boolean) extends PayeDesAgentClientFlagsApiResponse
+case class PayeFoundResponse(auth64_8: Boolean) extends PayeDesAgentClientFlagsApiResponse
 object PayeNotFoundResponse extends PayeDesAgentClientFlagsApiResponse

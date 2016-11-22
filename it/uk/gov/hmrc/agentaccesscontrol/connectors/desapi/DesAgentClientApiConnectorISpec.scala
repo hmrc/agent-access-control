@@ -110,40 +110,26 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
   "getPayeAgentClientRelationship" should {
     "request DES API with the correct auth tokens" in new Context {
       givenClientIsLoggedIn()
-        .andIsRelatedToPayeClientInDes(empRef, "auth_token_33", "env_33").andAuthorisedByBoth648AndOAA()
+        .andIsRelatedToPayeClientInDes(empRef, "auth_token_33", "env_33").andIsAuthorisedBy648()
 
       val connectorWithDifferentHeaders = new DesAgentClientApiConnector(wiremockBaseUrl, "auth_token_33", "env_33", wsHttp)
 
       val response = await(connectorWithDifferentHeaders.getPayeAgentClientRelationship(agentCode, empRef))
-      response shouldBe PayeFoundResponse(auth64_8 = true, authOAA = true)
+      response shouldBe PayeFoundResponse(auth64_8 = true)
     }
 
     "pass along 64-8 and i64-8 information" when {
-      "agent is authorised by 64-8 and OAA" in new Context {
+      "agent is authorised by 64-8" in new Context {
         givenClientIsLoggedIn()
-          .andIsRelatedToPayeClientInDes(empRef).andAuthorisedByBoth648AndOAA()
+          .andIsRelatedToPayeClientInDes(empRef).andIsAuthorisedBy648()
 
-        when(mockAuditConnector.sendMergedEvent(any[MergedDataEvent])(eqs(headerCarrier), any[ExecutionContext])).thenThrow(new RuntimeException("EXCEPTION!"))
-
-        await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true, authOAA = true)
-      }
-      "agent is authorised by only OAA" in new Context {
-        givenClientIsLoggedIn()
-          .andIsRelatedToPayeClientInDes(empRef).andIsAuthorisedByOnlyOAA()
-
-        await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = false, authOAA = true)
-      }
-      "agent is authorised by only 64-8" in new Context {
-        givenClientIsLoggedIn()
-          .andIsRelatedToPayeClientInDes(empRef).andIsAuthorisedByOnly648()
-
-        await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true, authOAA = false)
+        await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true)
       }
       "agent is not authorised" in new Context {
         givenClientIsLoggedIn()
           .andIsRelatedToPayeClientInDes(empRef).butIsNotAuthorised()
 
-        await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = false, authOAA = false)
+        await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = false)
       }
     }
 
@@ -163,19 +149,19 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
     "log metrics for outbound call" in new Context {
       val metricsRegistry = MetricsRegistry.defaultRegistry
       givenClientIsLoggedIn()
-        .andIsRelatedToPayeClientInDes(empRef).andAuthorisedByBoth648AndOAA()
+        .andIsRelatedToPayeClientInDes(empRef).andIsAuthorisedBy648()
 
-      await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true, authOAA = true)
+      await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true)
       metricsRegistry.getTimers.get("Timer-ConsumedAPI-DES-GetPayeAgentClientRelationship-GET").getCount should be >= 1L
     }
     "audit outbound call to DES" in new Context {
       givenClientIsLoggedIn()
-        .andIsRelatedToPayeClientInDes(empRef).andAuthorisedByBoth648AndOAA()
+        .andIsRelatedToPayeClientInDes(empRef).andIsAuthorisedBy648()
 
       when(mockAuditConnector.sendMergedEvent(any[MergedDataEvent])(eqs(headerCarrier), any[ExecutionContext])).thenThrow(new RuntimeException("EXCEPTION!"))
 
-      await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true, authOAA = true)
-      outboundPayeCallToDesShouldBeAudited(auth64_8 = true, authOAA = true)
+      await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true)
+      outboundPayeCallToDesShouldBeAudited(auth64_8 = true)
     }
   }
 
@@ -204,7 +190,7 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
       (responseJson \ "Auth_i64-8").as[Boolean] shouldBe authI64_8
     }
 
-    def outboundPayeCallToDesShouldBeAudited(auth64_8: Boolean, authOAA: Boolean): Unit = {
+    def outboundPayeCallToDesShouldBeAudited(auth64_8: Boolean): Unit = {
       val event: MergedDataEvent = capturedEvent()
 
       event.auditType shouldBe "OutboundCall"
@@ -213,7 +199,6 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
 
       val responseJson = Json.parse(event.response.detail("responseMessage"))
       (responseJson \ "Auth_64-8").as[Boolean] shouldBe auth64_8
-      (responseJson \ "Auth_OAA").as[Boolean] shouldBe authOAA
     }
   }
 }

@@ -161,20 +161,17 @@ trait DesStub[A] {
     }
 
     class PayeDesStubBuilder(client: EmpRef, authorizationToken: String, environment: String) {
-      def andIsAuthorisedByOnly648(): A = withFlags(true, false)
-      def andIsAuthorisedByOnlyOAA(): A = withFlags(false, true)
-      def butIsNotAuthorised(): A = withFlags(false, false)
-      def andAuthorisedByBoth648AndOAA(): A = withFlags(true, true)
+      def andIsAuthorisedBy648(): A = withFlags(true)
+      def butIsNotAuthorised(): A = withFlags(false)
 
-      private def withFlags(auth_64_8: Boolean, auth_oaa: Boolean): A = {
+      private def withFlags(auth_64_8: Boolean): A = {
         stubFor(matcherForClient(client)
           .withHeader("Authorization", equalTo(s"Bearer $authorizationToken"))
           .withHeader("Environment", equalTo(environment))
           .willReturn(aResponse().withStatus(200).withBody(
           s"""
              |{
-             |    "Auth_64-8": $auth_64_8,
-             |    "Auth_OAA": $auth_oaa
+             |    "Auth_64-8": $auth_64_8
              |}
         """.stripMargin)))
         DesStub.this

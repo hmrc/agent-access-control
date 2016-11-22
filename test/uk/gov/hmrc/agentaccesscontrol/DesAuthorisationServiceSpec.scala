@@ -85,13 +85,13 @@ class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return true if the 64-8=true" in new Context {
-      whenDesPayeEndpointIsCalled thenReturn(Future successful PayeFoundResponse(auth64_8 = true, authOAA = false))
+      whenDesPayeEndpointIsCalled thenReturn(Future successful PayeFoundResponse(auth64_8 = true))
 
       await(service.isAuthorisedInEBS(agentCode, empRef)) shouldBe true
     }
 
     "return false if the 64-8=false" in new Context {
-      whenDesPayeEndpointIsCalled thenReturn(Future successful PayeFoundResponse(auth64_8 = false, authOAA = false))
+      whenDesPayeEndpointIsCalled thenReturn(Future successful PayeFoundResponse(auth64_8 = false))
 
       await(service.isAuthorisedInEBS(agentCode, empRef)) shouldBe false
     }

@@ -22,7 +22,7 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.agentaccesscontrol.model._
-import uk.gov.hmrc.domain.{EmpRef, AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain._
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
 
@@ -33,10 +33,8 @@ class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String,
     (__ \ "Auth_i64-8").read[Boolean]
     ) (SaFoundResponse)
 
-  private implicit val payeFoundResponseReads: Reads[PayeFoundResponse] = (
-    (__ \ "Auth_64-8").read[Boolean] and
-    (__ \ "Auth_OAA").read[Boolean]
-    ) (PayeFoundResponse)
+  private implicit val payeFoundResponseReads: Reads[PayeFoundResponse] =
+    (__ \ "Auth_64-8").read[Boolean].map(PayeFoundResponse.apply)
 
   def getSaAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
         Future[SaDesAgentClientFlagsApiResponse] = {

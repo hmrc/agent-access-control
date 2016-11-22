@@ -61,9 +61,9 @@ class DesAuthorisationService(desAgentClientApiConnector: DesAgentClientApiConne
     response match {
       case PayeNotFoundResponse =>
         notAuthorised(s"DES API returned not found for agent $agentCode and client $empRef")
-      case PayeFoundResponse(true, _) =>
+      case PayeFoundResponse(true) =>
         authorised(s"DES API returned true for auth64-8 for agent $agentCode and client $empRef")
-      case PayeFoundResponse(false, _) =>
+      case PayeFoundResponse(false) =>
         notAuthorised(s"DES API returned false for auth64-8 flag agent $agentCode and client $empRef")
     }
   }
