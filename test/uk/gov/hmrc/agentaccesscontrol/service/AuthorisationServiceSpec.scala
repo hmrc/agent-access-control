@@ -41,7 +41,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   implicit val fakeRequest = FakeRequest("GET", s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientSaUtr")
 
 
-  "isAuthorised" should {
+  "isAuthorisedForSa" should {
     "return false if SA agent reference cannot be found (as CESA cannot be checked)" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 
