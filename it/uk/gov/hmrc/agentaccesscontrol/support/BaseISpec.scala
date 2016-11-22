@@ -110,7 +110,7 @@ trait DesStub[A] {
     def andDesIsDown(): A = {
       stubFor(get(urlPathMatching("/sa/agents/[^/]+/client/[^/]+")).
         willReturn(aResponse().withStatus(500)))
-      stubFor(get(urlPathMatching("/agents/regime/PAYE/agentref/[^/]+/clientref/[^/]+")).
+      stubFor(get(urlPathMatching("/agents/regime/PAYE/agent/[^/]+/client/[^/]+")).
         willReturn(aResponse().withStatus(500)))
       this
     }
@@ -137,7 +137,7 @@ trait DesStub[A] {
       get(urlPathEqualTo(s"/sa/agents/${saAgentReference.get.value}/client/${client.value}"))
 
     private def matcherForClient(empRef: EmpRef) =
-      get(urlPathEqualTo(s"/agents/regime/PAYE/agentref/$agentCode/clientref/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"))
+      get(urlPathEqualTo(s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"))
 
     class SaDesStubBuilder(client: SaUtr, authorizationToken: String, environment: String) {
       def andIsAuthorisedByOnly648(): A = withFlags(true, false)
