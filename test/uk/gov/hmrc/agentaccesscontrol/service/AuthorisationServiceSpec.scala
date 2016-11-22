@@ -166,10 +166,20 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
     }
 
-    "propagate any errors that happen" in new Context {
+    "propagate any errors from GG" in new Context {
       agentIsLoggedIn
       whenGGIsCheckedForPayeRelationship thenReturn (Future failed new BadRequestException("bad request"))
       whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
+
+      intercept[BadRequestException] {
+        await(authorisationService.isAuthorisedForPaye(agentCode, empRef))
+      }
+    }
+
+    "propagate any errors from EBS" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future successful true)
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future failed new BadRequestException("bad request"))
 
       intercept[BadRequestException] {
         await(authorisationService.isAuthorisedForPaye(agentCode, empRef))

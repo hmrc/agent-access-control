@@ -32,7 +32,7 @@ object PathBinders {
       try {
         Right(EmpRef.fromIdentifiers(value))
       } catch {
-        case e: Throwable => Left(s"Cannot parse parameter '$key' with value '$value' as EmpRef")
+        case e: IllegalArgumentException => Left(s"Cannot parse parameter '$key' with value '$value' as EmpRef")
       }
 
     def unbind(key: String, empRef: EmpRef): String = empRef.encodedValue
