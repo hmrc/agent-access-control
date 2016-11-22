@@ -23,7 +23,7 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -34,6 +34,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val agentCode = AgentCode("ABCDEF123456")
   val saAgentRef = SaAgentReference("ABC456")
   val clientSaUtr = SaUtr("CLIENTSAUTR456")
+  val empRef = EmpRef("123", "01234567")
 
 
   implicit val hc = HeaderCarrier()
@@ -131,6 +132,56 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
   }
 
+  "isAuthorisedForPaye" should {
+    "return true when both GGW and EBS indicate that a relationship exists" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future successful true)
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
+
+      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe true
+    }
+
+    "return false when only GGW indicates a relationship exists" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future successful true)
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful false)
+
+      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
+    }
+
+    "return false when only EBS indicates a relationship exists" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future successful false)
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
+
+      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
+    }
+
+    "return false when neither GGW nor EBS indicate a relationship exists" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future successful false)
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful false)
+
+      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false 
+    }
+
+    "return false when user is not logged in" in new Context {
+      agentIsNotLoggedIn
+
+      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
+    }
+
+    "propagate any errors that happen" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future failed new BadRequestException("bad request"))
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
+
+      intercept[BadRequestException] {
+        await(authorisationService.isAuthorisedForPaye(agentCode, empRef))
+      }
+    }
+  }
+
   private abstract class Context {
     val mockAuthConnector = mock[AuthConnector]
     val mockDesAuthorisationService = mock[DesAuthorisationService]
@@ -141,5 +192,17 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       mockAuthConnector,
       mockGGAuthorisationService,
       mockAuditService)
+
+    def agentIsNotLoggedIn =
+      when(mockAuthConnector.currentAuthDetails()).thenReturn(None)
+
+    def agentIsLoggedIn =
+      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
+
+    def whenGGIsCheckedForPayeRelationship =
+      when(mockGGAuthorisationService.isAuthorisedForPayeInGovernmentGateway(agentCode, "ggId", empRef))
+
+    def whenEBSIsCheckedForPayeRelationship =
+      when(mockDesAuthorisationService.isAuthorisedInEBS(agentCode, empRef))
   }
 }

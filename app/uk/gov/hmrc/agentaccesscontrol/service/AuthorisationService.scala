@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol.service
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,6 +49,16 @@ class AuthorisationService(desAuthorisationService: DesAuthorisationService,
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
       case None =>
         Future successful notAuthorised("No user is logged in")
+    }
+
+  def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef)
+    (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
+    authConnector.currentAuthDetails().flatMap {
+      case Some(agentAuthDetails@AuthDetails(_, ggCredentialId, _, _)) =>
+        val results = desAuthorisationService.isAuthorisedInEBS(agentCode, empRef) zip
+          ggAuthorisationService.isAuthorisedForPayeInGovernmentGateway(agentCode, ggCredentialId, empRef)
+        results.map { case (ebs, ggw) => ebs & ggw }
+      case None => Future successful notAuthorised("No user is logged in")
     }
 
   private def auditDecision(

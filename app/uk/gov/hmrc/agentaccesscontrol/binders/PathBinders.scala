@@ -16,12 +16,25 @@
 
 package uk.gov.hmrc.agentaccesscontrol.binders
 
+import play.api.mvc.PathBindable
 import uk.gov.hmrc.agentaccesscontrol.model.MtdClientId
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
 import uk.gov.hmrc.play.binders.SimpleObjectBinder
 
 object PathBinders {
   implicit object AgentCodeBinder extends SimpleObjectBinder[AgentCode](AgentCode.apply, _.value)
   implicit object SaUtrBinder extends SimpleObjectBinder[SaUtr](SaUtr.apply, _.value)
   implicit object MtdSaClientIdBinder extends SimpleObjectBinder[MtdClientId](MtdClientId.apply, _.value)
+
+  implicit object EmpRefBinder extends PathBindable[EmpRef] {
+
+    def bind(key: String, value: String) =
+      try {
+        Right(EmpRef.fromIdentifiers(value))
+      } catch {
+        case e: Throwable => Left(s"Cannot parse parameter '$key' with value '$value' as EmpRef")
+      }
+
+    def unbind(key: String, empRef: EmpRef): String = empRef.encodedValue
+  }
 }
