@@ -94,10 +94,10 @@ class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) extends 
   private def payeBody(empRef: EmpRef): String =
     <GsoAdminGetAssignedAgentsXmlInput xmlns="urn:GSO-System-Services:external:2.13.3:GsoAdminGetAssignedAgentsXmlInput">
       <DelegatedAccessIdentifier>HMRC</DelegatedAccessIdentifier>
-      <ServiceName>IR-SA</ServiceName>
+      <ServiceName>IR-PAYE</ServiceName>
       <Identifiers>
-        <Identifier IdentifierType="taxofficenumber">{ empRef.taxOfficeNumber }</Identifier>
-        <Identifier IdentifierType="taxofficereference">{ empRef.taxOfficeReference }</Identifier>
+        <Identifier IdentifierType="TaxOfficeNumber">{ empRef.taxOfficeNumber }</Identifier>
+        <Identifier IdentifierType="TaxOfficeReference">{ empRef.taxOfficeReference }</Identifier>
       </Identifiers>
     </GsoAdminGetAssignedAgentsXmlInput>.toString()
 }
