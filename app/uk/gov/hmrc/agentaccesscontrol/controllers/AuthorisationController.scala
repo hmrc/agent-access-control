@@ -21,7 +21,7 @@ import play.api.mvc.Action
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.model.MtdClientId
 import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdAuthorisationService}
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
 
@@ -32,7 +32,7 @@ class AuthorisationController(override val auditService: AuditService,
                               mtdAuthorisationService: MtdAuthorisationService) extends BaseController with Audit {
 
   def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr) = Action.async { implicit request =>
-    authorisationService.isAuthorised(agentCode, saUtr).map {
+    authorisationService.isAuthorisedForSa(agentCode, saUtr).map {
       case authorised if authorised => Ok
       case notAuthorised => Unauthorized
     }
@@ -40,6 +40,13 @@ class AuthorisationController(override val auditService: AuditService,
 
   def isAuthorisedForMtdSa(agentCode: AgentCode, mtdSaClientId: MtdClientId) = Action.async { implicit request =>
     mtdAuthorisationService.authoriseForSa(agentCode, mtdSaClientId) map {
+      case authorised if authorised => Ok
+      case notAuthorised => Unauthorized
+    }
+  }
+
+  def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef) = Action.async { implicit request =>
+    authorisationService.isAuthorisedForPaye(agentCode, empRef) map {
       case authorised if authorised => Ok
       case notAuthorised => Unauthorized
     }

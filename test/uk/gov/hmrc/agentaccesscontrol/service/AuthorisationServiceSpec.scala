@@ -23,7 +23,7 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -34,39 +34,38 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val agentCode = AgentCode("ABCDEF123456")
   val saAgentRef = SaAgentReference("ABC456")
   val clientSaUtr = SaUtr("CLIENTSAUTR456")
+  val empRef = EmpRef("123", "01234567")
 
 
   implicit val hc = HeaderCarrier()
   implicit val fakeRequest = FakeRequest("GET", s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientSaUtr")
 
 
-  "isAuthorised" should {
+  "isAuthorisedForSa" should {
     "return false if SA agent reference cannot be found (as CESA cannot be checked)" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+      await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns true" in new Context {
-      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
-      when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
-      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
-        .thenReturn(false)
+      agentIsLoggedIn
+      whenGGIsCheckedForSaRelationship thenReturn(true)
+      whenCesaIsCheckedForSaRelationship thenReturn(false)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+      await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesaResult" -> false, "gatewayResult" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
     "return true if SA agent reference is found and DesAuthorisationService returns true and GG Authorisation returns true" in new Context {
-      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
-      when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
-      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
-        .thenReturn(true)
+      agentIsLoggedIn
+      whenGGIsCheckedForSaRelationship thenReturn(true)
+      whenCesaIsCheckedForSaRelationship thenReturn(true)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
+      await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe true
       verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> true, "cesaResult" -> true, "gatewayResult" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
@@ -75,58 +74,115 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       val differentSaAgentRef = SaAgentReference("XYZ123")
 
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(differentSaAgentRef), "ggId", affinityGroup = Some("Organisation"), agentUserRole = Some("assistant"))))
-      when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
+      whenGGIsCheckedForSaRelationship thenReturn(true)
       when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, differentSaAgentRef, clientSaUtr))
         .thenReturn(true)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
+      await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe true
       verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> true, "cesaResult" -> true, "gatewayResult" -> true, "saAgentReference" -> differentSaAgentRef, "affinityGroup" -> "Organisation", "agentUserRole" -> "assistant"))(hc, fakeRequest)
     }
 
     "still work if the fields only used for auditing are removed from the auth record" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = None, agentUserRole = None)))
-      when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
-      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
-        .thenReturn(true)
+      whenGGIsCheckedForSaRelationship thenReturn(true)
+      whenCesaIsCheckedForSaRelationship thenReturn(true)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
+      await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe true
       verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> true, "cesaResult" -> true, "gatewayResult" -> true, "saAgentReference" -> saAgentRef))(hc, fakeRequest)
     }
 
     "return false if SA agent reference is found and DesAuthorisationService returns true and GG Authorisation returns false" in new Context {
-      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
-      when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(false)
-      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
-        .thenReturn(true)
+      agentIsLoggedIn
+      whenGGIsCheckedForSaRelationship thenReturn(false)
+      whenCesaIsCheckedForSaRelationship thenReturn(true)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+      await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesaResult" -> true, "gatewayResult" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
     "return false if SA agent reference is found and DesAuthorisationService returns false and GG Authorisation returns false" in new Context {
-      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
-      when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(false)
-      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
-        .thenReturn(false)
+      agentIsLoggedIn
+      whenGGIsCheckedForSaRelationship thenReturn(false)
+      whenCesaIsCheckedForSaRelationship thenReturn(false)
 
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+      await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesaResult" -> false, "gatewayResult" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
     "return false if user is not logged in" in new Context {
-      when(mockAuthConnector.currentAuthDetails()).thenReturn(None)
-      await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
+      agentIsNotLoggedIn
+      await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
     }
 
     "propagate any errors that happened" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Future failed new BadRequestException("bad request"))
 
       intercept[BadRequestException] {
-        await(authorisationService.isAuthorised(agentCode, clientSaUtr))
+        await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr))
+      }
+    }
+  }
+
+  "isAuthorisedForPaye" should {
+    "return true when both GGW and EBS indicate that a relationship exists" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future successful true)
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
+
+      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe true
+    }
+
+    "return false when only GGW indicates a relationship exists" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future successful true)
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful false)
+
+      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
+    }
+
+    "return false when only EBS indicates a relationship exists" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future successful false)
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
+
+      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
+    }
+
+    "return false when neither GGW nor EBS indicate a relationship exists" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future successful false)
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful false)
+
+      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false 
+    }
+
+    "return false when user is not logged in" in new Context {
+      agentIsNotLoggedIn
+
+      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
+    }
+
+    "propagate any errors from GG" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future failed new BadRequestException("bad request"))
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
+
+      intercept[BadRequestException] {
+        await(authorisationService.isAuthorisedForPaye(agentCode, empRef))
+      }
+    }
+
+    "propagate any errors from EBS" in new Context {
+      agentIsLoggedIn
+      whenGGIsCheckedForPayeRelationship thenReturn (Future successful true)
+      whenEBSIsCheckedForPayeRelationship thenReturn (Future failed new BadRequestException("bad request"))
+
+      intercept[BadRequestException] {
+        await(authorisationService.isAuthorisedForPaye(agentCode, empRef))
       }
     }
   }
@@ -141,5 +197,23 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       mockAuthConnector,
       mockGGAuthorisationService,
       mockAuditService)
+
+    def agentIsNotLoggedIn =
+      when(mockAuthConnector.currentAuthDetails()).thenReturn(None)
+
+    def agentIsLoggedIn =
+      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
+
+    def whenGGIsCheckedForPayeRelationship =
+      when(mockGGAuthorisationService.isAuthorisedForPayeInGovernmentGateway(agentCode, "ggId", empRef))
+
+    def whenGGIsCheckedForSaRelationship =
+      when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr))
+
+    def whenEBSIsCheckedForPayeRelationship =
+      when(mockDesAuthorisationService.isAuthorisedInEBS(agentCode, empRef))
+
+    def whenCesaIsCheckedForSaRelationship =
+      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
   }
 }

@@ -40,7 +40,7 @@ class AuthorisationControllerRoutingISpec extends fixture.WordSpecLike with Matc
 
   class TestMicroserviceGlobal(isAuthorisedToReturn: Boolean) extends MicroserviceGlobal {
     override lazy val authorisationService: AuthorisationService = mock[AuthorisationService]
-    when(authorisationService.isAuthorised(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], any[Request[Any]]))
+    when(authorisationService.isAuthorisedForSa(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], any[Request[Any]]))
       .thenReturn(Future successful isAuthorisedToReturn)
   }
 
