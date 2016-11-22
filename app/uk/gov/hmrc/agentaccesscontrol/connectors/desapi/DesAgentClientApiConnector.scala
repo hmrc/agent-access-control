@@ -60,7 +60,7 @@ class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String,
     s"$desBaseUrl/sa/agents/${saAgentReference.value}/client/$saUtr"
 
   private def payeUrlFor(agentCode: AgentCode, empRef: EmpRef): String =
-    s"$desBaseUrl/agents/regime/PAYE/agentref/$agentCode/clientref/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
+    s"$desBaseUrl/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
 
   private def getWithDesHeaders(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val desHeaderCarrier = hc.copy(

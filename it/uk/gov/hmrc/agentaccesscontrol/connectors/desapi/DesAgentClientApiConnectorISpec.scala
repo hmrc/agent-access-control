@@ -195,7 +195,7 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
 
       event.auditType shouldBe "OutboundCall"
 
-      event.request.tags("path") shouldBe s"$wiremockBaseUrl/agents/regime/PAYE/agentref/$agentCode/clientref/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
+      event.request.tags("path") shouldBe s"$wiremockBaseUrl/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
 
       val responseJson = Json.parse(event.response.detail("responseMessage"))
       (responseJson \ "Auth_64-8").as[Boolean] shouldBe auth64_8
