@@ -16,35 +16,51 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
+import scala.concurrent.Future
+
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.agentaccesscontrol.model.{DesAgentClientFlagsApiResponse, FoundResponse, NotFoundResponse}
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.agentaccesscontrol.model._
+import uk.gov.hmrc.domain._
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
 
-import scala.concurrent.Future
-
 class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String, environment: String, httpGet: HttpGet) {
 
-  private implicit val foundResponseReads: Reads[FoundResponse] = (
+  private implicit val foundResponseReads: Reads[SaFoundResponse] = (
     (__ \ "Auth_64-8").read[Boolean] and
     (__ \ "Auth_i64-8").read[Boolean]
-    ) (FoundResponse)
+    ) (SaFoundResponse)
 
-  def getAgentClientRelationship(saAgentReference: SaAgentReference, agentCode: AgentCode, saUtr: SaUtr)(implicit hc: HeaderCarrier):
-        Future[DesAgentClientFlagsApiResponse] = {
-    val url: String = urlFor(saAgentReference, saUtr)
+  private implicit val payeFoundResponseReads: Reads[PayeFoundResponse] =
+    (__ \ "Auth_64-8").read[Boolean].map(PayeFoundResponse.apply)
+
+  def getSaAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
+        Future[SaDesAgentClientFlagsApiResponse] = {
+    val url: String = saUrlFor(saAgentReference, saUtr)
     getWithDesHeaders(url) map { r =>
       foundResponseReads.reads(Json.parse(r.body)).get
     } recover {
-      case _: NotFoundException => NotFoundResponse
+      case _: NotFoundException => SaNotFoundResponse
     }
   }
 
-  private def urlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): String =
+  def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(implicit hc: HeaderCarrier):
+        Future[PayeDesAgentClientFlagsApiResponse] = {
+    val url: String = payeUrlFor(agentCode, empRef)
+    getWithDesHeaders(url) map { r =>
+      payeFoundResponseReads.reads(Json.parse(r.body)).get
+    } recover {
+      case _: NotFoundException => PayeNotFoundResponse
+    }
+  }
+
+  private def saUrlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): String =
     s"$desBaseUrl/sa/agents/${saAgentReference.value}/client/$saUtr"
+
+  private def payeUrlFor(agentCode: AgentCode, empRef: EmpRef): String =
+    s"$desBaseUrl/agents/regime/PAYE/agentref/$agentCode/clientref/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
 
   private def getWithDesHeaders(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val desHeaderCarrier = hc.copy(

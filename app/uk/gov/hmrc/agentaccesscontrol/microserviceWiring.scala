@@ -25,7 +25,7 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnect
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{AgenciesConnector, RelationshipsConnector}
 import uk.gov.hmrc.agentaccesscontrol.connectors.{GovernmentGatewayProxyConnector, AuthConnector => OurAuthConnector}
 import uk.gov.hmrc.agentaccesscontrol.controllers.{AuthorisationController, WhitelistController}
-import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, CesaAuthorisationService, GovernmentGatewayAuthorisationService, MtdAuthorisationService}
+import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, DesAuthorisationService, GovernmentGatewayAuthorisationService, MtdAuthorisationService}
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -35,7 +35,8 @@ import uk.gov.hmrc.play.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws._
 
 trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch with AppName with MonitoredWSHttp with HttpAuditing {
-  val httpAPIs = Map(".*/sa/agents/\\w+/client/\\w+" -> "DES-GetAgentClientRelationship",
+  val httpAPIs = Map(".*/sa/agents/\\w+/client/\\w+" -> "DES-GetSaAgentClientRelationship",
+                     ".*/agents/regime/PAYE/agentref/\\w+/clientref/\\w+" -> "DES-GetPayeAgentClientRelationship",
                      ".*/auth/authority" -> "AUTH-GetAuthority",
                      ".*/agencies/agentcode/\\w+" -> "AGENCIES-GetAgencyByAgentCode",
                      ".*/relationships/mtd-sa/.*" -> "RELATIONSHIPS-GetAgentClientRelationship")
@@ -65,12 +66,12 @@ trait ServiceRegistry extends ServicesConfig {
     new DesAgentClientApiConnector(baseUrl("des"), desAuthToken, desEnvironment, WSHttp)
   }
   lazy val authConnector = new OurAuthConnector(new URL(baseUrl("auth")), WSHttp)
-  lazy val cesaAuthorisationService = new CesaAuthorisationService(desAgentClientApiConnector)
+  lazy val desAuthorisationService = new DesAuthorisationService(desAgentClientApiConnector)
   lazy val ggProxyConnector: GovernmentGatewayProxyConnector =
     new GovernmentGatewayProxyConnector(new URL(baseUrl("government-gateway-proxy")), WSHttp)
   lazy val ggAuthorisationService = new GovernmentGatewayAuthorisationService(ggProxyConnector)
   lazy val authorisationService: AuthorisationService =
-    new AuthorisationService(cesaAuthorisationService, authConnector, ggAuthorisationService, auditService)
+    new AuthorisationService(desAuthorisationService, authConnector, ggAuthorisationService, auditService)
   lazy val agenciesConnector = new AgenciesConnector(new URL(baseUrl("agencies-fake")), WSHttp)
   lazy val relationshipsConnector = new RelationshipsConnector(new URL(baseUrl("agent-client-relationships")), WSHttp)
   lazy val mtdAuthorisationService = new MtdAuthorisationService(agenciesConnector, relationshipsConnector, auditService)

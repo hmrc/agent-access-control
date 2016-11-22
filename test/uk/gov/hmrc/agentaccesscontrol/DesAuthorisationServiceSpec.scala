@@ -20,61 +20,56 @@ import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.model.{FoundResponse, NotFoundResponse}
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.agentaccesscontrol.model._
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
 
-class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
+class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val agentCode = AgentCode("ABCDEF123456")
   val saAgentRef = SaAgentReference("ABC456")
   val clientSaUtr = SaUtr("CLIENTSAUTR456")
+  val empRef = EmpRef("123", "45676890")
 
 
   implicit val headerCarrier = HeaderCarrier()
 
   "isAuthorisedInCesa" should {
     "return false if the Agent or the relationship between the Agent and Client was not found in DES" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
-        thenReturn(NotFoundResponse)
+      whenDesSaEndpointIsCalled thenReturn(SaNotFoundResponse)
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return true if the DES API returns 64-8=true and i64-8=true" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = true, authI64_8 = true))
+      whenDesSaEndpointIsCalled thenReturn(SaFoundResponse(auth64_8 = true, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe true
     }
 
     "return false if the DES API returns 64-8=true and i64-8=false" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = true, authI64_8 = false))
+      whenDesSaEndpointIsCalled thenReturn(SaFoundResponse(auth64_8 = true, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return false if the DES API returns 64-8=false and i64-8=true" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = false, authI64_8 = true))
+      whenDesSaEndpointIsCalled thenReturn(SaFoundResponse(auth64_8 = false, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return false if the DES API returns 64-8=false and i64-8=false" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
-        thenReturn(FoundResponse(auth64_8 = false, authI64_8 = false))
+      whenDesSaEndpointIsCalled thenReturn(SaFoundResponse(auth64_8 = false, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "propagate any errors that happened" in new Context {
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, agentCode, clientSaUtr)).
-        thenReturn(Future failed new BadRequestException("bad request"))
+      whenDesSaEndpointIsCalled thenReturn(Future failed new BadRequestException("bad request"))
 
       intercept[BadRequestException] {
         await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
@@ -82,8 +77,43 @@ class CesaAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
   }
 
+  "isAuthorisedInEBS" should {
+    "return false if the relationship is not found in DES" in new Context {
+      whenDesPayeEndpointIsCalled thenReturn(Future successful PayeNotFoundResponse)
+
+      await(service.isAuthorisedInEBS(agentCode, empRef)) shouldBe false
+    }
+
+    "return true if the 64-8=true" in new Context {
+      whenDesPayeEndpointIsCalled thenReturn(Future successful PayeFoundResponse(auth64_8 = true))
+
+      await(service.isAuthorisedInEBS(agentCode, empRef)) shouldBe true
+    }
+
+    "return false if the 64-8=false" in new Context {
+      whenDesPayeEndpointIsCalled thenReturn(Future successful PayeFoundResponse(auth64_8 = false))
+
+      await(service.isAuthorisedInEBS(agentCode, empRef)) shouldBe false
+    }
+
+    "propagate any errors that happened" in new Context {
+      whenDesPayeEndpointIsCalled thenReturn(Future failed new BadRequestException("bad request"))
+
+      intercept[BadRequestException] {
+        await(service.isAuthorisedInEBS(agentCode, empRef))
+      }
+    }
+
+  }
+
   private abstract class Context {
     val mockDesAgentClientApiConnector = mock[DesAgentClientApiConnector]
-    val service = new CesaAuthorisationService(mockDesAgentClientApiConnector)
+    val service = new DesAuthorisationService(mockDesAgentClientApiConnector)
+
+    protected def whenDesSaEndpointIsCalled =
+      when(mockDesAgentClientApiConnector.getSaAgentClientRelationship(saAgentRef, clientSaUtr))
+
+    protected def whenDesPayeEndpointIsCalled =
+      when(mockDesAgentClientApiConnector.getPayeAgentClientRelationship(agentCode, empRef))
   }
 }

@@ -52,7 +52,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns true" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
       when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
-      when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
+      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(false)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
@@ -60,10 +60,10 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesaResult" -> false, "gatewayResult" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
-    "return true if SA agent reference is found and CesaAuthorisationService returns true and GG Authorisation returns true" in new Context {
+    "return true if SA agent reference is found and DesAuthorisationService returns true and GG Authorisation returns true" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
       when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
-      when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
+      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
@@ -76,7 +76,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(differentSaAgentRef), "ggId", affinityGroup = Some("Organisation"), agentUserRole = Some("assistant"))))
       when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
-      when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, differentSaAgentRef, clientSaUtr))
+      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, differentSaAgentRef, clientSaUtr))
         .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
@@ -87,7 +87,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     "still work if the fields only used for auditing are removed from the auth record" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = None, agentUserRole = None)))
       when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(true)
-      when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
+      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe true
@@ -95,10 +95,10 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         Seq("credId" -> "ggId", "accessGranted" -> true, "cesaResult" -> true, "gatewayResult" -> true, "saAgentReference" -> saAgentRef))(hc, fakeRequest)
     }
 
-    "return false if SA agent reference is found and CesaAuthorisationService returns true and GG Authorisation returns false" in new Context {
+    "return false if SA agent reference is found and DesAuthorisationService returns true and GG Authorisation returns false" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
       when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(false)
-      when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
+      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(true)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
@@ -106,10 +106,10 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesaResult" -> true, "gatewayResult" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
-    "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns false" in new Context {
+    "return false if SA agent reference is found and DesAuthorisationService returns false and GG Authorisation returns false" in new Context {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
       when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr)).thenReturn(false)
-      when(mockCesaAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
+      when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
         .thenReturn(false)
 
       await(authorisationService.isAuthorised(agentCode, clientSaUtr)) shouldBe false
@@ -133,11 +133,11 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   private abstract class Context {
     val mockAuthConnector = mock[AuthConnector]
-    val mockCesaAuthorisationService = mock[CesaAuthorisationService]
+    val mockDesAuthorisationService = mock[DesAuthorisationService]
     val mockGGAuthorisationService = mock[GovernmentGatewayAuthorisationService]
     val mockAuditService = mock[AuditService]
     val authorisationService = new AuthorisationService(
-      mockCesaAuthorisationService,
+      mockDesAuthorisationService,
       mockAuthConnector,
       mockGGAuthorisationService,
       mockAuditService)
