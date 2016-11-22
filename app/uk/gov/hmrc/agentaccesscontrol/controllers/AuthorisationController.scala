@@ -32,7 +32,7 @@ class AuthorisationController(override val auditService: AuditService,
                               mtdAuthorisationService: MtdAuthorisationService) extends BaseController with Audit {
 
   def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr) = Action.async { implicit request =>
-    authorisationService.isAuthorised(agentCode, saUtr).map {
+    authorisationService.isAuthorisedForSa(agentCode, saUtr).map {
       case authorised if authorised => Ok
       case notAuthorised => Unauthorized
     }

@@ -30,7 +30,7 @@ class AuthorisationService(desAuthorisationService: DesAuthorisationService,
                            auditService: AuditService)
   extends LoggingAuthorisationResults {
 
-  def isAuthorised(agentCode: AgentCode, saUtr: SaUtr)
+  def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr)
     (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
       case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), ggCredentialId, _, _)) =>

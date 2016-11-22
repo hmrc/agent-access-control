@@ -70,7 +70,7 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
 
       val response = controller.isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
 
-      verify(authorisationService).isAuthorised(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], eqs(fakeRequest))
+      verify(authorisationService).isAuthorisedForSa(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], eqs(fakeRequest))
 
       status(response) shouldBe Status.OK
     }
@@ -113,7 +113,7 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
     }
   }
   def whenAuthorisationServiceIsCalled =
-    when(authorisationService.isAuthorised(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], any[Request[Any]]))
+    when(authorisationService.isAuthorisedForSa(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], any[Request[Any]]))
 
   def whenMtdAuthorisationServiceIsCalled =
     when(mtdAuthorisationService.authoriseForSa(any[AgentCode], any[MtdClientId])(any[ExecutionContext], any[HeaderCarrier], any[Request[_]]))
