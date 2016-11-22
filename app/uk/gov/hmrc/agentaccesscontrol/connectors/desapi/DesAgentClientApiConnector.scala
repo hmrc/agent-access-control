@@ -38,7 +38,7 @@ class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String,
     (__ \ "Auth_OAA").read[Boolean]
     ) (PayeFoundResponse)
 
-  def getAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
+  def getSaAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
         Future[SaDesAgentClientFlagsApiResponse] = {
     val url: String = saUrlFor(saAgentReference, saUtr)
     getWithDesHeaders(url) map { r =>

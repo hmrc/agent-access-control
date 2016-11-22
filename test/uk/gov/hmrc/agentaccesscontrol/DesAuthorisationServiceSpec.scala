@@ -111,7 +111,7 @@ class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     val service = new DesAuthorisationService(mockDesAgentClientApiConnector)
 
     protected def whenDesSaEndpointIsCalled =
-      when(mockDesAgentClientApiConnector.getAgentClientRelationship(saAgentRef, clientSaUtr))
+      when(mockDesAgentClientApiConnector.getSaAgentClientRelationship(saAgentRef, clientSaUtr))
 
     protected def whenDesPayeEndpointIsCalled =
       when(mockDesAgentClientApiConnector.getPayeAgentClientRelationship(agentCode, empRef))
