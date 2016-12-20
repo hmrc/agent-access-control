@@ -18,7 +18,8 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
 
-import com.kenshoo.play.metrics.MetricsRegistry
+import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain.SaAgentReference
@@ -59,7 +60,7 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
     }
 
     "record metrics for both /auth/authority and /auth/authority/(oid)/enrolments" in {
-      val metricsRegistry = MetricsRegistry.defaultRegistry
+      val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
       given()
         .agentAdmin("ABCDEF123456").isLoggedIn()
         .andHasSaAgentReferenceWithEnrolment("REF879")
@@ -99,7 +100,7 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
       }
     }
 
-    def newAuthConnector() = new AuthConnector(new URL(wiremockBaseUrl), WSHttp)
+    def newAuthConnector() = new AuthConnector(new URL(wiremockBaseUrl), WSHttp, app.injector.instanceOf[Metrics].defaultRegistry)
   }
 
 }

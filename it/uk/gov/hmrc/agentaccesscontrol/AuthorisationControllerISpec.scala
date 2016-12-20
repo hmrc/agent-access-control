@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol
 
-import com.kenshoo.play.metrics.MetricsRegistry
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
@@ -145,7 +144,7 @@ class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
     }
 
     "record metrics for inbound http call" in {
-      val metricsRegistry = MetricsRegistry.defaultRegistry
+      val metricsRegistry = app.injector.instanceOf[MicroserviceMonitoringFilter].kenshooRegistry
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)

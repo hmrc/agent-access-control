@@ -16,21 +16,67 @@
 
 package uk.gov.hmrc.agentaccesscontrol
 
+import java.net.URL
 import java.util.Base64
+import javax.inject.{Inject, Provider, Singleton}
 
+import com.codahale.metrics.MetricRegistry
+import com.google.inject.AbstractModule
+import com.google.inject.name.Names
 import com.typesafe.config.Config
-import play.api.mvc.Call
-import play.api.{Logger, Application, Configuration, Play}
-import uk.gov.hmrc.play.audit.filters.AuditFilter
-import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
-import uk.gov.hmrc.play.config.{AppName, ControllerConfig, RunMode}
-import uk.gov.hmrc.play.filters.MicroserviceFilterSupport
-import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
-import uk.gov.hmrc.play.microservice.bootstrap.DefaultMicroserviceGlobal
-import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
 import net.ceedubs.ficus.Ficus._
+import org.slf4j.MDC
+import play.api._
+import play.api.http.HttpFilters
+import play.api.mvc.{Call, EssentialFilter}
 import uk.gov.hmrc.agent.kenshoo.monitoring.MonitoringFilter
+import uk.gov.hmrc.play.audit.filters.AuditFilter
+import uk.gov.hmrc.play.audit.http.config.ErrorAuditingSettings
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
+import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
+import uk.gov.hmrc.play.config.{AppName, ControllerConfig, ServicesConfig}
+import uk.gov.hmrc.play.filters.MicroserviceFilterSupport
+import uk.gov.hmrc.play.graphite.GraphiteConfig
+import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
+import uk.gov.hmrc.play.http.{HttpGet, HttpPost, HttpPut}
+import uk.gov.hmrc.play.microservice.bootstrap.JsonErrorHandling
+import uk.gov.hmrc.play.microservice.bootstrap.Routing.RemovingOfTrailingSlashes
 import uk.gov.hmrc.whitelist.AkamaiWhitelistFilter
+
+
+class GuiceModule() extends AbstractModule with ServicesConfig {
+  def configure() = {
+    bind(classOf[HttpGet]).toInstance(WSHttp)
+    bind(classOf[HttpPut]).toInstance(WSHttp)
+    bind(classOf[HttpPost]).toInstance(WSHttp)
+    bind(classOf[AuditConnector]).toInstance(MicroserviceGlobal.auditConnector)
+    bindBaseUrl("auth")
+    bindBaseUrl("agencies-fake")
+    bindBaseUrl("agent-client-relationships")
+    bindBaseUrl("des")
+    bindBaseUrl("government-gateway-proxy")
+    bindConfigProperty("des.authorization-token")
+    bindConfigProperty("des.environment")
+  }
+
+  private def bindBaseUrl(serviceName: String) =
+    bind(classOf[URL]).annotatedWith(Names.named(s"$serviceName-baseUrl")).toProvider(new BaseUrlProvider(serviceName))
+
+  private class BaseUrlProvider(serviceName: String) extends Provider[URL] {
+    override lazy val get = new URL(baseUrl(serviceName))
+  }
+
+  private def bindConfigProperty(propertyName: String) =
+    bind(classOf[String]).annotatedWith(Names.named(s"$propertyName")).toProvider(new ConfigPropertyProvider(propertyName))
+
+  private class ConfigPropertyProvider(propertyName: String) extends Provider[String] {
+    override lazy val get = getConfString(propertyName, throw new RuntimeException(s"No configuration value found for '$propertyName'"))
+  }
+
+}
+
+
 
 object ControllerConfiguration extends ControllerConfig {
   lazy val controllerConfigs = Play.current.configuration.underlying.as[Config]("controllers")
@@ -45,10 +91,11 @@ object MicroserviceAuditFilter extends AuditFilter with AppName with Microservic
   override def controllerNeedsAuditing(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsAuditing
 }
 
-object MicroserviceMonitoringFilter extends MonitoringFilter with MicroserviceFilterSupport {
-  val urlPatternToNameMapping = Map(".*/sa-auth/agent/\\w+/client/\\w+" -> "Agent-SA-Access-Control",
-                                    ".*/mtd-sa-auth/agent/\\w+/client/\\w+" -> "Agent-MTD-SA-Access-Control")
-}
+@Singleton
+class MicroserviceMonitoringFilter @Inject() (kenshooRegistry: MetricRegistry)
+  extends MonitoringFilter(Map(".*/sa-auth/agent/\\w+/client/\\w+" -> "Agent-SA-Access-Control",
+                               ".*/mtd-sa-auth/agent/\\w+/client/\\w+" -> "Agent-MTD-SA-Access-Control"),
+                           kenshooRegistry) with MicroserviceFilterSupport
 
 object MicroserviceLoggingFilter extends LoggingFilter with MicroserviceFilterSupport {
   override def controllerNeedsLogging(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsLogging
@@ -60,8 +107,8 @@ object MicroserviceAuthFilter extends AuthorisationFilter with MicroserviceFilte
   override def controllerNeedsAuth(controllerName: String): Boolean = ControllerConfiguration.paramsForController(controllerName).needsAuth
 }
 
-class WhitelistFilter extends AkamaiWhitelistFilter with MicroserviceFilterSupport {
-  import play.api.Play.current
+@Singleton
+class WhitelistFilter @Inject() (configuration: Configuration) extends AkamaiWhitelistFilter with MicroserviceFilterSupport {
 
   override val whitelist: Seq[String] = whitelistConfig("microservice.whitelist.ips")
   override val destination: Call = Call("GET", "/agent-access-control/forbidden")
@@ -72,36 +119,48 @@ class WhitelistFilter extends AkamaiWhitelistFilter with MicroserviceFilterSuppo
     Call("GET", "/agent-access-control/forbidden")
   )
 
+  def enabled(): Boolean = configuration.getBoolean("microservice.whitelist.enabled").getOrElse(true)
+
   private def whitelistConfig(key: String): Seq[String] =
-    new String(Base64.getDecoder().decode(Play.configuration.getString(key).getOrElse("")), "UTF-8").split(",")
+    new String(Base64.getDecoder().decode(configuration.getString(key).getOrElse("")), "UTF-8").split(",")
 }
 
-object WhitelistFilter {
-  import play.api.Play.current
+class Filters @Inject() (whitelistFilter: WhitelistFilter,
+                         monitoringFilter: MicroserviceMonitoringFilter) extends HttpFilters {
 
-  def enabled(): Boolean = Play.configuration.getBoolean("microservice.whitelist.enabled").getOrElse(true)
-
-}
-
-trait MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with ServiceRegistry with ControllerRegistry {
-  private lazy val whitelistFilterSeq = WhitelistFilter.enabled match {
-    case true =>
-      Logger.info("Starting microservice with IP whitelist enabled")
-      Seq(new WhitelistFilter)
-    case _ =>
-      Logger.info("Starting microservice with IP whitelist disabled")
-      Seq.empty
+  private lazy val whitelistFilterSeq = if (whitelistFilter.enabled()) {
+    Logger.info("Starting microservice with IP whitelist enabled")
+    Seq(whitelistFilter.asInstanceOf[EssentialFilter])
+  } else {
+    Logger.info("Starting microservice with IP whitelist disabled")
+    Seq.empty
   }
 
-  override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
-
-  override val loggingFilter = MicroserviceLoggingFilter
-
-  override val microserviceAuditFilter = MicroserviceAuditFilter
-
-  override val authFilter = Some(MicroserviceAuthFilter)
-
-  override def microserviceFilters = whitelistFilterSeq ++ defaultMicroserviceFilters ++ Seq(MicroserviceMonitoringFilter)
+  override def filters = whitelistFilterSeq ++ Seq(
+    monitoringFilter,
+    MicroserviceAuditFilter,
+    MicroserviceLoggingFilter,
+    MicroserviceAuthFilter)
 }
 
-object MicroserviceGlobal extends MicroserviceGlobal
+object MicroserviceGlobal
+  extends GlobalSettings
+    with GraphiteConfig
+    with RemovingOfTrailingSlashes
+    with JsonErrorHandling
+    with ErrorAuditingSettings {
+
+  lazy val appName = Play.current.configuration.getString("appName").getOrElse("APP NAME NOT SET")
+  lazy val loggerDateFormat: Option[String] = Play.current.configuration.getString("logger.json.dateformat")
+
+  override def onStart(app: Application) {
+    Logger.info(s"Starting microservice : $appName : in mode : ${app.mode}")
+    MDC.put("appName", appName)
+    loggerDateFormat.foreach(str => MDC.put("logger.json.dateformat", str))
+    super.onStart(app)
+  }
+
+  override val auditConnector = new MicroserviceAuditConnector
+
+  override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
+}

@@ -1,6 +1,5 @@
 package uk.gov.hmrc.agentaccesscontrol
 
-import com.kenshoo.play.metrics.MetricsRegistry
 import play.utils.UriEncoding.encodePathSegment
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub

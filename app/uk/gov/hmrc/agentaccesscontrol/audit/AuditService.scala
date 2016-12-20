@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.agentaccesscontrol.audit
 
+import javax.inject.{Inject, Singleton}
+
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.model.MtdClientId
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
@@ -28,7 +30,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 
-class AuditService(val auditConnector: AuditConnector) {
+@Singleton
+class AuditService @Inject() (val auditConnector: AuditConnector) {
 
   import AgentAccessControlEvent.AgentAccessControlEvent
 

@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
+import javax.inject.{Inject, Singleton}
+
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.Action
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
@@ -26,8 +28,8 @@ import uk.gov.hmrc.play.microservice.controller.BaseController
 
 
 
-
-class AuthorisationController(override val auditService: AuditService,
+@Singleton
+class AuthorisationController @Inject() (override val auditService: AuditService,
                               authorisationService: AuthorisationService,
                               mtdAuthorisationService: MtdAuthorisationService) extends BaseController with Audit {
 

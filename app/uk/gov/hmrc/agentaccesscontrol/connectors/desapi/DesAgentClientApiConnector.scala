@@ -16,8 +16,10 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
-import scala.concurrent.Future
+import java.net.URL
+import javax.inject.{Inject, Named, Singleton}
 
+import scala.concurrent.Future
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -26,7 +28,11 @@ import uk.gov.hmrc.domain._
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
 
-class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String, environment: String, httpGet: HttpGet) {
+@Singleton
+class DesAgentClientApiConnector @Inject() (@Named("des-baseUrl") desBaseUrl: URL,
+                                 @Named("des.authorization-token") authorizationToken: String,
+                                 @Named("des.environment") environment: String,
+                                 httpGet: HttpGet) {
 
   private implicit val foundResponseReads: Reads[SaFoundResponse] = (
     (__ \ "Auth_64-8").read[Boolean] and
@@ -57,10 +63,10 @@ class DesAgentClientApiConnector(desBaseUrl: String, authorizationToken: String,
   }
 
   private def saUrlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): String =
-    s"$desBaseUrl/sa/agents/${saAgentReference.value}/client/$saUtr"
+    new URL(desBaseUrl, s"/sa/agents/${saAgentReference.value}/client/$saUtr").toString
 
   private def payeUrlFor(agentCode: AgentCode, empRef: EmpRef): String =
-    s"$desBaseUrl/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
+    new URL(desBaseUrl, s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}").toString
 
   private def getWithDesHeaders(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val desHeaderCarrier = hc.copy(
