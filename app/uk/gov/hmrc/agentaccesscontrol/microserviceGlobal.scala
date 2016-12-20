@@ -24,6 +24,7 @@ import play.api.{Logger, Application, Configuration, Play}
 import uk.gov.hmrc.play.audit.filters.AuditFilter
 import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
 import uk.gov.hmrc.play.config.{AppName, ControllerConfig, RunMode}
+import uk.gov.hmrc.play.filters.MicroserviceFilterSupport
 import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 import uk.gov.hmrc.play.microservice.bootstrap.DefaultMicroserviceGlobal
 import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
@@ -39,27 +40,27 @@ object AuthParamsControllerConfiguration extends AuthParamsControllerConfig {
   lazy val controllerConfigs = ControllerConfiguration.controllerConfigs
 }
 
-object MicroserviceAuditFilter extends AuditFilter with AppName {
+object MicroserviceAuditFilter extends AuditFilter with AppName with MicroserviceFilterSupport {
   override val auditConnector = MicroserviceGlobal.auditConnector
   override def controllerNeedsAuditing(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsAuditing
 }
 
-object MicroserviceMonitoringFilter extends MonitoringFilter {
+object MicroserviceMonitoringFilter extends MonitoringFilter with MicroserviceFilterSupport {
   val urlPatternToNameMapping = Map(".*/sa-auth/agent/\\w+/client/\\w+" -> "Agent-SA-Access-Control",
                                     ".*/mtd-sa-auth/agent/\\w+/client/\\w+" -> "Agent-MTD-SA-Access-Control")
 }
 
-object MicroserviceLoggingFilter extends LoggingFilter {
+object MicroserviceLoggingFilter extends LoggingFilter with MicroserviceFilterSupport {
   override def controllerNeedsLogging(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsLogging
 }
 
-object MicroserviceAuthFilter extends AuthorisationFilter {
+object MicroserviceAuthFilter extends AuthorisationFilter with MicroserviceFilterSupport {
   override lazy val authParamsConfig = AuthParamsControllerConfiguration
   override lazy val authConnector = MicroserviceAuthConnector
   override def controllerNeedsAuth(controllerName: String): Boolean = ControllerConfiguration.paramsForController(controllerName).needsAuth
 }
 
-class WhitelistFilter extends AkamaiWhitelistFilter {
+class WhitelistFilter extends AkamaiWhitelistFilter with MicroserviceFilterSupport {
   import play.api.Play.current
 
   override val whitelist: Seq[String] = whitelistConfig("microservice.whitelist.ips")
@@ -101,10 +102,6 @@ trait MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with Ser
   override val authFilter = Some(MicroserviceAuthFilter)
 
   override def microserviceFilters = whitelistFilterSeq ++ defaultMicroserviceFilters ++ Seq(MicroserviceMonitoringFilter)
-
-  override def getControllerInstance[A](controllerClass: Class[A]): A = {
-    getController(controllerClass)
-  }
 }
 
 object MicroserviceGlobal extends MicroserviceGlobal
