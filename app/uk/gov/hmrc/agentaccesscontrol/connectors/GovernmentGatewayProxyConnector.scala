@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
+import javax.inject.{Inject, Named, Singleton}
 import javax.xml.XMLConstants
 import javax.xml.parsers.SAXParserFactory
 
@@ -30,6 +31,7 @@ import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost}
 
 import scala.concurrent.Future
 import scala.xml.Elem
+import com.codahale.metrics.MetricRegistry
 
 case class AssignedAgent(
   allocatedAgentCode: AgentCode,
@@ -41,7 +43,9 @@ case class AssignedAgent(
 
 case class AssignedCredentials(identifier: String)
 
-class GovernmentGatewayProxyConnector(baseUrl: URL, httpPost: HttpPost) extends HttpAPIMonitor {
+@Singleton
+class GovernmentGatewayProxyConnector @Inject() (@Named("government-gateway-proxy-baseUrl") baseUrl: URL, httpPost: HttpPost, override val kenshooRegistry: MetricRegistry)
+      extends HttpAPIMonitor {
   val url: URL = new URL(baseUrl, "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents")
 
   def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {

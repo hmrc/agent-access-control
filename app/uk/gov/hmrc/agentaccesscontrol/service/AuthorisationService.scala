@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
+import javax.inject.{Inject, Singleton}
+
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
@@ -24,7 +26,8 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthorisationService(desAuthorisationService: DesAuthorisationService,
+@Singleton
+class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationService,
                            authConnector: AuthConnector,
                            ggAuthorisationService: GovernmentGatewayAuthorisationService,
                            auditService: AuditService)

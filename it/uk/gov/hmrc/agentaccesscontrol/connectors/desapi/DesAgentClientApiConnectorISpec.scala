@@ -16,7 +16,9 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
-import com.kenshoo.play.metrics.MetricsRegistry
+import java.net.URL
+
+import com.kenshoo.play.metrics.Metrics
 import org.mockito.Matchers.{any, eq => eqs}
 import org.mockito.Mockito.when
 import org.scalatest.mock.MockitoSugar
@@ -39,7 +41,7 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
       givenClientIsLoggedIn()
         .andIsRelatedToSaClientInDes(saUtr, "auth_token_33", "env_33").andAuthorisedByBoth648AndI648()
 
-      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(wiremockBaseUrl, "auth_token_33", "env_33", wsHttp)
+      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(new URL(wiremockBaseUrl), "auth_token_33", "env_33", wsHttp)
 
       val response = await(connectorWithDifferentHeaders.getSaAgentClientRelationship(saAgentReference, saUtr))
       response shouldBe SaFoundResponse(auth64_8 = true, authI64_8 = true)
@@ -88,7 +90,7 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
     }
 
     "log metrics for the outbound call" in new Context {
-      val metricsRegistry = MetricsRegistry.defaultRegistry
+      val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
       givenClientIsLoggedIn()
         .andIsRelatedToSaClientInDes(saUtr).andAuthorisedByBoth648AndI648()
 
@@ -112,7 +114,7 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
       givenClientIsLoggedIn()
         .andIsRelatedToPayeClientInDes(empRef, "auth_token_33", "env_33").andIsAuthorisedBy648()
 
-      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(wiremockBaseUrl, "auth_token_33", "env_33", wsHttp)
+      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(new URL(wiremockBaseUrl), "auth_token_33", "env_33", wsHttp)
 
       val response = await(connectorWithDifferentHeaders.getPayeAgentClientRelationship(agentCode, empRef))
       response shouldBe PayeFoundResponse(auth64_8 = true)
@@ -147,7 +149,7 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
     }
 
     "log metrics for outbound call" in new Context {
-      val metricsRegistry = MetricsRegistry.defaultRegistry
+      val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
       givenClientIsLoggedIn()
         .andIsRelatedToPayeClientInDes(empRef).andIsAuthorisedBy648()
 
@@ -167,7 +169,7 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
 
   private abstract class Context extends MockAuditingContext {
 
-    val connector = new DesAgentClientApiConnector(wiremockBaseUrl, "secret", "test", wsHttp)
+    val connector = new DesAgentClientApiConnector(new URL(wiremockBaseUrl), "secret", "test", wsHttp)
     val saAgentReference = SaAgentReference("AGENTR")
     val saUtr = SaUtr("SAUTR456")
     val empRef = EmpRef("123", "4567890")

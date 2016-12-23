@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
+import javax.inject.{Inject, Named, Singleton}
 
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
@@ -25,9 +26,11 @@ import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpReads, Upstream4xxResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
+import com.codahale.metrics.MetricRegistry
 
 
-class AuthConnector(baseUrl: URL, httpGet: HttpGet) extends HttpAPIMonitor {
+@Singleton
+class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet, override val kenshooRegistry: MetricRegistry) extends HttpAPIMonitor {
 
   def currentAuthDetails()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AuthDetails]] =
     currentAuthority

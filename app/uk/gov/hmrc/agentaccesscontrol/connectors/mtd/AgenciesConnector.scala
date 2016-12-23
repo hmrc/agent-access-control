@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
 import java.net.URL
+import javax.inject.{Inject, Named, Singleton}
 
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.model.Arn
@@ -30,7 +31,8 @@ object AgencyRecord {
   implicit val reads = Json.reads[AgencyRecord]
 }
 
-class AgenciesConnector(baseUrl: URL, httpGet: HttpGet) {
+@Singleton
+class AgenciesConnector @Inject() (@Named("agencies-fake-baseUrl") baseUrl: URL, httpGet: HttpGet) {
   def fetchAgencyRecord(agentCode: AgentCode)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[AgencyRecord]] = {
     httpGet.GET[Option[AgencyRecord]](agencyUrl(agentCode).toString)
   }

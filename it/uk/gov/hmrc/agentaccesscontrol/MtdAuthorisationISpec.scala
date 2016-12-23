@@ -1,10 +1,10 @@
 package uk.gov.hmrc.agentaccesscontrol
 
-import com.kenshoo.play.metrics.MetricsRegistry
+import com.kenshoo.play.metrics.Metrics
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{WireMockWithOneServerPerSuiteISpec, Resource}
+import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.http.HttpResponse
 
@@ -58,7 +58,7 @@ class MtdAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     }
 
     "record metrics for access control request" in {
-      val metricsRegistry = MetricsRegistry.defaultRegistry
+      val metricsRegistry = app.injector.instanceOf[MicroserviceMonitoringFilter].kenshooRegistry
       given()
         .mtdAgency(agentCode, arn)
         .isAnMtdAgency()

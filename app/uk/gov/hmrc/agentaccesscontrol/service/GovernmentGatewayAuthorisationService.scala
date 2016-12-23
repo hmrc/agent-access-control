@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
+import javax.inject.{Inject, Singleton}
+
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.connectors.GovernmentGatewayProxyConnector
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
@@ -23,7 +25,8 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
 
-class GovernmentGatewayAuthorisationService(val ggProxyConnector: GovernmentGatewayProxyConnector) extends LoggingAuthorisationResults {
+@Singleton
+class GovernmentGatewayAuthorisationService @Inject() (val ggProxyConnector: GovernmentGatewayProxyConnector) extends LoggingAuthorisationResults {
 
   def isAuthorisedForSaInGovernmentGateway(agentCode: AgentCode, ggCredentialId: String, saUtr: SaUtr)(implicit hc: HeaderCarrier): Future[Boolean] = {
     ggProxyConnector.getAssignedSaAgents(saUtr) map { assignedAgents =>

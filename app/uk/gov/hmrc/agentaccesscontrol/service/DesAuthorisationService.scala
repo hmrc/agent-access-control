@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
+import javax.inject.{Inject, Singleton}
+
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
@@ -23,7 +25,8 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class DesAuthorisationService(desAgentClientApiConnector: DesAgentClientApiConnector)
+@Singleton
+class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentClientApiConnector)
   extends LoggingAuthorisationResults {
 
   def isAuthorisedInCesa(agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)

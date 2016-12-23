@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
 import java.net.URL
+import javax.inject.{Inject, Named, Singleton}
 
 import play.api.libs.json._
 import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
@@ -29,7 +30,8 @@ object Relationship {
   implicit val jsonReads = Json.reads[Relationship]
 }
 
-class RelationshipsConnector(baseUrl: URL, httpGet: HttpGet) {
+@Singleton
+class RelationshipsConnector @Inject() (@Named("agent-client-relationships-baseUrl") baseUrl: URL, httpGet: HttpGet) {
 
   def fetchRelationship(arn: Arn, mtdSaClientId: MtdClientId)
                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Relationship]] = {

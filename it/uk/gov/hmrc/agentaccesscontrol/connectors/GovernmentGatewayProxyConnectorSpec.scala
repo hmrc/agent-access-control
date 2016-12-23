@@ -2,20 +2,21 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
 
-import com.kenshoo.play.metrics.MetricsRegistry
 import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.domain.{AgentCode, SaUtr, EmpRef}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
 import uk.gov.hmrc.play.http.{HeaderCarrier, Upstream5xxResponse}
 
 import scala.xml.SAXParseException
+import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
 
 class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
 
   implicit val hc = HeaderCarrier()
 
-  val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp)
+  val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp, app.injector.instanceOf[Metrics].defaultRegistry)
 
   "GovernmentGatewayProxy" should {
     "return sa agent allocations and assignments" in {
@@ -91,7 +92,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
     }
 
     "record metrics for outbound call" in {
-      val metricsRegistry = MetricsRegistry.defaultRegistry
+      val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
       given()
         .agentAdmin("AgentCode")
         .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"))
