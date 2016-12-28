@@ -22,7 +22,7 @@ import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPe
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HttpResponse
 
-class AuthorisationControllerISpec extends WireMockWithOneServerPerSuiteISpec {
+class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
 
   val agentCode = AgentCode("ABCDEF123456")
   val saAgentReference = SaAgentReference("ABC456")
