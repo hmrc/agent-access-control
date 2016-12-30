@@ -100,7 +100,7 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
       }
     }
 
-    def newAuthConnector() = new AuthConnector(new URL(wiremockBaseUrl), WSHttp, app.injector.instanceOf[Metrics].defaultRegistry)
+    def newAuthConnector() = new AuthConnector(new URL(wiremockBaseUrl), WSHttp, app.injector.instanceOf[Metrics])
   }
 
 }

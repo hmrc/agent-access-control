@@ -16,7 +16,7 @@ class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpe
 
   implicit val hc = HeaderCarrier()
 
-  val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp, app.injector.instanceOf[Metrics].defaultRegistry)
+  val connector = new GovernmentGatewayProxyConnector(new URL(wiremockBaseUrl), WSHttp, app.injector.instanceOf[Metrics])
 
   "GovernmentGatewayProxy" should {
     "return sa agent allocations and assignments" in {
