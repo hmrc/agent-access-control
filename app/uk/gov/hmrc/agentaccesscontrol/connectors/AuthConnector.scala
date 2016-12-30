@@ -26,11 +26,11 @@ import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpReads, Upstream4xxResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
-import com.codahale.metrics.MetricRegistry
-
+import com.kenshoo.play.metrics.Metrics
 
 @Singleton
-class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet, override val kenshooRegistry: MetricRegistry) extends HttpAPIMonitor {
+class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet, metrics: Metrics) extends HttpAPIMonitor {
+  override val kenshooRegistry = metrics.defaultRegistry
 
   def currentAuthDetails()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AuthDetails]] =
     currentAuthority

@@ -31,7 +31,7 @@ import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost}
 
 import scala.concurrent.Future
 import scala.xml.Elem
-import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
 
 case class AssignedAgent(
   allocatedAgentCode: AgentCode,
@@ -44,8 +44,9 @@ case class AssignedAgent(
 case class AssignedCredentials(identifier: String)
 
 @Singleton
-class GovernmentGatewayProxyConnector @Inject() (@Named("government-gateway-proxy-baseUrl") baseUrl: URL, httpPost: HttpPost, override val kenshooRegistry: MetricRegistry)
+class GovernmentGatewayProxyConnector @Inject() (@Named("government-gateway-proxy-baseUrl") baseUrl: URL, httpPost: HttpPost, metrics: Metrics)
       extends HttpAPIMonitor {
+  override val kenshooRegistry = metrics.defaultRegistry
   val url: URL = new URL(baseUrl, "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents")
 
   def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgent]] = {

@@ -20,7 +20,6 @@ import java.net.URL
 import java.util.Base64
 import javax.inject.{Inject, Provider, Singleton}
 
-import com.codahale.metrics.MetricRegistry
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import com.typesafe.config.Config
@@ -43,6 +42,7 @@ import uk.gov.hmrc.play.http.{HttpGet, HttpPost, HttpPut}
 import uk.gov.hmrc.play.microservice.bootstrap.JsonErrorHandling
 import uk.gov.hmrc.play.microservice.bootstrap.Routing.RemovingOfTrailingSlashes
 import uk.gov.hmrc.whitelist.AkamaiWhitelistFilter
+import com.kenshoo.play.metrics.Metrics
 
 
 class GuiceModule() extends AbstractModule with ServicesConfig {
@@ -92,10 +92,10 @@ object MicroserviceAuditFilter extends AuditFilter with AppName with Microservic
 }
 
 @Singleton
-class MicroserviceMonitoringFilter @Inject() (kenshooRegistry: MetricRegistry)
+class MicroserviceMonitoringFilter @Inject() (metrics: Metrics)
   extends MonitoringFilter(Map(".*/sa-auth/agent/\\w+/client/\\w+" -> "Agent-SA-Access-Control",
                                ".*/mtd-sa-auth/agent/\\w+/client/\\w+" -> "Agent-MTD-SA-Access-Control"),
-                           kenshooRegistry) with MicroserviceFilterSupport
+                           metrics.defaultRegistry) with MicroserviceFilterSupport
 
 object MicroserviceLoggingFilter extends LoggingFilter with MicroserviceFilterSupport {
   override def controllerNeedsLogging(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsLogging
