@@ -41,7 +41,7 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
   val auditService = mock[AuditService]
   val authorisationService = mock[AuthorisationService]
   val mtdAuthorisationService = mock[MtdAuthorisationService]
-  def controller(enabled : Boolean) = new AuthorisationController(auditService, authorisationService, mtdAuthorisationService, Configuration("features.allowPayeAccess" -> enabled))
+  def controller(enabled : Boolean = true) = new AuthorisationController(auditService, authorisationService, mtdAuthorisationService, Configuration("features.allowPayeAccess" -> enabled))
 
 
   override protected def beforeEach(): Unit = {
@@ -52,28 +52,28 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
   "isAuthorisedForSa" should {
 
     "return 401 if the AuthorisationService doesn't permit access" in {
-      val payeEnabled = true
+
       whenAuthorisationServiceIsCalled thenReturn(Future successful false)
 
-      val response = controller(payeEnabled).isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
+      val response = controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
 
       status (response) shouldBe Status.UNAUTHORIZED
     }
 
     "return 200 if the AuthorisationService allows access" in {
-      val payeEnabled = true
+
       whenAuthorisationServiceIsCalled thenReturn(Future successful true)
 
-      val response = controller(payeEnabled).isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
+      val response = controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
 
       status(response) shouldBe Status.OK
     }
 
     "pass request to AuthorisationService" in {
-      val payeEnabled = true
+
       whenAuthorisationServiceIsCalled thenReturn(Future successful true)
 
-      val response = controller(payeEnabled).isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
+      val response = controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
 
       verify(authorisationService).isAuthorisedForSa(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], eqs(fakeRequest))
 
@@ -81,49 +81,48 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
     }
 
     "propagate exception if the AuthorisationService fails" in {
-      val payeEnabled = true
+
       whenAuthorisationServiceIsCalled thenReturn(Future failed new IllegalStateException("some error"))
 
-      an[IllegalStateException] shouldBe thrownBy(status(controller(payeEnabled).isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)))
+      an[IllegalStateException] shouldBe thrownBy(status(controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)))
     }
   }
 
   "isAuthorisedForMtdSa" should {
 
     "return 401 if the MtdAuthorisationService doesn't permit access" in {
-      val payeEnabled = true
+
       whenMtdAuthorisationServiceIsCalled thenReturn(Future successful false)
 
-      val response = controller(payeEnabled).isAuthorisedForMtdSa(AgentCode(""), MtdClientId("utr"))(fakeRequest)
+      val response = controller().isAuthorisedForMtdSa(AgentCode(""), MtdClientId("utr"))(fakeRequest)
 
       status (response) shouldBe Status.UNAUTHORIZED
     }
 
 
     "return 200 if the MtdAuthorisationService allows access" in {
-      val payeEnabled = true
+
       whenMtdAuthorisationServiceIsCalled thenReturn(Future successful true)
 
-      val response = controller(payeEnabled).isAuthorisedForMtdSa(AgentCode(""), MtdClientId("utr"))(fakeRequest)
+      val response = controller().isAuthorisedForMtdSa(AgentCode(""), MtdClientId("utr"))(fakeRequest)
 
       status(response) shouldBe Status.OK
     }
 
 
     "propagate exception if the MtdAuthorisationService fails" in {
-      val payeEnabled = true
+
       whenMtdAuthorisationServiceIsCalled thenReturn(Future failed new IllegalStateException("some error"))
 
-      an[IllegalStateException] shouldBe thrownBy(status(controller(payeEnabled).isAuthorisedForMtdSa(AgentCode(""), MtdClientId("utr"))(fakeRequest)))
+      an[IllegalStateException] shouldBe thrownBy(status(controller().isAuthorisedForMtdSa(AgentCode(""), MtdClientId("utr"))(fakeRequest)))
     }
 
     "isAuthorisedForPaye" should {
 
       "return 200 when Paye is enabled" in {
         whenPayeAuthorisationServiceIsCalled thenReturn(Future successful true)
-        val payeEnabled = true
 
-        val response = controller(payeEnabled).isAuthorisedForPaye(AgentCode(""), EmpRef("123", "123456"))(fakeRequest)
+        val response = controller().isAuthorisedForPaye(AgentCode(""), EmpRef("123", "123456"))(fakeRequest)
 
         status(response) shouldBe 200
       }
