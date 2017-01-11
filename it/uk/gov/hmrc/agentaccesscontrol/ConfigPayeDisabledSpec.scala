@@ -7,9 +7,6 @@ import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPe
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.http.HttpResponse
 
-/**
-  * Created by zephaniah on 09/01/17.
-  */
 class ConfigPayeDisabledSpec extends WireMockWithOneServerPerSuiteISpec {
 
   val agentCode = AgentCode("A11112222A")

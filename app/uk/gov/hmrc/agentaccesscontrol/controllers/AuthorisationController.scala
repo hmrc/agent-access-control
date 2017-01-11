@@ -54,17 +54,19 @@ class AuthorisationController @Inject()(override val auditService: AuditService,
 
     val payeEnabled : Boolean = configuration.getBoolean("features.allowPayeAccess").getOrElse(false)
 
-    if(payeEnabled){
+    if(payeEnabled) {
       authorisationService.isAuthorisedForPaye (agentCode, empRef) map {
         case true => Ok
         case false => Unauthorized
         case _ => Unauthorized
-      } } else Future(Forbidden)
+      }
+    }
+    else {
+      Future(Forbidden)
+    }
   }
 }
 
-
 trait Audit {
-
   val auditService: AuditService
 }
