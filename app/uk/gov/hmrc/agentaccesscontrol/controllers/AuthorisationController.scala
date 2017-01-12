@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 
 import javax.inject.{Inject, Singleton}
 
+import play.api.Configuration
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.Action
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
@@ -26,12 +27,14 @@ import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdAuthoris
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
+import scala.concurrent.Future
+
 
 
 @Singleton
-class AuthorisationController @Inject() (override val auditService: AuditService,
-                              authorisationService: AuthorisationService,
-                              mtdAuthorisationService: MtdAuthorisationService) extends BaseController with Audit {
+class AuthorisationController @Inject()(override val auditService: AuditService,
+                                        authorisationService: AuthorisationService,
+                                        mtdAuthorisationService: MtdAuthorisationService, configuration: Configuration) extends BaseController with Audit {
 
   def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr) = Action.async { implicit request =>
     authorisationService.isAuthorisedForSa(agentCode, saUtr).map {
@@ -48,14 +51,22 @@ class AuthorisationController @Inject() (override val auditService: AuditService
   }
 
   def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef) = Action.async { implicit request =>
-    authorisationService.isAuthorisedForPaye(agentCode, empRef) map {
-      case authorised if authorised => Ok
-      case notAuthorised => Unauthorized
+
+    val payeEnabled : Boolean = configuration.getBoolean("features.allowPayeAccess").getOrElse(false)
+
+    if(payeEnabled) {
+      authorisationService.isAuthorisedForPaye (agentCode, empRef) map {
+        case true => Ok
+        case false => Unauthorized
+        case _ => Unauthorized
+      }
+    }
+    else {
+      Future(Forbidden)
     }
   }
 }
 
 trait Audit {
-
   val auditService: AuditService
 }
