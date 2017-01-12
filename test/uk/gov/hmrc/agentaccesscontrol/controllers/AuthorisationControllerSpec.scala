@@ -41,7 +41,7 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
   val auditService = mock[AuditService]
   val authorisationService = mock[AuthorisationService]
   val mtdAuthorisationService = mock[MtdAuthorisationService]
-  def controller(enabled : Boolean = true) = new AuthorisationController(auditService, authorisationService, mtdAuthorisationService, Configuration("features.allowPayeAccess" -> enabled))
+  def controller(enabled: Boolean = true) = new AuthorisationController(auditService, authorisationService, mtdAuthorisationService, Configuration("features.allowPayeAccess" -> enabled))
 
 
   override protected def beforeEach(): Unit = {
@@ -129,9 +129,8 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
 
       "return 403 when Paye is disabled" in {
         whenPayeAuthorisationServiceIsCalled thenReturn(Future successful true)
-        val payeEnabled = false
 
-        val response = controller(payeEnabled).isAuthorisedForPaye(AgentCode(""), EmpRef("123", "123456"))(fakeRequest)
+        val response = controller(enabled = false).isAuthorisedForPaye(AgentCode(""), EmpRef("123", "123456"))(fakeRequest)
 
         status(response) shouldBe 403
       }
