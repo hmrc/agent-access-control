@@ -11,7 +11,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   val agentCode = AgentCode("A11112222A")
   val empRef = EmpRef("123", "123456")
 
-  "/agent-access-control/paye-auth/agent/:agentCode/client/:empRef" should {
+  "/agent-access-control/epaye-auth/agent/:agentCode/client/:empRef" should {
     "return 200 when access is granted" in {
       given().agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
@@ -49,5 +49,5 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   }
 
   def authResponseFor(agentCode: AgentCode, empRef: EmpRef): HttpResponse =
-    new Resource(s"/agent-access-control/paye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}")(port).get()
+    new Resource(s"/agent-access-control/epaye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}")(port).get()
 }
