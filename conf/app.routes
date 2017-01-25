@@ -1,5 +1,5 @@
 # microservice specific routes
-GET    /paye-auth/agent/:agentCode/client/:empRef               @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForPaye(agentCode: uk.gov.hmrc.domain.AgentCode, empRef: uk.gov.hmrc.domain.EmpRef)
+GET    /epaye-auth/agent/:agentCode/client/:empRef               @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForPaye(agentCode: uk.gov.hmrc.domain.AgentCode, empRef: uk.gov.hmrc.domain.EmpRef)
 GET    /sa-auth/agent/:agentCode/client/:saUtr                  @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForSa(agentCode: uk.gov.hmrc.domain.AgentCode, saUtr: uk.gov.hmrc.domain.SaUtr)
 GET    /mtd-sa-auth/agent/:agentCode/client/:mtdClientId        @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForMtdSa(agentCode: uk.gov.hmrc.domain.AgentCode, mtdClientId: uk.gov.hmrc.agentaccesscontrol.model.MtdClientId)
 

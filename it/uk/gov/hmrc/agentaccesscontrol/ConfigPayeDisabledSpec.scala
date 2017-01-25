@@ -31,5 +31,5 @@ class ConfigPayeDisabledSpec extends WireMockWithOneServerPerSuiteISpec {
   }
 
   def authResponseFor(agentCode: AgentCode, empRef: EmpRef): HttpResponse =
-    new Resource(s"/agent-access-control/paye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}")(port).get()
+    new Resource(s"/agent-access-control/epaye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}")(port).get()
 }
