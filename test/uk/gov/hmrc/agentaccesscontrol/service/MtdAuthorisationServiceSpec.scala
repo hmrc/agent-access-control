@@ -82,7 +82,7 @@ class MtdAuthorisationServiceSpec extends UnitSpec with MockitoSugar with Before
         await(service.authoriseForSa(agentCode, clientId))
 
         verify(auditService)
-          .auditMtdEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientId, Seq("accessGranted" -> true, "arn" -> arn))(hc, fakeRequest)
+          .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-sa", clientId, Seq("accessGranted" -> true, "arn" -> arn))(hc, fakeRequest)
       }
 
       "decision is made to deny access" in {
@@ -92,7 +92,7 @@ class MtdAuthorisationServiceSpec extends UnitSpec with MockitoSugar with Before
         await(service.authoriseForSa(agentCode, clientId))
 
         verify(auditService)
-          .auditMtdEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientId, Seq("accessGranted" -> false, "arn" -> arn))(hc, fakeRequest)
+          .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-sa", clientId, Seq("accessGranted" -> false, "arn" -> arn))(hc, fakeRequest)
       }
 
       "no agent record exists" in {
@@ -101,7 +101,7 @@ class MtdAuthorisationServiceSpec extends UnitSpec with MockitoSugar with Before
         await(service.authoriseForSa(agentCode, clientId))
 
         verify(auditService)
-          .auditMtdEvent(AgentAccessControlDecision, "agent access decision", agentCode, clientId, Seq("accessGranted" -> false))(hc, fakeRequest)
+          .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-sa", clientId, Seq("accessGranted" -> false))(hc, fakeRequest)
       }
     }
   }

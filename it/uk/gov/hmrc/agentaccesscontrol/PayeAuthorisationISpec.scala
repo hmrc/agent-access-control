@@ -46,6 +46,21 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
 
       status shouldBe 502
     }
+
+    "send an AccessControlDecision audit event" in {
+      given()
+        .agentAdmin(agentCode).isLoggedIn()
+        .andHasNoIrSaAgentEnrolment()
+        .andIsAllocatedAndAssignedToClient(empRef)
+        .andIsRelatedToPayeClientInDes(empRef)
+        .andIsAuthorisedBy648()
+
+      authResponseFor(agentCode, empRef).status shouldBe 200
+
+      DataStreamStub.verifyAuditRequestSent(
+        AgentAccessControlDecision,
+        Map("path" -> s"/agent-access-control/epaye-auth/agent/$agentCode/client/${encodePathSegment(empRef.value, "UTF-8")}"))
+    }
   }
 
   def authResponseFor(agentCode: AgentCode, empRef: EmpRef): HttpResponse =

@@ -19,8 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol.audit
 import javax.inject.{Inject, Singleton}
 
 import play.api.mvc.Request
-import uk.gov.hmrc.agentaccesscontrol.model.MtdClientId
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
@@ -35,22 +34,14 @@ class AuditService @Inject() (val auditConnector: AuditConnector) {
 
   import AgentAccessControlEvent.AgentAccessControlEvent
 
-  def auditSaEvent(event: AgentAccessControlEvent,
-                 transactionName: String,
-                 agentCode: AgentCode,
-                 saUtr: SaUtr,
-                 details: Seq[(String, Any)] = Seq.empty)
-    (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
-    send(createEvent(event, transactionName, agentCode, "sa", saUtr.value, details: _*))
-  }
-
-  def auditMtdEvent(event: AgentAccessControlEvent,
+  def auditEvent(event: AgentAccessControlEvent,
                    transactionName: String,
                    agentCode: AgentCode,
-                   mtdSaClientId: MtdClientId,
+                   regime: String,
+                   regimeId: TaxIdentifier,
                    details: Seq[(String, Any)] = Seq.empty)
-                  (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
-    send(createEvent(event, transactionName, agentCode, "mtd-sa", mtdSaClientId.value, details: _*))
+    (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
+    send(createEvent(event, transactionName, agentCode, regime, regimeId.value, details: _*))
   }
 
   private def createEvent(event: AgentAccessControlEvent,

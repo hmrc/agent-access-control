@@ -55,10 +55,12 @@ class MtdAuthorisationService @Inject() (agenciesConnector: AgenciesConnector,
                              result: Boolean, extraDetails: (String, Any)*)
                            (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
 
-    auditService.auditMtdEvent(
+    auditService.auditEvent(
       AgentAccessControlEvent.AgentAccessControlDecision,
       "agent access decision",
-      agentCode, mtdSaClientId,
+      agentCode,
+      "mtd-sa",
+      mtdSaClientId,
       Seq("accessGranted" -> result)
         ++ extraDetails)
   }
