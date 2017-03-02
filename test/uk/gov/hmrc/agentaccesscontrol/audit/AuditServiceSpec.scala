@@ -47,7 +47,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
       service.auditSaEvent(
         AgentAccessControlDecision,
         "transaction name",
-        AgentCode("TESTAGENTCODE"), SaUtr("TESTSAUTR"),
+        AgentCode("TESTAGENTCODE"), "sa", SaUtr("TESTSAUTR"),
         Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
       )(
         hc,
