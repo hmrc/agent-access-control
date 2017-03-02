@@ -46,7 +46,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 
       await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
@@ -56,7 +56,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       whenCesaIsCheckedForSaRelationship thenReturn false
 
       await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesaResult" -> false, "gatewayResult" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
@@ -66,7 +66,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       whenCesaIsCheckedForSaRelationship thenReturn true
 
       await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe true
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> true, "cesaResult" -> true, "gatewayResult" -> true, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
@@ -79,7 +79,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(true)
 
       await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe true
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> true, "cesaResult" -> true, "gatewayResult" -> true, "saAgentReference" -> differentSaAgentRef, "affinityGroup" -> "Organisation", "agentUserRole" -> "assistant"))(hc, fakeRequest)
     }
 
@@ -89,7 +89,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       whenCesaIsCheckedForSaRelationship thenReturn true
 
       await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe true
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> true, "cesaResult" -> true, "gatewayResult" -> true, "saAgentReference" -> saAgentRef))(hc, fakeRequest)
     }
 
@@ -99,7 +99,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       whenCesaIsCheckedForSaRelationship thenReturn true
 
       await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesaResult" -> true, "gatewayResult" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
@@ -109,7 +109,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       whenCesaIsCheckedForSaRelationship thenReturn false
 
       await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "cesaResult" -> false, "gatewayResult" -> false, "saAgentReference" -> saAgentRef, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
@@ -135,7 +135,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe true
 
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "paye", empRef,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "paye", empRef,
         Seq("credId" -> "ggId", "accessGranted" -> true, "ebsResult" -> true, "gatewayResult" -> true, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
@@ -146,7 +146,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
 
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "paye", empRef,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "paye", empRef,
         Seq("credId" -> "ggId", "accessGranted" -> false, "ebsResult" -> false, "gatewayResult" -> true, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
@@ -157,7 +157,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
 
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "paye", empRef,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "paye", empRef,
         Seq("credId" -> "ggId", "accessGranted" -> false, "ebsResult" -> true, "gatewayResult" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
@@ -168,7 +168,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
 
-      verify(mockAuditService).auditSaEvent(AgentAccessControlDecision, "agent access decision", agentCode, "paye", empRef,
+      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "paye", empRef,
         Seq("credId" -> "ggId", "accessGranted" -> false, "ebsResult" -> false, "gatewayResult" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 

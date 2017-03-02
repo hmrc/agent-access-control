@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.agentaccesscontrol.model
 
-import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites}
+import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites, TaxIdentifier}
 
-case class MtdClientId(value: String)
+case class MtdClientId(value: String) extends TaxIdentifier
 object MtdClientId{
   implicit val reads = new SimpleObjectReads[MtdClientId]("clientId", MtdClientId.apply)
   implicit val writes = new SimpleObjectWrites[MtdClientId](_.value)

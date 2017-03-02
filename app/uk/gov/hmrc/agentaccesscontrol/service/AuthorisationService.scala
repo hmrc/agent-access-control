@@ -77,7 +77,7 @@ class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationS
       agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
       agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
 
-    auditService.auditSaEvent(
+    auditService.auditEvent(
       AgentAccessControlEvent.AgentAccessControlDecision,
       "agent access decision",
       agentCode,
