@@ -63,7 +63,9 @@ class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationS
         results.map { case (ebs, ggw) =>
           val result = ebs & ggw
           auditDecision(agentCode, agentAuthDetails, "paye", empRef, result, "ebsResult" -> ebs, "gatewayResult" -> ggw)
-          result
+
+          if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$empRef")
+          else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$empRef cesa=$ebs ggw=$ggw")
         }
       case None => Future successful notAuthorised("No user is logged in")
     }

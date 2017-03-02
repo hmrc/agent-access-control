@@ -94,6 +94,7 @@ object MicroserviceAuditFilter extends AuditFilter with AppName with Microservic
 @Singleton
 class MicroserviceMonitoringFilter @Inject() (metrics: Metrics)
   extends MonitoringFilter(Map(".*/sa-auth/agent/\\w+/client/\\w+" -> "Agent-SA-Access-Control",
+                               ".*/epaye-auth/agent/\\w+/client/[\\w%\\d]+" -> "Agent-PAYE-Access-Control",
                                ".*/mtd-sa-auth/agent/\\w+/client/\\w+" -> "Agent-MTD-SA-Access-Control"),
                            metrics.defaultRegistry) with MicroserviceFilterSupport
 
