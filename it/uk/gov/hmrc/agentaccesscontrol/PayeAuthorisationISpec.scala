@@ -47,6 +47,19 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
       status shouldBe 502
     }
 
+    "record metrics for inbound http call" in {
+      val metricsRegistry = app.injector.instanceOf[MicroserviceMonitoringFilter].kenshooRegistry
+      given()
+        .agentAdmin(agentCode).isLoggedIn()
+        .andHasNoIrSaAgentEnrolment()
+        .andIsAllocatedAndAssignedToClient(empRef)
+        .andIsRelatedToPayeClientInDes(empRef)
+        .andIsAuthorisedBy648()
+
+      authResponseFor(agentCode, empRef).status shouldBe 200
+      metricsRegistry.getTimers().get("Timer-API-Agent-PAYE-Access-Control-GET").getCount should be >= 1L
+    }
+
     "send an AccessControlDecision audit event" in {
       given()
         .agentAdmin(agentCode).isLoggedIn()

@@ -36,7 +36,9 @@ class GovernmentGatewayAuthorisationService @Inject() (val ggProxyConnector: Gov
 
   def isAuthorisedForPayeInGovernmentGateway(agentCode: AgentCode, ggCredentialId: String, empRef: EmpRef)(implicit hc: HeaderCarrier): Future[Boolean] = {
     ggProxyConnector.getAssignedPayeAgents(empRef) map { assignedAgents =>
-      assignedAgents.exists(_.matches(agentCode, ggCredentialId))
+      val result = assignedAgents.exists(_.matches(agentCode, ggCredentialId))
+      if (result) authorised(s"GGW returned true for assigned agent for $agentCode, GGW credential $ggCredentialId and client $empRef")
+      else notAuthorised(s"GGW returned false for assigned agent for $agentCode, GGW credential $ggCredentialId and client $empRef")
     }
   }
 }
