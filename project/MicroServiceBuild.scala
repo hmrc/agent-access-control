@@ -39,7 +39,7 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "logback-json-logger" % logbackJsonLoggerVersion,
     "uk.gov.hmrc" %% "play-whitelist-filter" % "2.0.0",
     "uk.gov.hmrc" %% "domain" % domainVersion,
-    "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "2.0.0"
+    "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "2.3.0"
   )
 
   trait TestDependencies {

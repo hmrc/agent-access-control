@@ -57,7 +57,6 @@ class AuthorisationController @Inject()(override val auditService: AuditService,
     if(payeEnabled) {
       authorisationService.isAuthorisedForPaye (agentCode, empRef) map {
         case true => Ok
-        case false => Unauthorized
         case _ => Unauthorized
       }
     }
