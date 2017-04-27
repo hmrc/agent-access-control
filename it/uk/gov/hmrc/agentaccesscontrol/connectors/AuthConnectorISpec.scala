@@ -18,10 +18,10 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
 
-import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.play.http.HeaderCarrier
 
@@ -31,14 +31,15 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
 
   implicit val hc = HeaderCarrier()
 
-  "getSaAgentReference" should {
+  "currentAuthDetails" should {
     "return sa agent reference and other auth details" in {
       given()
         .agentAdmin("ABCDEF123456").isLoggedIn()
-        .andHasSaAgentReferenceWithEnrolment("REF879")
+        .andHasSaAgentReferenceAndArnWithEnrolments(SaAgentReference("REF879"), Arn("AARN0000002"))
 
       val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
       authDetails.saAgentReference shouldBe Some(SaAgentReference("REF879"))
+      authDetails.arn shouldBe Some(Arn("AARN0000002"))
       authDetails.ggCredentialId shouldBe "0000001232456789"
       authDetails.affinityGroup shouldBe Some("Agent")
       authDetails.agentUserRole shouldBe Some("admin")
@@ -50,7 +51,7 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
     "handle affinityGroup and agentUserRole being missing" in {
       given()
         .agentAdmin("ABCDEF123456").isLoggedIn(onlyUsedByAuditingAuthorityJson = "")
-        .andHasSaAgentReferenceWithEnrolment("REF879")
+        .andHasSaAgentReferenceWithEnrolment(SaAgentReference("REF879"))
 
       val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
       authDetails.saAgentReference shouldBe Some(SaAgentReference("REF879"))
@@ -63,7 +64,7 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
       val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
       given()
         .agentAdmin("ABCDEF123456").isLoggedIn()
-        .andHasSaAgentReferenceWithEnrolment("REF879")
+        .andHasSaAgentReferenceWithEnrolment(SaAgentReference("REF879"))
 
       val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
       authDetails.saAgentReference shouldBe Some(SaAgentReference("REF879"))
@@ -80,6 +81,16 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
 
       val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
       authDetails.saAgentReference shouldBe None
+      authDetails.ggCredentialId shouldBe "0000001232456789"
+    }
+
+    "return None as the ARN if no ARN found in the enrolments" in {
+      given()
+        .agentAdmin("ABCDEF123456").isLoggedIn()
+        .andHasNoIrSaAgentEnrolment()
+
+      val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
+      authDetails.arn shouldBe None
       authDetails.ggCredentialId shouldBe "0000001232456789"
     }
 

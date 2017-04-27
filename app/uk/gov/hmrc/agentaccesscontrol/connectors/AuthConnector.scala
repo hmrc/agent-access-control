@@ -19,14 +19,15 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 import java.net.URL
 import javax.inject.{Inject, Named, Singleton}
 
+import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.model.{AuthEnrolment, Enrolments}
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpReads, Upstream4xxResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
-import com.kenshoo.play.metrics.Metrics
 
 @Singleton
 class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet, metrics: Metrics) extends HttpAPIMonitor {
@@ -36,8 +37,9 @@ class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: Htt
     currentAuthority
       .flatMap({ authority =>
         monitor("ConsumedAPI-AUTH-GetEnrolments-GET") { enrolments(authority) }
-          .map(e => toSaAgentReference(e))
-          .map(ref => Some(AuthDetails(ref, ggCredentialId(authority), affinityGroup(authority), agentUserRole(authority))))
+          .map { e =>
+            Some(AuthDetails(e.saAgentReferenceOption, e.arnOption, ggCredentialId(authority), affinityGroup(authority), agentUserRole(authority)))
+          }
       }) recover {
       case ex: Upstream4xxResponse if ex.upstreamResponseCode == 401 => None
     }
@@ -54,9 +56,6 @@ class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: Htt
   private def agentUserRole(authorityJson: JsValue): Option[String] = {
     (authorityJson \ "accounts" \ "agent" \ "agentUserRole").asOpt[String]
   }
-
-  private def toSaAgentReference(enrolments: Enrolments): Option[SaAgentReference] =
-    enrolments.saAgentReferenceOption
 
   private def currentAuthority()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[JsValue] =
     httpGetAs[JsValue]("/auth/authority")
@@ -76,6 +75,7 @@ class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: Htt
 
 case class AuthDetails(
   saAgentReference: Option[SaAgentReference],
+  arn: Option[Arn],
   ggCredentialId: String,
   affinityGroup: Option[String],
   agentUserRole: Option[String]

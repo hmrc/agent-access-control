@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.model
 
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -41,6 +42,30 @@ class EnrolmentsSpec extends UnitSpec {
       "there is IRAgentReference in IR-SA-AGENT enrolment, but the enrolment is pending" in {
         val authEnrolment = AuthEnrolment("IR-SA-AGENT", Seq(EnrolmentIdentifier("IRAgentReference", "123456")), "Pending")
         Enrolments(Set(authEnrolment)).saAgentReferenceOption shouldBe Some(SaAgentReference("123456"))
+      }
+    }
+  }
+
+  "arnOption" should {
+    "return None" when {
+      "no HMRC-AS-AGENT enrolment is found" in {
+        Enrolments(Set()).arnOption shouldBe None
+      }
+
+      "there's no AgentReferenceNumber in HMRC-AS-AGENT enrolment" in {
+        Enrolments(Set(AuthEnrolment("HMRC-AS-AGENT", Seq(), "Pending"))).arnOption shouldBe None
+      }
+    }
+
+    "return Some(agent reference)" when {
+      "there is AgentReferenceNumber in HMRC-AS-AGENT enrolment" in {
+        val authEnrolment = AuthEnrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")), "Activated")
+        Enrolments(Set(authEnrolment)).arnOption shouldBe Some(Arn("TARN0000001"))
+      }
+
+      "there is AgentReferenceNumber in HMRC-AS-AGENT enrolment, but the enrolment is pending" in {
+        val authEnrolment = AuthEnrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")), "Pending")
+        Enrolments(Set(authEnrolment)).arnOption shouldBe Some(Arn("TARN0000001"))
       }
     }
   }

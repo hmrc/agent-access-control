@@ -14,18 +14,27 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentaccesscontrol.model
+package uk.gov.hmrc.agentaccesscontrol.support
 
-import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites, TaxIdentifier}
+import org.mockito.Mockito
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{BeforeAndAfterEach, Suite}
 
-case class MtdClientId(value: String) extends TaxIdentifier
-object MtdClientId{
-  implicit val reads = new SimpleObjectReads[MtdClientId]("clientId", MtdClientId.apply)
-  implicit val writes = new SimpleObjectWrites[MtdClientId](_.value)
-}
+import scala.reflect.Manifest
 
-case class Arn(value: String)
-object Arn {
-  implicit val reads = new SimpleObjectReads[Arn]("arn", Arn.apply)
-  implicit val writes = new SimpleObjectWrites[Arn](_.value)
+trait ResettingMockitoSugar extends MockitoSugar with BeforeAndAfterEach {
+  this: Suite =>
+
+  var mocksToReset = Seq.empty[Any]
+
+  def resettingMock[T <: AnyRef](implicit manifest: Manifest[T]): T = {
+    val m = mock[T](manifest)
+    mocksToReset = mocksToReset :+ m
+    m
+  }
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    Mockito.reset(mocksToReset: _*)
+  }
 }

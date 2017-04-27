@@ -17,9 +17,8 @@
 package uk.gov.hmrc.agentaccesscontrol.model
 
 import play.api.libs.json.Json
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
-
-import scala.concurrent.Future
 
 case class EnrolmentIdentifier(key: String, value: String)
 case class AuthEnrolment(key: String, identifiers: Seq[EnrolmentIdentifier], state: String) {
@@ -33,9 +32,12 @@ object AuthEnrolment {
 
 case class Enrolments(enrolments: Set[AuthEnrolment]) {
 
-  def saAgentReferenceOption: Option[SaAgentReference] = saEnrolment.flatMap(_.identifier("IRAgentReference")).map(SaAgentReference)
+  def saAgentReferenceOption: Option[SaAgentReference] = saAgentEnrolment.flatMap(_.identifier("IRAgentReference")).map(SaAgentReference)
+  def arnOption: Option[Arn] = asAgentEnrolment.flatMap(_.identifier("AgentReferenceNumber")).map(Arn.apply)
 
-  private def saEnrolment: Option[AuthEnrolment] = getEnrolment("IR-SA-AGENT")
+  private def asAgentEnrolment: Option[AuthEnrolment] = getEnrolment("HMRC-AS-AGENT")
+
+  private def saAgentEnrolment: Option[AuthEnrolment] = getEnrolment("IR-SA-AGENT")
 
   private def getEnrolment(key: String): Option[AuthEnrolment] = enrolments.find(e => e.key == key)
 }

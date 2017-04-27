@@ -23,9 +23,9 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import org.scalatestplus.play.{OneAppPerSuite, OneServerPerSuite}
 import play.api.test.FakeApplication
-import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
 import uk.gov.hmrc.agentaccesscontrol.{StartAndStopWireMock, WSHttp}
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr, TaxIdentifier}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
+import uk.gov.hmrc.domain._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -46,8 +46,6 @@ abstract class WireMockISpec extends UnitSpec
     "microservice.services.government-gateway-proxy.port" -> wiremockPort,
     "auditing.consumer.baseUri.host" -> wiremockHost,
     "auditing.consumer.baseUri.port" -> wiremockPort,
-    "microservice.services.agencies-fake.host" -> wiremockHost,
-    "microservice.services.agencies-fake.port" -> wiremockPort,
     "microservice.services.agent-client-relationships.host" -> wiremockHost,
     "microservice.services.agent-client-relationships.port" -> wiremockPort
   )
@@ -85,8 +83,8 @@ trait StubUtils {
       agentAdmin(agentCode.value)
     }
 
-    def mtdAgency(agentCode: AgentCode, arn: Arn): MtdAgency = {
-      new MtdAgency(agentCode.value, arn.value)
+    def mtdAgency(arn: Arn): MtdAgency = {
+      new MtdAgency(arn)
     }
   }
 
@@ -99,9 +97,8 @@ trait StubUtils {
                    override val oid: String)
     extends AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with GovernmentGatewayProxyStubs[AgentAdmin]
 
-  class MtdAgency(override val agentCode: String,
-                  override val arn: String)
-    extends AgenciesStub[MtdAgency] with RelationshipsStub[MtdAgency]
+  class MtdAgency(override val arn: Arn)
+    extends RelationshipsStub[MtdAgency]
 
 
 trait DesStub[A] {
@@ -333,7 +330,11 @@ trait DesStub[A] {
       andHasNoIrSaAgentEnrolment()
     }
 
-    def andHasNoIrSaAgentEnrolment(): A = {
+    def andHasNoIrSaAgentEnrolment(): A = andHasNoIrSaAgentOrHmrcAsAgentEnrolment()
+
+    def andHasNoHmrcAsAgentEnrolment(): A = andHasNoIrSaAgentOrHmrcAsAgentEnrolment()
+
+    private def andHasNoIrSaAgentOrHmrcAsAgentEnrolment(): A = {
       stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(
         s"""
            |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
@@ -352,26 +353,44 @@ trait DesStub[A] {
       this
     }
 
-    def andHasSaAgentReferenceWithEnrolment(saAgentReference: SaAgentReference): A =
-      andHasSaAgentReferenceWithEnrolment(saAgentReference.value)
-
-    def andHasSaAgentReferenceWithEnrolment(ref: String, enrolmentState: String = "Activated"): A = {
-      andHasSaAgentReference(ref)
+    def andHasSaAgentReferenceWithEnrolment(saAgentReference: SaAgentReference, enrolmentState: String = "Activated"): A = {
+      andHasSaAgentReference(saAgentReference)
       stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(
         s"""
            |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
            | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
-           | {"key":"IR-SA-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the IR Agent Reference"}, {"key":"IRAgentReference","value":"$ref"}],"state":"$enrolmentState"}]
+           | {"key":"IR-SA-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the IR Agent Reference"}, {"key":"IRAgentReference","value":"${saAgentReference.value}"}],"state":"$enrolmentState"}]
+         """.stripMargin
+      )))
+      this
+    }
+
+    def andHasSaAgentReferenceAndArnWithEnrolments(saAgentReference: SaAgentReference, arn: uk.gov.hmrc.agentmtdidentifiers.model.Arn): A = {
+      andHasSaAgentReference(saAgentReference)
+      stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(
+        s"""
+           |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
+           | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
+           | {"key":"IR-SA-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the IR Agent Reference"}, {"key":"IRAgentReference","value":"${saAgentReference.value}"}],"state":"Activated"},
+           | {"key":"HMRC-AS-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the ARN"}, {"key":"AgentReferenceNumber","value":"${arn.value}"}],"state":"Activated"}]
+         """.stripMargin
+      )))
+      this
+    }
+
+    def andHasHmrcAsAgentEnrolment(arn: uk.gov.hmrc.agentmtdidentifiers.model.Arn): A = {
+      stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(
+        s"""
+           |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
+           | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
+           | {"key":"HMRC-AS-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the ARN"}, {"key":"AgentReferenceNumber","value":"${arn.value}"}],"state":"Activated"}]
          """.stripMargin
       )))
       this
     }
 
     def andHasSaAgentReferenceWithPendingEnrolment(saAgentReference: SaAgentReference): A =
-      andHasSaAgentReferenceWithPendingEnrolment(saAgentReference.value)
-
-    def andHasSaAgentReferenceWithPendingEnrolment(ref: String): A =
-      andHasSaAgentReferenceWithEnrolment(ref, enrolmentState = "Pending")
+      andHasSaAgentReferenceWithEnrolment(saAgentReference, enrolmentState = "Pending")
 
     def isNotLoggedIn(): A = {
       stubFor(get(urlPathEqualTo(s"/auth/authority")).willReturn(aResponse().withStatus(401)))
@@ -405,58 +424,18 @@ trait DesStub[A] {
     }
   }
 
-  trait AgenciesStub[A] {
-    me: A =>
-    def agentCode: String
-    def arn: String
-
-    def isAnMtdAgency(): A =  {
-      stubFor(get(urlPathEqualTo(s"/agencies-fake/agencies/agentcode/$agentCode"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withBody(
-                  s"""
-                    |{
-                    |   "arn": "$arn"
-                    |}
-                  """.stripMargin)))
-      this
-    }
-
-
-    def isNotAnMtdAgency(): A = {
-      stubFor(get(urlPathEqualTo(s"/agencies-fake/agencies/agentcode/$agentCode"))
-        .willReturn(aResponse()
-          .withStatus(404)))
-
-      this
-    }
-  }
-
   trait RelationshipsStub[A] {
     me: A =>
-    def arn: String
+    def arn: Arn
 
-    def andHasARelationshipWith(mtdClientId: MtdClientId): A =  {
-      stubFor(get(urlEqualTo(s"/agent-client-relationships/relationships/mtd-sa/${mtdClientId.value}/$arn"))
+    def hasARelationshipWith(clientId: MtdItId): A = statusReturnedForRelationship(clientId, 200)
+
+    def hasNoRelationshipWith(clientId: MtdItId): A = statusReturnedForRelationship(clientId, 404)
+
+    def statusReturnedForRelationship(clientId: MtdItId, status: Int): A =  {
+      stubFor(get(urlEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/${clientId.value}"))
               .willReturn(aResponse()
-                .withStatus(200)
-                .withBody(
-                  s"""
-                     |{
-                     |  "arn": "$arn",
-                     |  "clientId": "${mtdClientId.value}"
-                     |}
-                   """.stripMargin)))
-      this
-    }
-
-
-    def andHasNoRelationshipWith(mtdClientId: MtdClientId): A = {
-      stubFor(get(urlEqualTo(s"/agent-client-relationships/relationships/mtd-sa/${mtdClientId.value}/$arn"))
-        .willReturn(aResponse()
-          .withStatus(404)))
-
+                .withStatus(status)))
       this
     }
   }

@@ -20,8 +20,8 @@ import java.net.URL
 import javax.inject.{Inject, Named, Singleton}
 
 import play.api.libs.json._
-import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
+import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpResponse, NotFoundException}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,11 +33,16 @@ object Relationship {
 @Singleton
 class RelationshipsConnector @Inject() (@Named("agent-client-relationships-baseUrl") baseUrl: URL, httpGet: HttpGet) {
 
-  def fetchRelationship(arn: Arn, mtdSaClientId: MtdClientId)
-                       (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Relationship]] = {
-    httpGet.GET[Option[Relationship]](relationshipUrl(arn, mtdSaClientId).toString)
+  def relationshipExists(arn: Arn, mtdItId: MtdItId)
+                       (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
+    httpGet.GET[HttpResponse](relationshipUrl(arn, mtdItId).toString) map { response =>
+      assert(response.status == 200, s"Unexpected response status ${response.status}")
+      true
+    } recover {
+      case _: NotFoundException => false
+    }
   }
 
-  private def relationshipUrl(arn: Arn, mtdSaClientId: MtdClientId) =
-          new URL(baseUrl, s"/agent-client-relationships/relationships/mtd-sa/${mtdSaClientId.value}/${arn.value}")
+  private def relationshipUrl(arn: Arn, mtdItId: MtdItId) =
+          new URL(baseUrl, s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/${mtdItId.value}")
 }

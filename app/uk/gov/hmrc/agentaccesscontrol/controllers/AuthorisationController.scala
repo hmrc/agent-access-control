@@ -22,8 +22,8 @@ import play.api.Configuration
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.Action
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
-import uk.gov.hmrc.agentaccesscontrol.model.MtdClientId
-import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdAuthorisationService}
+import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdItAuthorisationService}
+import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
@@ -34,7 +34,7 @@ import scala.concurrent.Future
 @Singleton
 class AuthorisationController @Inject()(override val auditService: AuditService,
                                         authorisationService: AuthorisationService,
-                                        mtdAuthorisationService: MtdAuthorisationService, configuration: Configuration) extends BaseController with Audit {
+                                        mtdItAuthorisationService: MtdItAuthorisationService, configuration: Configuration) extends BaseController with Audit {
 
   def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr) = Action.async { implicit request =>
     authorisationService.isAuthorisedForSa(agentCode, saUtr).map {
@@ -43,8 +43,8 @@ class AuthorisationController @Inject()(override val auditService: AuditService,
     }
   }
 
-  def isAuthorisedForMtdSa(agentCode: AgentCode, mtdSaClientId: MtdClientId) = Action.async { implicit request =>
-    mtdAuthorisationService.authoriseForSa(agentCode, mtdSaClientId) map {
+  def isAuthorisedForMtdIt(agentCode: AgentCode, mtdItId: MtdItId) = Action.async { implicit request =>
+    mtdItAuthorisationService.authoriseForMtdIt(agentCode, mtdItId) map {
       case authorised if authorised => Ok
       case notAuthorised => Unauthorized
     }

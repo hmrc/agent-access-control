@@ -22,6 +22,7 @@ import javax.inject.{Inject, Provider, Singleton}
 
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
+import com.kenshoo.play.metrics.Metrics
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 import org.slf4j.MDC
@@ -42,7 +43,6 @@ import uk.gov.hmrc.play.http.{HttpGet, HttpPost, HttpPut}
 import uk.gov.hmrc.play.microservice.bootstrap.JsonErrorHandling
 import uk.gov.hmrc.play.microservice.bootstrap.Routing.RemovingOfTrailingSlashes
 import uk.gov.hmrc.whitelist.AkamaiWhitelistFilter
-import com.kenshoo.play.metrics.Metrics
 
 
 class GuiceModule() extends AbstractModule with ServicesConfig {
@@ -52,7 +52,6 @@ class GuiceModule() extends AbstractModule with ServicesConfig {
     bind(classOf[HttpPost]).toInstance(WSHttp)
     bind(classOf[AuditConnector]).toInstance(MicroserviceGlobal.auditConnector)
     bindBaseUrl("auth")
-    bindBaseUrl("agencies-fake")
     bindBaseUrl("agent-client-relationships")
     bindBaseUrl("des")
     bindBaseUrl("government-gateway-proxy")
@@ -95,7 +94,7 @@ object MicroserviceAuditFilter extends AuditFilter with AppName with Microservic
 class MicroserviceMonitoringFilter @Inject() (metrics: Metrics)
   extends MonitoringFilter(Map(".*/sa-auth/agent/\\w+/client/\\w+" -> "Agent-SA-Access-Control",
                                ".*/epaye-auth/agent/\\w+/client/[\\w%]+" -> "Agent-PAYE-Access-Control",
-                               ".*/mtd-sa-auth/agent/\\w+/client/\\w+" -> "Agent-MTD-SA-Access-Control"),
+                               ".*/mtd-it-auth/agent/\\w+/client/\\w+" -> "Agent-MTD-IT-Access-Control"),
                            metrics.defaultRegistry) with MicroserviceFilterSupport
 
 object MicroserviceLoggingFilter extends LoggingFilter with MicroserviceFilterSupport {

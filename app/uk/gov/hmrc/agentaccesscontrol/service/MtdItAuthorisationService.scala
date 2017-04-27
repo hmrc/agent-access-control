@@ -20,38 +20,39 @@ import javax.inject.{Inject, Singleton}
 
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
-import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{AgenciesConnector, RelationshipsConnector}
-import uk.gov.hmrc.agentaccesscontrol.model.{Arn, MtdClientId}
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class MtdAuthorisationService @Inject() (agenciesConnector: AgenciesConnector,
+class MtdItAuthorisationService @Inject() (authConnector: AuthConnector,
                               relationshipsConnector: RelationshipsConnector,
                               auditService: AuditService) extends LoggingAuthorisationResults {
 
-  def authoriseForSa(agentCode: AgentCode, mtdSaClientId: MtdClientId)
+  def authoriseForMtdIt(agentCode: AgentCode, mtdItId: MtdItId)
                     (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[_]): Future[Boolean] = {
-    agenciesConnector.fetchAgencyRecord(agentCode) flatMap  {
-      case Some(agency) => hasRelationship(agency.arn, mtdSaClientId) map { result =>
-        auditDecision(agentCode, mtdSaClientId, result, "arn" -> agency.arn)
-        if (result) authorised(s"Access allowed for agentCode=$agentCode arn=${agency.arn.value} client=${mtdSaClientId.value}")
-        else notAuthorised(s"Access not allowed for agentCode=$agentCode arn=${agency.arn.value} client=${mtdSaClientId.value}")
+    authConnector.currentAuthDetails() flatMap  {
+      case Some(AuthDetails(_, Some(arn), _, _, _)) => hasRelationship(arn, mtdItId) map { result =>
+        auditDecision(agentCode, mtdItId, result, "arn" -> arn)
+        if (result) authorised(s"Access allowed for agentCode=$agentCode arn=${arn.value} client=${mtdItId.value}")
+        else notAuthorised(s"Access not allowed for agentCode=$agentCode arn=${arn.value} client=${mtdItId.value}")
       }
-      case None =>
-        auditDecision(agentCode, mtdSaClientId, result = false)
-        Future successful notAuthorised(s"No MTD agency record for agentCode $agentCode")
+      case maybeAuthDetails =>
+        auditDecision(agentCode, mtdItId, result = false)
+        Future successful notAuthorised(s"No ARN found HMRC-AS-AGENT enrolment for agentCode $agentCode, logged in: ${maybeAuthDetails.isDefined}")
     }
   }
 
-  private def hasRelationship(arn: Arn, mtdSaClientId: MtdClientId)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
-    relationshipsConnector.fetchRelationship(arn, mtdSaClientId) map { _.isDefined }
+  private def hasRelationship(arn: Arn, mtdItId: MtdItId)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
+    relationshipsConnector.relationshipExists(arn, mtdItId)
   }
 
   private def auditDecision(
-                             agentCode: AgentCode, mtdSaClientId: MtdClientId,
+                             agentCode: AgentCode, mtdItId: MtdItId,
                              result: Boolean, extraDetails: (String, Any)*)
                            (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
 
@@ -59,8 +60,8 @@ class MtdAuthorisationService @Inject() (agenciesConnector: AgenciesConnector,
       AgentAccessControlEvent.AgentAccessControlDecision,
       "agent access decision",
       agentCode,
-      "mtd-sa",
-      mtdSaClientId,
+      "mtd-it",
+      mtdItId,
       Seq("accessGranted" -> result)
         ++ extraDetails)
   }

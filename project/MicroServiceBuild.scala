@@ -15,8 +15,8 @@ object MicroServiceBuild extends Build with MicroService {
 }
 
 private object AppDependencies {
-  import play.sbt.PlayImport._
   import play.core.PlayVersion
+  import play.sbt.PlayImport._
 
   private val microserviceBootstrapVersion = "5.14.0"
   private val playAuthVersion = "4.3.0"
@@ -39,7 +39,8 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "logback-json-logger" % logbackJsonLoggerVersion,
     "uk.gov.hmrc" %% "play-whitelist-filter" % "2.0.0",
     "uk.gov.hmrc" %% "domain" % domainVersion,
-    "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "2.3.0"
+    "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "2.3.0",
+    "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.5.0"
   )
 
   trait TestDependencies {
