@@ -43,7 +43,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   "isAuthorisedForSa" should {
     "return false if SA agent reference cannot be found (as CESA cannot be checked)" in new Context {
-      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
+      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 
       await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
@@ -51,7 +51,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns false and GG Authorisation returns true" in new Context {
-      saAgentIsLoggedIn
+      saAgentIsLoggedIn()
       whenGGIsCheckedForSaRelationship thenReturn true
       whenCesaIsCheckedForSaRelationship thenReturn false
 
@@ -61,7 +61,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return true if SA agent reference is found and DesAuthorisationService returns true and GG Authorisation returns true" in new Context {
-      saAgentIsLoggedIn
+      saAgentIsLoggedIn()
       whenGGIsCheckedForSaRelationship thenReturn true
       whenCesaIsCheckedForSaRelationship thenReturn true
 
@@ -73,7 +73,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     "not hard code audited values" in new Context {
       val differentSaAgentRef = SaAgentReference("XYZ123")
 
-      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(differentSaAgentRef), "ggId", affinityGroup = Some("Organisation"), agentUserRole = Some("assistant"))))
+      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(differentSaAgentRef), None, "ggId", affinityGroup = Some("Organisation"), agentUserRole = Some("assistant"))))
       whenGGIsCheckedForSaRelationship thenReturn true
       when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, differentSaAgentRef, clientSaUtr))
         .thenReturn(true)
@@ -84,7 +84,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "still work if the fields only used for auditing are removed from the auth record" in new Context {
-      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = None, agentUserRole = None)))
+      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), None, "ggId", affinityGroup = None, agentUserRole = None)))
       whenGGIsCheckedForSaRelationship thenReturn true
       whenCesaIsCheckedForSaRelationship thenReturn true
 
@@ -94,7 +94,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false if SA agent reference is found and DesAuthorisationService returns true and GG Authorisation returns false" in new Context {
-      saAgentIsLoggedIn
+      saAgentIsLoggedIn()
       whenGGIsCheckedForSaRelationship thenReturn false
       whenCesaIsCheckedForSaRelationship thenReturn true
 
@@ -104,7 +104,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false if SA agent reference is found and DesAuthorisationService returns false and GG Authorisation returns false" in new Context {
-      saAgentIsLoggedIn
+      saAgentIsLoggedIn()
       whenGGIsCheckedForSaRelationship thenReturn false
       whenCesaIsCheckedForSaRelationship thenReturn false
 
@@ -114,7 +114,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false if user is not logged in" in new Context {
-      agentIsNotLoggedIn
+      agentIsNotLoggedIn()
       await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
     }
 
@@ -129,7 +129,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   "isAuthorisedForPaye" should {
     "return true when both GGW and EBS indicate that a relationship exists" in new Context {
-      payeAgentIsLoggedIn
+      payeAgentIsLoggedIn()
       whenGGIsCheckedForPayeRelationship thenReturn (Future successful true)
       whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
 
@@ -140,7 +140,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false when only GGW indicates a relationship exists" in new Context {
-      payeAgentIsLoggedIn
+      payeAgentIsLoggedIn()
       whenGGIsCheckedForPayeRelationship thenReturn (Future successful true)
       whenEBSIsCheckedForPayeRelationship thenReturn (Future successful false)
 
@@ -151,7 +151,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false when only EBS indicates a relationship exists" in new Context {
-      payeAgentIsLoggedIn
+      payeAgentIsLoggedIn()
       whenGGIsCheckedForPayeRelationship thenReturn (Future successful false)
       whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
 
@@ -162,7 +162,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false when neither GGW nor EBS indicate a relationship exists" in new Context {
-      payeAgentIsLoggedIn
+      payeAgentIsLoggedIn()
       whenGGIsCheckedForPayeRelationship thenReturn (Future successful false)
       whenEBSIsCheckedForPayeRelationship thenReturn (Future successful false)
 
@@ -173,13 +173,13 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false when user is not logged in" in new Context {
-      agentIsNotLoggedIn
+      agentIsNotLoggedIn()
 
       await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
     }
 
     "propagate any errors from GG" in new Context {
-      payeAgentIsLoggedIn
+      payeAgentIsLoggedIn()
       whenGGIsCheckedForPayeRelationship thenReturn (Future failed new BadRequestException("bad request"))
       whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
 
@@ -189,7 +189,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "propagate any errors from EBS" in new Context {
-      payeAgentIsLoggedIn
+      payeAgentIsLoggedIn()
       whenGGIsCheckedForPayeRelationship thenReturn (Future successful true)
       whenEBSIsCheckedForPayeRelationship thenReturn (Future failed new BadRequestException("bad request"))
 
@@ -210,25 +210,25 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       mockGGAuthorisationService,
       mockAuditService)
 
-    def agentIsNotLoggedIn =
+    def agentIsNotLoggedIn() =
       when(mockAuthConnector.currentAuthDetails()).thenReturn(None)
 
-    def saAgentIsLoggedIn =
-      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
+    def saAgentIsLoggedIn() =
+      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(Some(saAgentRef), None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 
-    def payeAgentIsLoggedIn =
-      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
+    def payeAgentIsLoggedIn() =
+      when(mockAuthConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 
-    def whenGGIsCheckedForPayeRelationship =
+    def whenGGIsCheckedForPayeRelationship() =
       when(mockGGAuthorisationService.isAuthorisedForPayeInGovernmentGateway(agentCode, "ggId", empRef))
 
-    def whenGGIsCheckedForSaRelationship =
+    def whenGGIsCheckedForSaRelationship() =
       when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr))
 
-    def whenEBSIsCheckedForPayeRelationship =
+    def whenEBSIsCheckedForPayeRelationship() =
       when(mockDesAuthorisationService.isAuthorisedInEBS(agentCode, empRef))
 
-    def whenCesaIsCheckedForSaRelationship =
+    def whenCesaIsCheckedForSaRelationship() =
       when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
   }
 }

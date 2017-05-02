@@ -17,14 +17,14 @@
 package uk.gov.hmrc.agentaccesscontrol.binders
 
 import play.api.mvc.PathBindable
-import uk.gov.hmrc.agentaccesscontrol.model.MtdClientId
+import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
 import uk.gov.hmrc.play.binders.SimpleObjectBinder
 
 object PathBinders {
   implicit object AgentCodeBinder extends SimpleObjectBinder[AgentCode](AgentCode.apply, _.value)
   implicit object SaUtrBinder extends SimpleObjectBinder[SaUtr](SaUtr.apply, _.value)
-  implicit object MtdSaClientIdBinder extends SimpleObjectBinder[MtdClientId](MtdClientId.apply, _.value)
+  implicit object MtdItIdBinder extends SimpleObjectBinder[MtdItId](MtdItId.apply, _.value)
 
   implicit object EmpRefBinder extends PathBindable[EmpRef] {
 

@@ -36,7 +36,7 @@ class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationS
   def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr)
     (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
-      case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), ggCredentialId, _, _)) =>
+      case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), _, ggCredentialId, _, _)) =>
         val results = desAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr) zip
           ggAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, ggCredentialId, saUtr)
         results.map { case (cesa, ggw) => {
@@ -47,7 +47,7 @@ class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationS
           if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
           else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr cesa=$cesa ggw=$ggw")
         } }
-      case Some(agentAuthDetails@AuthDetails(None, _, _, _)) =>
+      case Some(agentAuthDetails@AuthDetails(None, _, _, _, _)) =>
         auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result = false)
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
       case None =>
@@ -57,7 +57,7 @@ class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationS
   def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef)
     (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
-      case Some(agentAuthDetails@AuthDetails(_, ggCredentialId, _, _)) =>
+      case Some(agentAuthDetails@AuthDetails(_, _, ggCredentialId, _, _)) =>
         val results = desAuthorisationService.isAuthorisedInEBS(agentCode, empRef) zip
           ggAuthorisationService.isAuthorisedForPayeInGovernmentGateway(agentCode, ggCredentialId, empRef)
         results.map { case (ebs, ggw) =>

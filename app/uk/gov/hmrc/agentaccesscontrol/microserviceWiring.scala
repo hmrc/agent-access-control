@@ -33,7 +33,7 @@ trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch wit
                      ".*/agents/regime/PAYE/agent/\\w+/client/\\w+" -> "DES-GetPayeAgentClientRelationship",
                      ".*/auth/authority" -> "AUTH-GetAuthority",
                      ".*/agencies/agentcode/\\w+" -> "AGENCIES-GetAgencyByAgentCode",
-                     ".*/relationships/mtd-sa/.*" -> "RELATIONSHIPS-GetAgentClientRelationship")
+                     ".*/agent-client-relationships/agent/[^/]+/service/[^/]+/client/[^/]+/.*" -> "RELATIONSHIPS-GetAgentClientRelationship")
 
   override val hooks: Seq[HttpHook] = Seq(AuditingHook)
   override lazy val kenshooRegistry: MetricRegistry = Play.current.injector.instanceOf[Metrics].defaultRegistry
