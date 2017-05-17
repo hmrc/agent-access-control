@@ -98,11 +98,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     "return false without calling DES if GG Authorisation returns false (to reduce the load on DES)" in new Context {
       saAgentIsLoggedIn()
       whenGGIsCheckedForSaRelationship thenReturn false
-      whenCesaIsCheckedForSaRelationship thenAnswer new Answer[Future[Boolean]] {
-        override def answer(invocation: InvocationOnMock): Future[Boolean] = {
-          fail("DES should not be called")
-        }
-      }
+      whenCesaIsCheckedForSaRelationship thenAnswer failBecauseDesShouldNotBeCalled
 
       await(authorisationService.isAuthorisedForSa(agentCode, clientSaUtr)) shouldBe false
       verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "sa", clientSaUtr,
@@ -146,26 +142,15 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         Seq("credId" -> "ggId", "accessGranted" -> false, "ebsResult" -> false, "gatewayResult" -> true, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
-    "return false when only EBS indicates a relationship exists" in new Context {
+    "return false without calling DES if GG Authorisation returns false (to reduce the load on DES)" in new Context {
       payeAgentIsLoggedIn()
       whenGGIsCheckedForPayeRelationship thenReturn (Future successful false)
-      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful true)
+      whenEBSIsCheckedForPayeRelationship thenAnswer failBecauseDesShouldNotBeCalled
 
       await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
 
       verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "paye", empRef,
-        Seq("credId" -> "ggId", "accessGranted" -> false, "ebsResult" -> true, "gatewayResult" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
-    }
-
-    "return false when neither GGW nor EBS indicate a relationship exists" in new Context {
-      payeAgentIsLoggedIn()
-      whenGGIsCheckedForPayeRelationship thenReturn (Future successful false)
-      whenEBSIsCheckedForPayeRelationship thenReturn (Future successful false)
-
-      await(authorisationService.isAuthorisedForPaye(agentCode, empRef)) shouldBe false
-
-      verify(mockAuditService).auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "paye", empRef,
-        Seq("credId" -> "ggId", "accessGranted" -> false, "ebsResult" -> false, "gatewayResult" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
+        Seq("credId" -> "ggId", "accessGranted" -> false, "ebsResult" -> "notChecked", "gatewayResult" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin"))(hc, fakeRequest)
     }
 
     "return false when user is not logged in" in new Context {
@@ -192,6 +177,12 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       intercept[BadRequestException] {
         await(authorisationService.isAuthorisedForPaye(agentCode, empRef))
       }
+    }
+  }
+
+  private val failBecauseDesShouldNotBeCalled = new Answer[Future[Boolean]] {
+    override def answer(invocation: InvocationOnMock): Future[Boolean] = {
+      fail("DES should not be called")
     }
   }
 
@@ -222,7 +213,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       when(mockGGAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, "ggId", clientSaUtr))
 
     def whenEBSIsCheckedForPayeRelationship() =
-      when(mockDesAuthorisationService.isAuthorisedInEBS(agentCode, empRef))
+      when(mockDesAuthorisationService.isAuthorisedInEbs(agentCode, empRef))
 
     def whenCesaIsCheckedForSaRelationship() =
       when(mockDesAuthorisationService.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))

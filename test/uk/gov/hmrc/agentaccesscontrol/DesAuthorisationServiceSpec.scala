@@ -81,26 +81,26 @@ class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     "return false if the relationship is not found in DES" in new Context {
       whenDesPayeEndpointIsCalled thenReturn(Future successful PayeNotFoundResponse)
 
-      await(service.isAuthorisedInEBS(agentCode, empRef)) shouldBe false
+      await(service.isAuthorisedInEbs(agentCode, empRef)) shouldBe false
     }
 
     "return true if the 64-8=true" in new Context {
       whenDesPayeEndpointIsCalled thenReturn(Future successful PayeFoundResponse(auth64_8 = true))
 
-      await(service.isAuthorisedInEBS(agentCode, empRef)) shouldBe true
+      await(service.isAuthorisedInEbs(agentCode, empRef)) shouldBe true
     }
 
     "return false if the 64-8=false" in new Context {
       whenDesPayeEndpointIsCalled thenReturn(Future successful PayeFoundResponse(auth64_8 = false))
 
-      await(service.isAuthorisedInEBS(agentCode, empRef)) shouldBe false
+      await(service.isAuthorisedInEbs(agentCode, empRef)) shouldBe false
     }
 
     "propagate any errors that happened" in new Context {
       whenDesPayeEndpointIsCalled thenReturn(Future failed new BadRequestException("bad request"))
 
       intercept[BadRequestException] {
-        await(service.isAuthorisedInEBS(agentCode, empRef))
+        await(service.isAuthorisedInEbs(agentCode, empRef))
       }
     }
 

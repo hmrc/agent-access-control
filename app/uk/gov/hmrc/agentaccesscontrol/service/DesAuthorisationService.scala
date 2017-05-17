@@ -36,7 +36,7 @@ class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentCli
       .map(handleCesaResponse(agentCode, saUtr, _))
   }
 
-  def isAuthorisedInEBS(agentCode: AgentCode, empRef: EmpRef)
+  def isAuthorisedInEbs(agentCode: AgentCode, empRef: EmpRef)
     (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
     desAgentClientApiConnector
       .getPayeAgentClientRelationship(agentCode, empRef)
