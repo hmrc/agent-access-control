@@ -36,14 +36,15 @@ class MtdItAuthorisationService @Inject() (authConnector: AuthConnector,
   def authoriseForMtdIt(agentCode: AgentCode, mtdItId: MtdItId)
                     (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[_]): Future[Boolean] = {
     authConnector.currentAuthDetails() flatMap  {
-      case Some(AuthDetails(_, Some(arn), _, _, _)) => hasRelationship(arn, mtdItId) map { result =>
-        auditDecision(agentCode, mtdItId, result, "arn" -> arn)
+      case Some(agentAuthDetails@AuthDetails(_, Some(arn), _, _, _)) => hasRelationship(arn, mtdItId) map { result =>
+        auditDecision(agentCode, agentAuthDetails, mtdItId, result, "arn" -> arn)
         if (result) authorised(s"Access allowed for agentCode=$agentCode arn=${arn.value} client=${mtdItId.value}")
         else notAuthorised(s"Access not allowed for agentCode=$agentCode arn=${arn.value} client=${mtdItId.value}")
       }
-      case maybeAuthDetails =>
-        auditDecision(agentCode, mtdItId, result = false)
-        Future successful notAuthorised(s"No ARN found HMRC-AS-AGENT enrolment for agentCode $agentCode, logged in: ${maybeAuthDetails.isDefined}")
+      case Some(agentAuthDetails) =>
+        auditDecision(agentCode, agentAuthDetails, mtdItId, result = false)
+        Future successful notAuthorised(s"No ARN found in HMRC-AS-AGENT enrolment for agentCode $agentCode")
+      case None => Future successful notAuthorised("No user is logged in")
     }
   }
 
@@ -52,7 +53,7 @@ class MtdItAuthorisationService @Inject() (authConnector: AuthConnector,
   }
 
   private def auditDecision(
-                             agentCode: AgentCode, mtdItId: MtdItId,
+                             agentCode: AgentCode, agentAuthDetails: AuthDetails, mtdItId: MtdItId,
                              result: Boolean, extraDetails: (String, Any)*)
                            (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
 
@@ -62,7 +63,8 @@ class MtdItAuthorisationService @Inject() (authConnector: AuthConnector,
       agentCode,
       "mtd-it",
       mtdItId,
-      Seq("accessGranted" -> result)
+      Seq("credId" -> agentAuthDetails.ggCredentialId,
+        "accessGranted" -> result)
         ++ extraDetails)
   }
 }
