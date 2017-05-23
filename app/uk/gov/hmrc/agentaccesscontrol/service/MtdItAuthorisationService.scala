@@ -37,7 +37,7 @@ class MtdItAuthorisationService @Inject() (authConnector: AuthConnector,
                     (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[_]): Future[Boolean] = {
     authConnector.currentAuthDetails() flatMap  {
       case Some(agentAuthDetails@AuthDetails(_, Some(arn), _, _, _)) => hasRelationship(arn, mtdItId) map { result =>
-        auditDecision(agentCode, agentAuthDetails, mtdItId, result, "arn" -> arn)
+        auditDecision(agentCode, agentAuthDetails, mtdItId, result, "arn" -> arn.value)
         if (result) authorised(s"Access allowed for agentCode=$agentCode arn=${arn.value} client=${mtdItId.value}")
         else notAuthorised(s"Access not allowed for agentCode=$agentCode arn=${arn.value} client=${mtdItId.value}")
       }

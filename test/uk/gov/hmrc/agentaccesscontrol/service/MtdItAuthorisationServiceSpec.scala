@@ -82,7 +82,7 @@ class MtdItAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar 
         await(service.authoriseForMtdIt(agentCode, clientId))
 
         verify(auditService)
-          .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-it", clientId, Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn))(hc, fakeRequest)
+          .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-it", clientId, Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn.value))(hc, fakeRequest)
       }
 
       "decision is made to deny access" in {
@@ -92,7 +92,7 @@ class MtdItAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar 
         await(service.authoriseForMtdIt(agentCode, clientId))
 
         verify(auditService)
-          .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-it", clientId, Seq("credId" -> "ggId", "accessGranted" -> false, "arn" -> arn))(hc, fakeRequest)
+          .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-it", clientId, Seq("credId" -> "ggId", "accessGranted" -> false, "arn" -> arn.value))(hc, fakeRequest)
       }
 
       "no HMRC-AS-AGENT enrolment exists" in {
