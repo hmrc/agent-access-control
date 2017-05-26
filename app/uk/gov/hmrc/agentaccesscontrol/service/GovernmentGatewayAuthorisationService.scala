@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.service
 
 import javax.inject.{Inject, Singleton}
 
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.agentaccesscontrol.connectors.GovernmentGatewayProxyConnector
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
 import uk.gov.hmrc.play.http.HeaderCarrier

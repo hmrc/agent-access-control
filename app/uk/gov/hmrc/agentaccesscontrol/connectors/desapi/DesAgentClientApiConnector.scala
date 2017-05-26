@@ -20,7 +20,7 @@ import java.net.URL
 import javax.inject.{Inject, Named, Singleton}
 
 import scala.concurrent.Future
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.agentaccesscontrol.model._

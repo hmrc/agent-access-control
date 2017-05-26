@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 import javax.inject.{Inject, Singleton}
 
 import play.api.Configuration
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import play.api.mvc.Action
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdItAuthorisationService}
