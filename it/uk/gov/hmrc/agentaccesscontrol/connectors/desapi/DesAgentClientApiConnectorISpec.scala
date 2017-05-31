@@ -24,7 +24,7 @@ import org.mockito.Mockito.when
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.model._
-import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupport, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -32,7 +32,7 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 import scala.concurrent.ExecutionContext
 
 
-class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
+class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar with MetricTestSupport {
 
   implicit val headerCarrier = HeaderCarrier()
 
@@ -40,11 +40,14 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
     "request DES API with the correct auth tokens" in new Context {
       givenClientIsLoggedIn()
         .andIsRelatedToSaClientInDes(saUtr, "auth_token_33", "env_33").andAuthorisedByBoth648AndI648()
+      givenCleanMetricRegistry()
 
-      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(new URL(wiremockBaseUrl), "auth_token_33", "env_33", wsHttp)
+      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(new URL(wiremockBaseUrl),
+        "auth_token_33", "env_33", wsHttp, app.injector.instanceOf[Metrics])
 
       val response = await(connectorWithDifferentHeaders.getSaAgentClientRelationship(saAgentReference, saUtr))
       response shouldBe SaFoundResponse(auth64_8 = true, authI64_8 = true)
+      timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
     }
 
     "pass along 64-8 and i64-8 information" when {
@@ -90,12 +93,12 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
     }
 
     "log metrics for the outbound call" in new Context {
-      val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
       givenClientIsLoggedIn()
         .andIsRelatedToSaClientInDes(saUtr).andAuthorisedByBoth648AndI648()
+      givenCleanMetricRegistry()
 
       await(connector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(auth64_8 = true, authI64_8 = true)
-      metricsRegistry.getTimers.get("Timer-ConsumedAPI-DES-GetSaAgentClientRelationship-GET").getCount should be >= 1L
+      timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
     }
 
     "audit oubound DES call" in new Context {
@@ -113,11 +116,14 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
     "request DES API with the correct auth tokens" in new Context {
       givenClientIsLoggedIn()
         .andIsRelatedToPayeClientInDes(empRef, "auth_token_33", "env_33").andIsAuthorisedBy648()
+      givenCleanMetricRegistry()
 
-      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(new URL(wiremockBaseUrl), "auth_token_33", "env_33", wsHttp)
+      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(new URL(wiremockBaseUrl),
+        "auth_token_33", "env_33", wsHttp, app.injector.instanceOf[Metrics])
 
       val response = await(connectorWithDifferentHeaders.getPayeAgentClientRelationship(agentCode, empRef))
       response shouldBe PayeFoundResponse(auth64_8 = true)
+      timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
     }
 
     "pass along 64-8 and i64-8 information" when {
@@ -149,13 +155,14 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
     }
 
     "log metrics for outbound call" in new Context {
-      val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
       givenClientIsLoggedIn()
         .andIsRelatedToPayeClientInDes(empRef).andIsAuthorisedBy648()
+      givenCleanMetricRegistry()
 
       await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true)
-      metricsRegistry.getTimers.get("Timer-ConsumedAPI-DES-GetPayeAgentClientRelationship-GET").getCount should be >= 1L
+      timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
     }
+
     "audit outbound call to DES" in new Context {
       givenClientIsLoggedIn()
         .andIsRelatedToPayeClientInDes(empRef).andIsAuthorisedBy648()
@@ -169,7 +176,8 @@ class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec wi
 
   private abstract class Context extends MockAuditingContext {
 
-    val connector = new DesAgentClientApiConnector(new URL(wiremockBaseUrl), "secret", "test", wsHttp)
+    val connector = new DesAgentClientApiConnector(new URL(wiremockBaseUrl),
+      "secret", "test", wsHttp, app.injector.instanceOf[Metrics])
     val saAgentReference = SaAgentReference("AGENTR")
     val saUtr = SaUtr("SAUTR456")
     val empRef = EmpRef("123", "4567890")

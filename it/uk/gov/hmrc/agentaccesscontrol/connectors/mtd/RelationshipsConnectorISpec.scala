@@ -4,11 +4,11 @@ import java.net.URL
 
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupport, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
-class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
+class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupport {
 
   val arn = Arn("B1111B")
   val client = MtdItId("C1111C")
@@ -18,15 +18,19 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
     "return true when relationship exists" in new Context {
       given().mtdAgency(arn)
         .hasARelationshipWith(client)
+      givenCleanMetricRegistry()
 
       await(connector.relationshipExists(arn, client)) shouldBe true
+      timerShouldExistsAndBeenUpdated("ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
     }
 
     "return false when relationship does not exist" in new Context {
       given().mtdAgency(arn)
         .hasNoRelationshipWith(client)
+      givenCleanMetricRegistry()
 
       await(connector.relationshipExists(arn, client)) shouldBe false
+      timerShouldExistsAndBeenUpdated("ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
     }
 
     "throw exception when unexpected status code encountered" in new Context {
@@ -61,7 +65,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
   }
 
   abstract class Context extends MockAuditingContext {
-    def connector = new RelationshipsConnector(new URL(wiremockBaseUrl), wsHttp)
+    def connector = new RelationshipsConnector(new URL(wiremockBaseUrl), wsHttp, app.injector.instanceOf[Metrics])
 
     def anOutboundCallShouldBeAudited(arn: Arn, client: MtdItId) = {
       val event = capturedEvent()

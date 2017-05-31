@@ -19,20 +19,27 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 import java.net.URL
 import javax.inject.{Inject, Named, Singleton}
 
-import scala.concurrent.Future
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+
+import scala.concurrent.Future
 
 @Singleton
 class DesAgentClientApiConnector @Inject() (@Named("des-baseUrl") desBaseUrl: URL,
-                                 @Named("des.authorization-token") authorizationToken: String,
-                                 @Named("des.environment") environment: String,
-                                 httpGet: HttpGet) {
+                                            @Named("des.authorization-token") authorizationToken: String,
+                                            @Named("des.environment") environment: String,
+                                            httpGet: HttpGet,
+                                            metrics: Metrics)
+  extends HttpAPIMonitor {
+  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   private implicit val foundResponseReads: Reads[SaFoundResponse] = (
     (__ \ "Auth_64-8").read[Boolean] and
@@ -44,8 +51,8 @@ class DesAgentClientApiConnector @Inject() (@Named("des-baseUrl") desBaseUrl: UR
 
   def getSaAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier):
         Future[SaDesAgentClientFlagsApiResponse] = {
-    val url: String = saUrlFor(saAgentReference, saUtr)
-    getWithDesHeaders(url) map { r =>
+    val url = saUrlFor(saAgentReference, saUtr)
+    getWithDesHeaders("GetSaAgentClientRelationship",url) map { r =>
       foundResponseReads.reads(Json.parse(r.body)).get
     } recover {
       case _: NotFoundException => SaNotFoundResponse
@@ -54,24 +61,26 @@ class DesAgentClientApiConnector @Inject() (@Named("des-baseUrl") desBaseUrl: UR
 
   def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(implicit hc: HeaderCarrier):
         Future[PayeDesAgentClientFlagsApiResponse] = {
-    val url: String = payeUrlFor(agentCode, empRef)
-    getWithDesHeaders(url) map { r =>
+    val url = payeUrlFor(agentCode, empRef)
+    getWithDesHeaders("GetPayeAgentClientRelationship",url) map { r =>
       payeFoundResponseReads.reads(Json.parse(r.body)).get
     } recover {
       case _: NotFoundException => PayeNotFoundResponse
     }
   }
 
-  private def saUrlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): String =
-    new URL(desBaseUrl, s"/sa/agents/${saAgentReference.value}/client/$saUtr").toString
+  private def saUrlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): URL =
+    new URL(desBaseUrl, s"/sa/agents/${saAgentReference.value}/client/$saUtr")
 
-  private def payeUrlFor(agentCode: AgentCode, empRef: EmpRef): String =
-    new URL(desBaseUrl, s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}").toString
+  private def payeUrlFor(agentCode: AgentCode, empRef: EmpRef): URL =
+    new URL(desBaseUrl, s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}")
 
-  private def getWithDesHeaders(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  private def getWithDesHeaders[A: HttpReads](apiName: String, url: URL)(implicit hc: HeaderCarrier): Future[A] = {
     val desHeaderCarrier = hc.copy(
       authorization = Some(Authorization(s"Bearer $authorizationToken")),
       extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
-    httpGet.GET[HttpResponse](url)(implicitly[HttpReads[HttpResponse]], desHeaderCarrier)
+    monitor(s"ConsumedAPI-DES-$apiName-GET") {
+      httpGet.GET[A](url.toString)(implicitly[HttpReads[A]], desHeaderCarrier)
+    }
   }
 }
