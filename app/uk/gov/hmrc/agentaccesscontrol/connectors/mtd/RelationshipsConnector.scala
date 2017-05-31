@@ -19,7 +19,10 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 import java.net.URL
 import javax.inject.{Inject, Named, Singleton}
 
+import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json._
+import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
 import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpResponse, NotFoundException}
 
@@ -31,11 +34,17 @@ object Relationship {
 }
 
 @Singleton
-class RelationshipsConnector @Inject() (@Named("agent-client-relationships-baseUrl") baseUrl: URL, httpGet: HttpGet) {
+class RelationshipsConnector @Inject()(@Named("agent-client-relationships-baseUrl") baseUrl: URL,
+                                       httpGet: HttpGet,
+                                       metrics: Metrics)
+  extends HttpAPIMonitor {
+  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   def relationshipExists(arn: Arn, mtdItId: MtdItId)
                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
-    httpGet.GET[HttpResponse](relationshipUrl(arn, mtdItId).toString) map { response =>
+    monitor("ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET") {
+      httpGet.GET[HttpResponse](relationshipUrl(arn, mtdItId).toString)
+    } map { response =>
       assert(response.status == 200, s"Unexpected response status ${response.status}")
       true
     } recover {
