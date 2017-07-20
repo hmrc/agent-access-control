@@ -25,18 +25,21 @@ import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.model.{AuthEnrolment, Enrolments}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpReads, Upstream4xxResponse}
+import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, Upstream4xxResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet, metrics: Metrics) extends HttpAPIMonitor {
+class AuthConnector @Inject()(@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet, metrics: Metrics) extends HttpAPIMonitor {
   override val kenshooRegistry = metrics.defaultRegistry
+  val authorityUrl = new URL(baseUrl, "/auth/authority")
 
   def currentAuthDetails()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AuthDetails]] =
     currentAuthority
       .flatMap({ authority =>
-        monitor("ConsumedAPI-AUTH-GetEnrolments-GET") { enrolments(authority) }
+        monitor("ConsumedAPI-AUTH-GetEnrolments-GET") {
+          enrolments(authority)
+        }
           .map { e =>
             Some(AuthDetails(e.saAgentReferenceOption, e.arnOption, ggCredentialId(authority), affinityGroup(authority), agentUserRole(authority)))
           }
@@ -58,25 +61,22 @@ class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: Htt
   }
 
   private def currentAuthority()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[JsValue] =
-    httpGetAs[JsValue]("/auth/authority")
+    httpGet.GET[JsValue](authorityUrl.toString)
 
-  private def enrolments(authorityJson: JsValue)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Enrolments] =
-    httpGetAs[Set[AuthEnrolment]](enrolmentsRelativeUrl(authorityJson)).map(Enrolments(_))
+  def enrolments(authorityJson: JsValue)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Enrolments] =
+    httpGet.GET[Set[AuthEnrolment]](enrolmentsAbsoluteUrl(enrolmentsRelativeUrl(authorityJson)).toString).map(Enrolments(_))
 
-  private def enrolmentsRelativeUrl(authorityJson: JsValue) = (authorityJson \ "enrolments").as[String]
 
-  private def url(relativeUrl: String): URL = new URL(baseUrl, relativeUrl)
+  private def enrolmentsRelativeUrl(authorityJson: JsValue): String = (authorityJson \ "enrolments").as[String]
 
-  private def httpGetAs[T](relativeUrl: String)(implicit rds: HttpReads[T], hc: HeaderCarrier, ec: ExecutionContext): Future[T] =
-    httpGet.GET[T](url(relativeUrl).toString)(rds, hc)
-
+  private[connectors] def enrolmentsAbsoluteUrl(relativeUrl: String): URL = new URL(authorityUrl, relativeUrl)
 }
 
 
 case class AuthDetails(
-  saAgentReference: Option[SaAgentReference],
-  arn: Option[Arn],
-  ggCredentialId: String,
-  affinityGroup: Option[String],
-  agentUserRole: Option[String]
-)
+                        saAgentReference: Option[SaAgentReference],
+                        arn: Option[Arn],
+                        ggCredentialId: String,
+                        affinityGroup: Option[String],
+                        agentUserRole: Option[String]
+                      )
