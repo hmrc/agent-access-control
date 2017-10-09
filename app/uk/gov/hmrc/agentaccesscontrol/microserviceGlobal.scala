@@ -30,19 +30,17 @@ import play.api._
 import play.api.http.HttpFilters
 import play.api.mvc.{Call, EssentialFilter}
 import uk.gov.hmrc.agent.kenshoo.monitoring.MonitoringFilter
-import uk.gov.hmrc.play.audit.filters.AuditFilter
-import uk.gov.hmrc.play.audit.http.config.ErrorAuditingSettings
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
 import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
 import uk.gov.hmrc.play.config.{AppName, ControllerConfig, ServicesConfig}
-import uk.gov.hmrc.play.filters.MicroserviceFilterSupport
 import uk.gov.hmrc.play.graphite.GraphiteConfig
-import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
-import uk.gov.hmrc.play.http.{HttpGet, HttpPost, HttpPut}
 import uk.gov.hmrc.play.microservice.bootstrap.JsonErrorHandling
 import uk.gov.hmrc.play.microservice.bootstrap.Routing.RemovingOfTrailingSlashes
 import uk.gov.hmrc.whitelist.AkamaiWhitelistFilter
+import uk.gov.hmrc.http.{ HttpGet, HttpPost, HttpPut }
+import uk.gov.hmrc.play.microservice.config.ErrorAuditingSettings
+import uk.gov.hmrc.play.microservice.filters.{ AuditFilter, LoggingFilter, MicroserviceFilterSupport }
 
 
 class GuiceModule() extends AbstractModule with ServicesConfig {

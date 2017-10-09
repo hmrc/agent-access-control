@@ -25,12 +25,12 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.{AuditEvent, DataEvent}
-import uk.gov.hmrc.play.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.{Authorization, RequestId, SessionId}
+import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.logging.{ Authorization, RequestId, SessionId }
 
 class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
   "auditEvent" should {
@@ -55,7 +55,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
       )
 
       eventually {
-        val captor = ArgumentCaptor.forClass(classOf[AuditEvent])
+        val captor = ArgumentCaptor.forClass(classOf[DataEvent])
         verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
         captor.getValue shouldBe an[DataEvent]
         val sentEvent = captor.getValue.asInstanceOf[DataEvent]

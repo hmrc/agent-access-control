@@ -20,16 +20,16 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 import java.net.URL
 
 import com.kenshoo.play.metrics.Metrics
-import org.mockito.Matchers.{any, eq ⇒ eqs}
+import org.mockito.Matchers.{any, eq => eqs}
 import org.mockito.Mockito.{verify, when}
 import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.agentaccesscontrol.model.{AuthEnrolment, EnrolmentIdentifier}
 import uk.gov.hmrc.agentaccesscontrol.support.ResettingMockitoSugar
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpReads}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpReads}
 
 class AuthConnectorSpec extends UnitSpec with ResettingMockitoSugar {
 
@@ -56,16 +56,16 @@ class AuthConnectorSpec extends UnitSpec with ResettingMockitoSugar {
   "currentAuthDetails" should {
     "resolve the enrolments URL relative to the authority URL" in {
 
-      when(httpGet.GET[JsValue](eqs(authorityUrl))(any[HttpReads[JsValue]], any[HeaderCarrier]))
+      when(httpGet.GET[JsValue](eqs(authorityUrl))(any[HttpReads[JsValue]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future successful authorityJsonWithRelativeUrl)
 
 
       val asAgentEnrolment = AuthEnrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")), "Activated")
 
-      when(httpGet.GET[Set[AuthEnrolment]](eqs(expectedEnrolmentsUrl))(any[HttpReads[Set[AuthEnrolment]]], any[HeaderCarrier]))
+      when(httpGet.GET[Set[AuthEnrolment]](eqs(expectedEnrolmentsUrl))(any[HttpReads[Set[AuthEnrolment]]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future successful Set(asAgentEnrolment))
       val authority: Option[AuthDetails] = await(authConnector.currentAuthDetails)
-      verify(httpGet).GET[Set[AuthEnrolment]](eqs(expectedEnrolmentsUrl))(any[HttpReads[Set[AuthEnrolment]]], any[HeaderCarrier])
+      verify(httpGet).GET[Set[AuthEnrolment]](eqs(expectedEnrolmentsUrl))(any[HttpReads[Set[AuthEnrolment]]], any[HeaderCarrier], any[ExecutionContext])
     }
   }
 

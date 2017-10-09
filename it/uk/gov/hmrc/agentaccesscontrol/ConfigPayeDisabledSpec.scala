@@ -5,7 +5,7 @@ import java.util.Base64
 import play.utils.UriEncoding.encodePathSegment
 import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.HttpResponse
+import uk.gov.hmrc.http.HttpResponse
 
 class ConfigPayeDisabledSpec extends WireMockWithOneServerPerSuiteISpec {
 

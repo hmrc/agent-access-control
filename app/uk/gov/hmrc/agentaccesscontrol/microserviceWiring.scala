@@ -20,33 +20,36 @@ import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import play.api.Play
 import uk.gov.hmrc.agent.kenshoo.monitoring.MonitoredWSHttp
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.HttpAuditing
-import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.auth.microservice.connectors.AuthConnector
 import uk.gov.hmrc.play.config.{AppName, RunMode, ServicesConfig}
-import uk.gov.hmrc.play.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws._
+import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
+import uk.gov.hmrc.play.microservice.config.LoadAuditingConfig
 
-trait WSHttp extends WSGet with WSPut with WSPost with WSDelete with WSPatch with AppName with MonitoredWSHttp with HttpAuditing {
+trait WSHttp extends HttpGet with WSGet with HttpPut with WSPut with HttpPost with WSPost with HttpDelete with WSDelete with HttpPatch with WSPatch with Hooks with AppName with MonitoredWSHttp{
   val httpAPIs = Map(".*/sa/agents/\\w+/client/\\w+" -> "DES-GetSaAgentClientRelationship",
                      ".*/agents/regime/PAYE/agent/\\w+/client/\\w+" -> "DES-GetPayeAgentClientRelationship",
                      ".*/auth/authority" -> "AUTH-GetAuthority",
                      ".*/agencies/agentcode/\\w+" -> "AGENCIES-GetAgencyByAgentCode",
                      ".*/agent-client-relationships/agent/[^/]+/service/[^/]+/client/[^/]+/.*" -> "RELATIONSHIPS-GetAgentClientRelationship")
 
-  override val hooks: Seq[HttpHook] = Seq(AuditingHook)
   override lazy val kenshooRegistry: MetricRegistry = Play.current.injector.instanceOf[Metrics].defaultRegistry
 }
 
-object WSHttp extends WSHttp {
-  override val auditConnector = MicroserviceGlobal.auditConnector
+object WSHttp extends WSHttp
+
+trait Hooks extends HttpHooks with HttpAuditing {
+  override val hooks = Seq(AuditingHook)
+  override lazy val auditConnector: AuditConnector = MicroserviceGlobal.auditConnector
 }
 
 class MicroserviceAuditConnector extends AuditConnector with RunMode {
   override lazy val auditingConfig = LoadAuditingConfig(s"auditing")
 }
 
-object MicroserviceAuthConnector extends AuthConnector with ServicesConfig {
-  override val authBaseUrl = baseUrl("auth")
+object MicroserviceAuthConnector extends AuthConnector with ServicesConfig with WSHttp {
+  override val authBaseUrl: String = baseUrl("auth")
 }

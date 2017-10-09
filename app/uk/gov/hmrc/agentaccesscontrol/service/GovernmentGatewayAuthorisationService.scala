@@ -21,9 +21,9 @@ import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.agentaccesscontrol.connectors.GovernmentGatewayProxyConnector
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
-import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class GovernmentGatewayAuthorisationService @Inject() (val ggProxyConnector: GovernmentGatewayProxyConnector) extends LoggingAuthorisationResults {

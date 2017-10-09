@@ -20,7 +20,7 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessC
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.HttpResponse
+import uk.gov.hmrc.http.HttpResponse
 
 class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
 

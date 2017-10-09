@@ -6,7 +6,7 @@ import com.kenshoo.play.metrics.Metrics
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupport, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
-import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.http.HeaderCarrier
 
 class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupport {
 
