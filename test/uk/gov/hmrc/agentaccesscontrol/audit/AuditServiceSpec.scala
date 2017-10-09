@@ -58,7 +58,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         val captor = ArgumentCaptor.forClass(classOf[DataEvent])
         verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
         captor.getValue shouldBe an[DataEvent]
-        val sentEvent = captor.getValue.asInstanceOf[DataEvent]
+        val sentEvent = captor.getValue
 
         sentEvent.auditType shouldBe "AgentAccessControlDecision"
         sentEvent.detail("agentCode") shouldBe "TESTAGENTCODE"
