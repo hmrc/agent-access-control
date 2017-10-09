@@ -5,7 +5,7 @@ import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
 import uk.gov.hmrc.domain.AgentCode
-import uk.gov.hmrc.play.http.HttpResponse
+import uk.gov.hmrc.http.HttpResponse
 
 class MtdItAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   val agentCode = AgentCode("A11112222A")

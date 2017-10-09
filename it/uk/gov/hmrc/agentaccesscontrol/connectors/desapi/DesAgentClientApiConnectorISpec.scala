@@ -26,8 +26,8 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupport, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext
 
@@ -35,6 +35,7 @@ import scala.concurrent.ExecutionContext
 class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar with MetricTestSupport {
 
   implicit val headerCarrier = HeaderCarrier()
+  implicit val ec = ExecutionContext.global
 
   "getSaAgentClientRelationship" should {
     "request DES API with the correct auth tokens" in new Context {

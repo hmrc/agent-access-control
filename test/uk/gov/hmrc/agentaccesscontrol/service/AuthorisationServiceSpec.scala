@@ -26,10 +26,10 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessC
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier }
 
 
 class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {

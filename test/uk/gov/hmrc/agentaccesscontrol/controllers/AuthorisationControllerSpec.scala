@@ -28,10 +28,10 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdItAuthorisationService}
 import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.HeaderCarrier
 
 class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with MockitoSugar {
 

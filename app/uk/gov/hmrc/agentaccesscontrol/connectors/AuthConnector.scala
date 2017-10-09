@@ -25,9 +25,10 @@ import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.model.{AuthEnrolment, Enrolments}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, Upstream4xxResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, Upstream4xxResponse }
+
 
 @Singleton
 class AuthConnector @Inject()(@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet, metrics: Metrics) extends HttpAPIMonitor {

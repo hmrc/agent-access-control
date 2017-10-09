@@ -24,9 +24,9 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
 import uk.gov.hmrc.domain.AgentCode
-import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class MtdItAuthorisationService @Inject() (authConnector: AuthConnector,

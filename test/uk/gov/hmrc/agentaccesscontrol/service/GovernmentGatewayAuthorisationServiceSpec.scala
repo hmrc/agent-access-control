@@ -23,10 +23,10 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AssignedAgent, AssignedCredentials, GovernmentGatewayProxyConnector}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.HeaderCarrier
 
 class GovernmentGatewayAuthorisationServiceSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 

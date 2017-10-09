@@ -44,7 +44,7 @@ trait MicroService {
     .settings(routesImport ++= Seq("uk.gov.hmrc.agentaccesscontrol.binders.PathBinders._"))
     .settings(
       targetJvm := "jvm-1.8",
-      scalaVersion := "2.11.8",
+      scalaVersion := "2.11.11",
       libraryDependencies ++= appDependencies,
       retrieveManaged := true,
       evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),

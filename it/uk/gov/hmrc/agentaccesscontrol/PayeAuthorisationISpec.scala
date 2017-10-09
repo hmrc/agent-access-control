@@ -3,9 +3,9 @@ package uk.gov.hmrc.agentaccesscontrol
 import play.utils.UriEncoding.encodePathSegment
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{WireMockWithOneServerPerSuiteISpec, Resource}
+import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef}
-import uk.gov.hmrc.play.http.HttpResponse
+import uk.gov.hmrc.http.HttpResponse
 
 class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   val agentCode = AgentCode("A11112222A")

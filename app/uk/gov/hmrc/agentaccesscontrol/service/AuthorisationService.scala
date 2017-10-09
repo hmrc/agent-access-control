@@ -22,9 +22,9 @@ import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
 import uk.gov.hmrc.domain._
-import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationService,

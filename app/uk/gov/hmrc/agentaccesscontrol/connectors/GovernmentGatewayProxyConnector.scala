@@ -27,11 +27,11 @@ import play.api.http.HeaderNames.CONTENT_TYPE
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost}
 
 import scala.concurrent.Future
 import scala.xml.Elem
 import com.kenshoo.play.metrics.Metrics
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpPost }
 
 case class AssignedAgent(
   allocatedAgentCode: AgentCode,

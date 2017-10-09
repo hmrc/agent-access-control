@@ -6,11 +6,11 @@ import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
-import uk.gov.hmrc.play.http.{HeaderCarrier, Upstream5xxResponse}
 
 import scala.xml.SAXParseException
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
+import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
 
 class GovernmentGatewayProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
 

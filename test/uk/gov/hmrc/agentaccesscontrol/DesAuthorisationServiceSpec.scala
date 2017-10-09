@@ -22,10 +22,10 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier }
 
 
 class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {

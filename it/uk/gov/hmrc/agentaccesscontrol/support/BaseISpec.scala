@@ -26,9 +26,9 @@ import play.api.test.FakeApplication
 import uk.gov.hmrc.agentaccesscontrol.{StartAndStopWireMock, WSHttp}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
 import uk.gov.hmrc.domain._
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext
@@ -443,7 +443,7 @@ trait DesStub[A] {
   trait MockAuditingContext extends MockitoSugar with Eventually {
     val mockAuditConnector = mock[AuditConnector]
     val wsHttp = new WSHttp {
-      override def auditConnector = mockAuditConnector
+      override lazy val auditConnector = mockAuditConnector
     }
 
     def capturedEvent() = {
