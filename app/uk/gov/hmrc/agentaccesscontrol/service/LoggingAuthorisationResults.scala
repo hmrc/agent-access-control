@@ -19,13 +19,23 @@ package uk.gov.hmrc.agentaccesscontrol.service
 import play.api.Logger
 
 trait LoggingAuthorisationResults {
-  protected def notAuthorised(message: String) = {
+  protected def notAuthorised(message: String): Boolean = {
     Logger.info(s"Not authorised: $message")
     false
   }
 
-  protected def authorised(message: String) = {
+  protected def authorised(message: String): Boolean = {
     Logger.info(s"Authorised: $message")
     true
+  }
+
+  protected def found(message: String): Boolean = {
+    Logger.info(s"Found: $message")
+    true
+  }
+
+  protected def notFound(message: String): Boolean = {
+    Logger.info(s"notFound: $message")
+    false
   }
 }

@@ -20,23 +20,24 @@ import javax.inject.{Inject, Singleton}
 
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
-import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
+import uk.gov.hmrc.agentaccesscontrol.connectors.{AfiRelationshipConnector, AuthConnector, AuthDetails}
 import uk.gov.hmrc.domain._
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
-class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationService,
-                           authConnector: AuthConnector,
-                           ggAuthorisationService: GovernmentGatewayAuthorisationService,
-                           auditService: AuditService)
+class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationService,
+                                     authConnector: AuthConnector,
+                                     ggAuthorisationService: GovernmentGatewayAuthorisationService,
+                                     auditService: AuditService,
+                                     afiRelationshipConnector: AfiRelationshipConnector)
   extends LoggingAuthorisationResults {
 
   def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr)
-    (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
+                       (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
-      case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), _, ggCredentialId, _, _)) =>
+      case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), _, ggCredentialId, _, _, _)) =>
         for {
           ggw <- ggAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, ggCredentialId, saUtr)
           maybeCesa <- checkCesaIfNecessary(ggw, agentCode, saAgentReference, saUtr)
@@ -49,7 +50,7 @@ class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationS
           if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
           else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr ggw=$ggw cesa=$cesaDescription")
         }
-      case Some(agentAuthDetails@AuthDetails(None, _, _, _, _)) =>
+      case Some(agentAuthDetails@AuthDetails(None, _, _, _, _, _)) =>
         auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result = false)
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
       case None =>
@@ -57,15 +58,15 @@ class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationS
     }
 
   private def checkCesaIfNecessary(ggw: Boolean, agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)
-    (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Boolean]] =
+                                  (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Boolean]] =
     if (ggw) desAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr).map(Some.apply)
     else Future successful None
 
 
   def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef)
-    (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
+                         (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
-      case Some(agentAuthDetails@AuthDetails(_, _, ggCredentialId, _, _)) =>
+      case Some(agentAuthDetails@AuthDetails(_, _, ggCredentialId, _, _, _)) =>
         for {
           ggw <- ggAuthorisationService.isAuthorisedForPayeInGovernmentGateway(agentCode, ggCredentialId, empRef)
           maybeEbs <- checkEbsIfNecessary(ggw, agentCode, empRef)
@@ -82,7 +83,7 @@ class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationS
     }
 
   private def checkEbsIfNecessary(ggw: Boolean, agentCode: AgentCode, empRef: EmpRef)
-    (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Boolean]] =
+                                 (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Boolean]] =
     if (ggw) desAuthorisationService.isAuthorisedInEbs(agentCode, empRef).map(Some.apply)
     else Future successful None
 
@@ -90,11 +91,23 @@ class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationS
     maybeEbs.getOrElse("notChecked")
   }
 
+  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino): Future[Boolean] = {
+    authConnector.currentAuthDetails().flatMap {
+      case Some(AuthDetails(_, Some(arn), _, _, _, Some(authProviderId))) =>
+        val arnValue = arn.value
+        afiRelationshipConnector.hasRelationship(arnValue, nino.value) map { hasRelationship =>
+          //TODO - add auditing success and failure here
+          if (hasRelationship) found("Relationship Found") else notFound("No relationship found")
+        }
+      case _ => Future successful notFound("Error retrieving arn and authProviderId")
+    }
+  }
+
 
   private def auditDecision(
                              agentCode: AgentCode, agentAuthDetails: AuthDetails, regime: String, taxIdentifier: TaxIdentifier,
                              result: Boolean, extraDetails: (String, Any)*)
-    (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
+                           (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
     val optionalDetails = Seq(
       agentAuthDetails.saAgentReference.map("saAgentReference" -> _),
       agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
@@ -108,7 +121,7 @@ class AuthorisationService @Inject() (desAuthorisationService: DesAuthorisationS
       taxIdentifier,
       Seq("credId" -> agentAuthDetails.ggCredentialId,
         "accessGranted" -> result)
-      ++ extraDetails
-      ++ optionalDetails)
+        ++ extraDetails
+        ++ optionalDetails)
   }
 }

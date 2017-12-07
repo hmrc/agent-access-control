@@ -24,17 +24,18 @@ import play.api.mvc.Action
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdItAuthorisationService}
 import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
 import scala.concurrent.Future
 
 
-
 @Singleton
 class AuthorisationController @Inject()(override val auditService: AuditService,
                                         authorisationService: AuthorisationService,
-                                        mtdItAuthorisationService: MtdItAuthorisationService, configuration: Configuration) extends BaseController with Audit {
+                                        mtdItAuthorisationService: MtdItAuthorisationService,
+                                        configuration: Configuration)
+  extends BaseController with Audit {
 
   def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr) = Action.async { implicit request =>
     authorisationService.isAuthorisedForSa(agentCode, saUtr).map {
@@ -52,16 +53,22 @@ class AuthorisationController @Inject()(override val auditService: AuditService,
 
   def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef) = Action.async { implicit request =>
 
-    val payeEnabled : Boolean = configuration.getBoolean("features.allowPayeAccess").getOrElse(false)
+    val payeEnabled: Boolean = configuration.getBoolean("features.allowPayeAccess").getOrElse(false)
 
-    if(payeEnabled) {
-      authorisationService.isAuthorisedForPaye (agentCode, empRef) map {
+    if (payeEnabled) {
+      authorisationService.isAuthorisedForPaye(agentCode, empRef) map {
         case true => Ok
         case _ => Unauthorized
       }
     }
     else {
       Future(Forbidden)
+    }
+  }
+
+  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino) = Action.async { implicit request =>
+    authorisationService.isAuthorisedForAfi(agentCode, nino) map { isAuthorised =>
+      if(isAuthorised) Ok else NotFound
     }
   }
 }

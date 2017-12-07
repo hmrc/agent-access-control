@@ -42,7 +42,12 @@ class AuthConnector @Inject()(@Named("auth-baseUrl") baseUrl: URL, httpGet: Http
           enrolments(authority)
         }
           .map { e =>
-            Some(AuthDetails(e.saAgentReferenceOption, e.arnOption, ggCredentialId(authority), affinityGroup(authority), agentUserRole(authority)))
+            Some(AuthDetails(e.saAgentReferenceOption,
+              e.arnOption,
+              ggCredentialId(authority),
+              affinityGroup(authority),
+              agentUserRole(authority),
+              extractCredId(authority)))
           }
       }) recover {
       case ex: Upstream4xxResponse if ex.upstreamResponseCode == 401 => None
@@ -60,6 +65,8 @@ class AuthConnector @Inject()(@Named("auth-baseUrl") baseUrl: URL, httpGet: Http
   private def agentUserRole(authorityJson: JsValue): Option[String] = {
     (authorityJson \ "accounts" \ "agent" \ "agentUserRole").asOpt[String]
   }
+
+  private def extractCredId(authorityJson: JsValue): Option[String] = Some((authorityJson \ "credId").as[String])
 
   private def currentAuthority()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[JsValue] =
     httpGet.GET[JsValue](authorityUrl.toString)
@@ -79,5 +86,6 @@ case class AuthDetails(
                         arn: Option[Arn],
                         ggCredentialId: String,
                         affinityGroup: Option[String],
-                        agentUserRole: Option[String]
+                        agentUserRole: Option[String],
+                        authProviderId: Option[String]
                       )
