@@ -24,12 +24,12 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
-import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
+import uk.gov.hmrc.agentaccesscontrol.connectors.{AfiRelationshipConnector, AuthConnector, AuthDetails}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier }
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
 
 
 class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
@@ -191,11 +191,13 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     val mockDesAuthorisationService = mock[DesAuthorisationService]
     val mockGGAuthorisationService = mock[GovernmentGatewayAuthorisationService]
     val mockAuditService = mock[AuditService]
+    val mockAfiRelationshipConnector = mock[AfiRelationshipConnector]
     val authorisationService = new AuthorisationService(
       mockDesAuthorisationService,
       mockAuthConnector,
       mockGGAuthorisationService,
-      mockAuditService)
+      mockAuditService,
+      mockAfiRelationshipConnector)
 
     def agentIsNotLoggedIn() =
       when(mockAuthConnector.currentAuthDetails()).thenReturn(None)

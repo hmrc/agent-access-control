@@ -34,10 +34,13 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
                                      afiRelationshipConnector: AfiRelationshipConnector)
   extends LoggingAuthorisationResults {
 
+  private val accessGranted = true
+  private val accessDenied = false
+
   def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr)
                        (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
-      case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), _, ggCredentialId, _, _, _)) =>
+      case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), _, ggCredentialId, _, _)) =>
         for {
           ggw <- ggAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, ggCredentialId, saUtr)
           maybeCesa <- checkCesaIfNecessary(ggw, agentCode, saAgentReference, saUtr)
@@ -50,7 +53,7 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
           if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
           else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr ggw=$ggw cesa=$cesaDescription")
         }
-      case Some(agentAuthDetails@AuthDetails(None, _, _, _, _, _)) =>
+      case Some(agentAuthDetails@AuthDetails(None, _, _, _, _)) =>
         auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result = false)
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
       case None =>
@@ -66,7 +69,7 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
   def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef)
                          (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
-      case Some(agentAuthDetails@AuthDetails(_, _, ggCredentialId, _, _, _)) =>
+      case Some(agentAuthDetails@AuthDetails(_, _, ggCredentialId, _, _)) =>
         for {
           ggw <- ggAuthorisationService.isAuthorisedForPayeInGovernmentGateway(agentCode, ggCredentialId, empRef)
           maybeEbs <- checkEbsIfNecessary(ggw, agentCode, empRef)
@@ -91,15 +94,21 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
     maybeEbs.getOrElse("notChecked")
   }
 
-  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino): Future[Boolean] = {
+  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino)
+                        (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
     authConnector.currentAuthDetails().flatMap {
-      case Some(AuthDetails(_, Some(arn), _, _, _, Some(authProviderId))) =>
+      case Some(authDetails@AuthDetails(_, Some(arn), _, _, _)) =>
         val arnValue = arn.value
         afiRelationshipConnector.hasRelationship(arnValue, nino.value) map { hasRelationship =>
-          //TODO - add auditing success and failure here
-          if (hasRelationship) found("Relationship Found") else notFound("No relationship found")
+          if (hasRelationship) {
+            auditDecision(agentCode, authDetails, "afi", nino, accessGranted, "" -> "")
+            found("Relationship Found")
+          } else {
+            auditDecision(agentCode, authDetails, "afi", nino, accessDenied, "" -> "")
+            notFound("No relationship found")
+          }
         }
-      case _ => Future successful notFound("Error retrieving arn and authProviderId")
+      case _ => Future successful notFound("Error retrieving arn")
     }
   }
 

@@ -20,10 +20,10 @@ import java.net.URL
 import javax.inject.{Inject, Named}
 
 import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpResponse, NotFoundException}
-
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import scala.concurrent.Future
 
-class AfiRelationshipConnector @Inject()(@Named("agent-fi-relationship-baseURL") url: URL,
+class AfiRelationshipConnector @Inject()(@Named("agent-fi-relationship-baseUrl") url: URL,
                                          httpGet: HttpGet) {
 
   private def buildUrl(arn: String, clientId: String): String = {
