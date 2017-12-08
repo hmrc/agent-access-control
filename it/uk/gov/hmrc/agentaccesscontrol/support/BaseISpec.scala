@@ -47,7 +47,9 @@ abstract class WireMockISpec extends UnitSpec
     "auditing.consumer.baseUri.host" -> wiremockHost,
     "auditing.consumer.baseUri.port" -> wiremockPort,
     "microservice.services.agent-client-relationships.host" -> wiremockHost,
-    "microservice.services.agent-client-relationships.port" -> wiremockPort
+    "microservice.services.agent-client-relationships.port" -> wiremockPort,
+    "microservice.services.agent-fi-relationship.host" -> wiremockHost,
+    "microservice.services.agent-fi-relationship.port" -> wiremockPort
   )
 }
 
@@ -95,13 +97,34 @@ trait StubUtils {
   class AgentAdmin(override val agentCode: String,
                    override val agentCredId: String,
                    override val oid: String)
-    extends AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with GovernmentGatewayProxyStubs[AgentAdmin]
+    extends AfiStub[AgentAdmin] with AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with GovernmentGatewayProxyStubs[AgentAdmin]
 
   class MtdAgency(override val arn: Arn)
     extends RelationshipsStub[MtdAgency]
 
+  trait AfiStub[A] {
+    me: A =>
 
-trait DesStub[A] {
+    def andHasRelationship(arn: Arn, clientId: Nino): A = {
+      stubFor(get(urlPathMatching(s"/agent-fi-relationship/relationships/afi/agent/${arn.value}/client/${clientId.value}")).
+        willReturn(aResponse().withStatus(200)))
+      this
+    }
+
+    def andHasNoRelationship(arn: Arn, clientId: Nino): A = {
+      stubFor(get(urlPathMatching(s"/agent-fi-relationship/relationships/afi/agent/${arn.value}/client/${clientId.value}")).
+        willReturn(aResponse().withStatus(404)))
+      this
+    }
+
+    def statusReturnedForRelationship(arn: Arn, clientId: Nino, statusCode: Int): A = {
+      stubFor(get(urlPathMatching(s"/agent-fi-relationship/relationships/afi/agent/${arn.value}/client/${clientId.value}")).
+        willReturn(aResponse().withStatus(statusCode)))
+      this
+    }
+  }
+
+  trait DesStub[A] {
     me: A with AuthStubs[A] =>
 
     def andDesIsDown(): A = {
@@ -138,8 +161,11 @@ trait DesStub[A] {
 
     class SaDesStubBuilder(client: SaUtr, authorizationToken: String, environment: String) {
       def andIsAuthorisedByOnly648(): A = withFlags(true, false)
+
       def andIsAuthorisedByOnlyI648(): A = withFlags(false, true)
+
       def butIsNotAuthorised(): A = withFlags(false, false)
+
       def andAuthorisedByBoth648AndI648(): A = withFlags(true, true)
 
       private def withFlags(auth_64_8: Boolean, auth_i64_8: Boolean): A = {
@@ -147,11 +173,11 @@ trait DesStub[A] {
           .withHeader("Authorization", equalTo(s"Bearer $authorizationToken"))
           .withHeader("Environment", equalTo(environment))
           .willReturn(aResponse().withStatus(200).withBody(
-          s"""
-             |{
-             |    "Auth_64-8": $auth_64_8,
-             |    "Auth_i64-8": $auth_i64_8
-             |}
+            s"""
+               |{
+               |    "Auth_64-8": $auth_64_8,
+               |    "Auth_i64-8": $auth_i64_8
+               |}
         """.stripMargin)))
         DesStub.this
       }
@@ -159,6 +185,7 @@ trait DesStub[A] {
 
     class PayeDesStubBuilder(client: EmpRef, authorizationToken: String, environment: String) {
       def andIsAuthorisedBy648(): A = withFlags(true)
+
       def butIsNotAuthorised(): A = withFlags(false)
 
       private def withFlags(auth_64_8: Boolean): A = {
@@ -166,10 +193,10 @@ trait DesStub[A] {
           .withHeader("Authorization", equalTo(s"Bearer $authorizationToken"))
           .withHeader("Environment", equalTo(environment))
           .willReturn(aResponse().withStatus(200).withBody(
-          s"""
-             |{
-             |    "Auth_64-8": $auth_64_8
-             |}
+            s"""
+               |{
+               |    "Auth_64-8": $auth_64_8
+               |}
         """.stripMargin)))
         DesStub.this
       }
@@ -180,6 +207,7 @@ trait DesStub[A] {
   trait GovernmentGatewayProxyStubs[A] {
     me: A =>
     def agentCode: String
+
     def agentCredId: String
 
     val path: String = "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents"
@@ -310,12 +338,16 @@ trait DesStub[A] {
       this
     }
   }
+
   trait AuthStubs[A] {
     me: A =>
 
     def oid: String
+
     def agentCode: String
+
     def agentCredId: String
+
     protected var saAgentReference: Option[SaAgentReference] = None
 
     def andGettingEnrolmentsFailsWith500(): A = {
@@ -432,10 +464,10 @@ trait DesStub[A] {
 
     def hasNoRelationshipWith(clientId: MtdItId): A = statusReturnedForRelationship(clientId, 404)
 
-    def statusReturnedForRelationship(clientId: MtdItId, status: Int): A =  {
+    def statusReturnedForRelationship(clientId: MtdItId, status: Int): A = {
       stubFor(get(urlEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/${clientId.value}"))
-              .willReturn(aResponse()
-                .withStatus(status)))
+        .willReturn(aResponse()
+          .withStatus(status)))
       this
     }
   }
@@ -456,4 +488,5 @@ trait DesStub[A] {
       }
     }
   }
+
 }

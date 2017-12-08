@@ -42,7 +42,11 @@ class AuthConnector @Inject()(@Named("auth-baseUrl") baseUrl: URL, httpGet: Http
           enrolments(authority)
         }
           .map { e =>
-            Some(AuthDetails(e.saAgentReferenceOption, e.arnOption, ggCredentialId(authority), affinityGroup(authority), agentUserRole(authority)))
+            Some(AuthDetails(e.saAgentReferenceOption,
+              e.arnOption,
+              ggCredentialId(authority),
+              affinityGroup(authority),
+              agentUserRole(authority)))
           }
       }) recover {
       case ex: Upstream4xxResponse if ex.upstreamResponseCode == 401 => None

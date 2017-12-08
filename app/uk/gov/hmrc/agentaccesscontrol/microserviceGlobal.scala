@@ -53,6 +53,7 @@ class GuiceModule() extends AbstractModule with ServicesConfig {
     bindBaseUrl("agent-client-relationships")
     bindBaseUrl("des")
     bindBaseUrl("government-gateway-proxy")
+    bindBaseUrl("agent-fi-relationship")
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
   }
