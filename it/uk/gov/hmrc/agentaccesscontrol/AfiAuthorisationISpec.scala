@@ -29,7 +29,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   val clientId = Nino("AE123456C")
   val arn = Arn("TARN0000001")
 
-  "/agent-access-control/afi/agent/:agentCode/client/:nino" should {
+  "/agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
     "respond with 200" when {
       "the client has authorised the agent" in {
         given()
@@ -41,7 +41,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
 
         DataStreamStub.verifyAuditRequestSent(
           AgentAccessControlDecision,
-          Map("path" -> s"/agent-access-control/afi/agent/$agentCode/client/$clientId"))
+          Map("path" -> s"/agent-access-control/afi-auth/agent/$agentCode/client/$clientId"))
       }
 
     }
@@ -57,13 +57,13 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
 
         DataStreamStub.verifyAuditRequestSent(
           AgentAccessControlDecision,
-          Map("path" -> s"/agent-access-control/afi/agent/$agentCode/client/$clientId"))
+          Map("path" -> s"/agent-access-control/afi-auth/agent/$agentCode/client/$clientId"))
       }
     }
   }
 
   def authResponseFor(agentCode: AgentCode, nino: Nino): HttpResponse =
-    new Resource(s"/agent-access-control/afi/agent/${agentCode.value}/client/${nino.value}")(port).get()
+    new Resource(s"/agent-access-control/afi-auth/agent/${agentCode.value}/client/${nino.value}")(port).get()
 
 
 }
