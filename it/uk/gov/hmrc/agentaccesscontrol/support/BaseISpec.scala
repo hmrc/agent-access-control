@@ -106,19 +106,19 @@ trait StubUtils {
     me: A =>
 
     def andHasRelationship(arn: Arn, clientId: Nino): A = {
-      stubFor(get(urlPathMatching(s"/agent-fi-relationship/relationships/afi/agent/${arn.value}/client/${clientId.value}")).
+      stubFor(get(urlPathMatching(s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/${arn.value}/client/${clientId.value}")).
         willReturn(aResponse().withStatus(200)))
       this
     }
 
     def andHasNoRelationship(arn: Arn, clientId: Nino): A = {
-      stubFor(get(urlPathMatching(s"/agent-fi-relationship/relationships/afi/agent/${arn.value}/client/${clientId.value}")).
+      stubFor(get(urlPathMatching(s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/${arn.value}/client/${clientId.value}")).
         willReturn(aResponse().withStatus(404)))
       this
     }
 
     def statusReturnedForRelationship(arn: Arn, clientId: Nino, statusCode: Int): A = {
-      stubFor(get(urlPathMatching(s"/agent-fi-relationship/relationships/afi/agent/${arn.value}/client/${clientId.value}")).
+      stubFor(get(urlPathMatching(s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/${arn.value}/client/${clientId.value}")).
         willReturn(aResponse().withStatus(statusCode)))
       this
     }
