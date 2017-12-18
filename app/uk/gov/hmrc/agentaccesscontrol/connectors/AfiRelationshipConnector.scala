@@ -27,7 +27,7 @@ class AfiRelationshipConnector @Inject()(@Named("agent-fi-relationship-baseUrl")
                                          httpGet: HttpGet) {
 
   private def buildUrl(arn: String, clientId: String): String = {
-    s"${url.toString}/agent-fi-relationship/relationships/afi/agent/$arn/client/$clientId"
+    s"${url.toString}/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId"
   }
 
   def hasRelationship(arn: String, clientId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
