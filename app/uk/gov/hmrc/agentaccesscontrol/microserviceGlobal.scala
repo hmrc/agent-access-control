@@ -93,7 +93,8 @@ object MicroserviceAuditFilter extends AuditFilter with AppName with Microservic
 class MicroserviceMonitoringFilter @Inject() (metrics: Metrics)
   extends MonitoringFilter(Map(".*/sa-auth/agent/\\w+/client/\\w+" -> "Agent-SA-Access-Control",
                                ".*/epaye-auth/agent/\\w+/client/[\\w%]+" -> "Agent-PAYE-Access-Control",
-                               ".*/mtd-it-auth/agent/\\w+/client/\\w+" -> "Agent-MTD-IT-Access-Control"),
+                               ".*/mtd-it-auth/agent/\\w+/client/\\w+" -> "Agent-MTD-IT-Access-Control",
+                               ".*/afi-auth/agent/\\w+/client/\\w+" -> "Agent-PIR-Access-Control"),
                            metrics.defaultRegistry) with MicroserviceFilterSupport
 
 object MicroserviceLoggingFilter extends LoggingFilter with MicroserviceFilterSupport {
