@@ -61,4 +61,9 @@ class Resource(path: String)(port: Int) {
   def get(trueClientIp: Option[String] = None) =
     Http.get(url)(HeaderCarrier(trueClientIp = trueClientIp))
 
+  def post[A](trueClientIp: Option[String] = None, body: A) (implicit writes: Writes[A])= {
+    implicit val headerCarrier = HeaderCarrier(trueClientIp = trueClientIp)
+    Http.post(url, body)
+  }
+
 }

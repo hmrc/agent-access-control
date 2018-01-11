@@ -11,7 +11,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   val agentCode = AgentCode("A11112222A")
   val empRef = EmpRef("123", "123456")
 
-  "/agent-access-control/epaye-auth/agent/:agentCode/client/:empRef" should {
+  private def aPayeEndpoint(method: String){
     "return 200 when access is granted" in {
       given().agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
@@ -19,7 +19,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
-      val status = authResponseFor(agentCode, empRef).status
+      val status = authResponseFor(agentCode, empRef, method).status
 
       status shouldBe 200
     }
@@ -31,18 +31,18 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
-      val status = authResponseFor(agentCode, empRef).status
+      val status = authResponseFor(agentCode, empRef, method).status
 
       status shouldBe 401
     }
 
-    "return 502 if a downstream service fails" in{
+    "return 502 if a downstream service fails" in {
       given().agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
         .andIsAllocatedAndAssignedToClient(empRef)
         .andDesIsDown()
 
-      val status = authResponseFor(agentCode, empRef).status
+      val status = authResponseFor(agentCode, empRef, method).status
 
       status shouldBe 502
     }
@@ -56,7 +56,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
-      authResponseFor(agentCode, empRef).status shouldBe 200
+      authResponseFor(agentCode, empRef, method).status shouldBe 200
       metricsRegistry.getTimers().get("Timer-API-Agent-PAYE-Access-Control-GET").getCount should be >= 1L
     }
 
@@ -68,7 +68,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
-      authResponseFor(agentCode, empRef).status shouldBe 200
+      authResponseFor(agentCode, empRef, method).status shouldBe 200
 
       DataStreamStub.verifyAuditRequestSent(
         AgentAccessControlDecision,
@@ -76,6 +76,21 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     }
   }
 
-  def authResponseFor(agentCode: AgentCode, empRef: EmpRef): HttpResponse =
-    new Resource(s"/agent-access-control/epaye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}")(port).get()
+  "GET /agent-access-control/epaye-auth/agent/:agentCode/client/:empRef" should {
+    behave like aPayeEndpoint("GET")
+  }
+
+  "POST /agent-access-control/epaye-auth/agent/:agentCode/client/:empRef" should {
+    behave like aPayeEndpoint("POST")
+  }
+
+  def authResponseFor(agentCode: AgentCode, empRef: EmpRef, method: String): HttpResponse = {
+    val resource = new Resource(s"/agent-access-control/epaye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}")(port)
+    method match {
+      case "GET" => resource.get()
+      case "POST" => resource.post(body = """{"foo": "bar"}""")
+    }
+  }
+
+
 }

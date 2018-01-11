@@ -28,13 +28,13 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   val saAgentReference = SaAgentReference("ABC456")
   val clientUtr = SaUtr("123")
 
-  "/agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
+  private def anSaEndpoint(method: String){
     "respond with 401" when {
       "agent is not logged in" in {
         given()
           .agentAdmin(agentCode).isNotLoggedIn()
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 401
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "agent and client has no relation in DES" in {
@@ -44,7 +44,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andIsAllocatedAndAssignedToClient(clientUtr)
           .andHasNoRelationInDesWith(clientUtr)
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 401
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client has authorised the agent only with 64-8, but not i64-8" in {
@@ -54,7 +54,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andIsAllocatedAndAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnly648()
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 401
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client has authorised the agent only with i64-8, but not 64-8" in {
@@ -64,7 +64,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andIsAllocatedAndAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnlyI648()
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 401
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client has not authorised the agent" in {
@@ -74,7 +74,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andIsAllocatedAndAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).butIsNotAuthorised()
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 401
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client is not allocated to the agency in GG" in {
@@ -84,7 +84,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andIsNotAllocatedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 401
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client is allocated to the agency but not assigned to the agent in GG" in {
@@ -94,7 +94,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andIsAllocatedButNotAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 401
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
     }
 
@@ -106,7 +106,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andIsAllocatedAndAssignedToClient(clientUtr)
           .andDesIsDown()
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 502
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 502
       }
 
       "GG is down" in {
@@ -116,7 +116,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
           .andGGIsDown(clientUtr)
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 502
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 502
       }
     }
 
@@ -129,7 +129,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andIsAllocatedAndAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 200
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
       "the client has authorised the agent with both 64-8 and i64-8" in  {
@@ -139,7 +139,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andIsAllocatedAndAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
-        authResponseFor(agentCode, clientUtr).status shouldBe 200
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
     }
 
@@ -151,7 +151,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         .andIsAllocatedAndAssignedToClient(clientUtr)
         .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
-      authResponseFor(agentCode, clientUtr).status shouldBe 200
+      authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       metricsRegistry.getTimers().get("Timer-API-Agent-SA-Access-Control-GET").getCount should be >= 1L
     }
 
@@ -162,16 +162,28 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         .andIsAllocatedAndAssignedToClient(clientUtr)
         .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
-      authResponseFor(agentCode, clientUtr).status shouldBe 200
+      authResponseFor(agentCode, clientUtr, method).status shouldBe 200
 
       DataStreamStub.verifyAuditRequestSent(
         AgentAccessControlDecision,
         Map("path" -> s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientUtr"))
     }
   }
-  
-  def authResponseFor(agentCode: AgentCode, clientSaUtr: SaUtr): HttpResponse =
-    new Resource(s"/agent-access-control/sa-auth/agent/${agentCode.value}/client/${clientSaUtr.value}")(port).get()
 
+  "GET /agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
+    behave like anSaEndpoint("GET")
+  }
+
+  "POST /agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
+    behave like anSaEndpoint("POST")
+  }
+  
+  def authResponseFor(agentCode: AgentCode, clientSaUtr: SaUtr, method: String): HttpResponse = {
+    val resource = new Resource(s"/agent-access-control/sa-auth/agent/${agentCode.value}/client/${clientSaUtr.value}")(port)
+    method match {
+      case "GET" => resource.get()
+      case "POST" => resource.post(body = """{"foo": "bar"}""")
+    }
+  }
 
 }
