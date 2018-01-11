@@ -29,7 +29,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   val clientId = Nino("AE123456C")
   val arn = Arn("TARN0000001")
 
-  "/agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
+  private def anAfiEndpoint(method: String) ={
     "respond with 200" when {
       "the client has authorised the agent" in {
         given()
@@ -37,7 +37,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andHasHmrcAsAgentEnrolment(arn)
           .andHasRelationship(arn, clientId)
 
-        authResponseFor(agentCode, clientId).status shouldBe 200
+        authResponseFor(agentCode, clientId, method).status shouldBe 200
 
         DataStreamStub.verifyAuditRequestSent(
           AgentAccessControlDecision,
@@ -53,7 +53,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
           .andHasHmrcAsAgentEnrolment(arn)
           .andHasNoRelationship(arn, clientId)
 
-        authResponseFor(agentCode, clientId).status shouldBe 404
+        authResponseFor(agentCode, clientId, method).status shouldBe 404
 
         DataStreamStub.verifyAuditRequestSent(
           AgentAccessControlDecision,
@@ -62,8 +62,19 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     }
   }
 
-  def authResponseFor(agentCode: AgentCode, nino: Nino): HttpResponse =
-    new Resource(s"/agent-access-control/afi-auth/agent/${agentCode.value}/client/${nino.value}")(port).get()
+  "GET /agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
+    behave like anAfiEndpoint("GET")
+  }
 
+  "POST /agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
+    behave like anAfiEndpoint("POST")
+  }
 
+  def authResponseFor(agentCode: AgentCode, nino: Nino, method: String): HttpResponse = {
+    val resource = new Resource(s"/agent-access-control/afi-auth/agent/${agentCode.value}/client/${nino.value}")(port)
+    method match {
+      case "GET" => resource.get()
+      case "POST" => resource.post(body = """{"foo": "bar"}""")
+    }
+  }
 }

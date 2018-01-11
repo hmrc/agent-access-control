@@ -4,5 +4,10 @@ GET        /sa-auth/agent/:agentCode/client/:saUtr              @uk.gov.hmrc.age
 GET        /mtd-it-auth/agent/:agentCode/client/:mtdItId        @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForMtdIt(agentCode: uk.gov.hmrc.domain.AgentCode, mtdItId: uk.gov.hmrc.agentmtdidentifiers.model.MtdItId)
 GET        /afi-auth/agent/:agentCode/client/:nino              @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForAfi(agentCode: uk.gov.hmrc.domain.AgentCode, nino: uk.gov.hmrc.domain.Nino)
 
+POST       /epaye-auth/agent/:agentCode/client/:empRef          @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForPaye(agentCode: uk.gov.hmrc.domain.AgentCode, empRef: uk.gov.hmrc.domain.EmpRef)
+POST       /sa-auth/agent/:agentCode/client/:saUtr              @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForSa(agentCode: uk.gov.hmrc.domain.AgentCode, saUtr: uk.gov.hmrc.domain.SaUtr)
+POST       /mtd-it-auth/agent/:agentCode/client/:mtdItId        @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForMtdIt(agentCode: uk.gov.hmrc.domain.AgentCode, mtdItId: uk.gov.hmrc.agentmtdidentifiers.model.MtdItId)
+POST       /afi-auth/agent/:agentCode/client/:nino              @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForAfi(agentCode: uk.gov.hmrc.domain.AgentCode, nino: uk.gov.hmrc.domain.Nino)
+
 # For whitelisting
 GET        /forbidden                                           @uk.gov.hmrc.agentaccesscontrol.controllers.WhitelistController.forbidden
