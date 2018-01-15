@@ -29,7 +29,8 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   val clientId = Nino("AE123456C")
   val arn = Arn("TARN0000001")
 
-  private def anAfiEndpoint(method: String) ={
+  "GET /agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
+    val method = "GET"
     "respond with 200" when {
       "the client has authorised the agent" in {
         given()
@@ -62,12 +63,38 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     }
   }
 
-  "GET /agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
-    anAfiEndpoint("GET")
-  }
-
   "POST /agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
-    anAfiEndpoint("POST")
+    val method = "POST"
+    "respond with 200" when {
+      "the client has authorised the agent" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasHmrcAsAgentEnrolment(arn)
+          .andHasRelationship(arn, clientId)
+
+        authResponseFor(agentCode, clientId, method).status shouldBe 200
+
+        DataStreamStub.verifyAuditRequestSent(
+          AgentAccessControlDecision,
+          Map("path" -> s"/agent-access-control/afi-auth/agent/$agentCode/client/$clientId"))
+      }
+
+    }
+
+    "respond with 404" when {
+      "the client has not authorised the agent" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasHmrcAsAgentEnrolment(arn)
+          .andHasNoRelationship(arn, clientId)
+
+        authResponseFor(agentCode, clientId, method).status shouldBe 404
+
+        DataStreamStub.verifyAuditRequestSent(
+          AgentAccessControlDecision,
+          Map("path" -> s"/agent-access-control/afi-auth/agent/$agentCode/client/$clientId"))
+      }
+    }
   }
 
   def authResponseFor(agentCode: AgentCode, nino: Nino, method: String): HttpResponse = {
