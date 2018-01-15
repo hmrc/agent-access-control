@@ -77,11 +77,11 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   }
 
   "GET /agent-access-control/epaye-auth/agent/:agentCode/client/:empRef" should {
-    behave like aPayeEndpoint("GET")
+    aPayeEndpoint("GET")
   }
 
   "POST /agent-access-control/epaye-auth/agent/:agentCode/client/:empRef" should {
-    behave like aPayeEndpoint("POST")
+    aPayeEndpoint("POST")
   }
 
   def authResponseFor(agentCode: AgentCode, empRef: EmpRef, method: String): HttpResponse = {

@@ -73,11 +73,11 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   }
 
   "GET /agent-access-control/mtd-it-auth/agent/:agentCode/client/:mtdItId" should {
-    behave like anMtdEnpoint("GET")
+    anMtdEnpoint("GET")
   }
 
   "POST /agent-access-control/mtd-it-auth/agent/:agentCode/client/:mtdItId" should {
-    behave like anMtdEnpoint("POST")
+    anMtdEnpoint("POST")
   }
 
   def authResponseFor(agentCode: AgentCode, mtdItId: MtdItId, method: String): HttpResponse = {

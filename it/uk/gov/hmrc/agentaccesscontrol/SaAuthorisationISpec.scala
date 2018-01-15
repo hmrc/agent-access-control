@@ -171,11 +171,11 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   }
 
   "GET /agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
-    behave like anSaEndpoint("GET")
+    anSaEndpoint("GET")
   }
 
   "POST /agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
-    behave like anSaEndpoint("POST")
+    anSaEndpoint("POST")
   }
   
   def authResponseFor(agentCode: AgentCode, clientSaUtr: SaUtr, method: String): HttpResponse = {

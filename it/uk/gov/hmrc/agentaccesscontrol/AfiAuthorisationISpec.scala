@@ -63,11 +63,11 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
   }
 
   "GET /agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
-    behave like anAfiEndpoint("GET")
+    anAfiEndpoint("GET")
   }
 
   "POST /agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
-    behave like anAfiEndpoint("POST")
+    anAfiEndpoint("POST")
   }
 
   def authResponseFor(agentCode: AgentCode, nino: Nino, method: String): HttpResponse = {
