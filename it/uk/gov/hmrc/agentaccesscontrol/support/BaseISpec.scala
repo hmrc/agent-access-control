@@ -97,7 +97,7 @@ trait StubUtils {
   class AgentAdmin(override val agentCode: String,
                    override val agentCredId: String,
                    override val oid: String)
-    extends AfiStub[AgentAdmin] with AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with GovernmentGatewayProxyStubs[AgentAdmin]
+    extends AfiStub[AgentAdmin] with AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with GovernmentGatewayProxyStubs[AgentAdmin] with EnrolmentStoreProxyStubs[AgentAdmin]
 
   class MtdAgency(override val arn: Arn)
     extends RelationshipsStub[MtdAgency]
@@ -204,6 +204,86 @@ trait StubUtils {
 
   }
 
+  trait EnrolmentStoreProxyStubs[A] {
+    me: A =>
+
+    def agentCredId: String
+
+    private val pathRegex: String = "/enrolment-store-proxy/enrolment-store/enrolments/[^/]+/users?type=delegated"
+
+    private def path(enrolmentKey: String): String = s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=delegated"
+
+    private def getES0(id: TaxIdentifier) = {
+      val enrolmentKey = id match {
+        case utr: SaUtr => s"IR-SA~UTR~$utr"
+        case empRef: EmpRef => s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
+      }
+
+      get(urlMatching(path(enrolmentKey)))
+        .withHeader("Content-Type", equalTo("application/json; charset=utf-8"))
+    }
+
+    def andEnrolmentStoreProxyReturnsAnError500(): A = {
+      stubFor(post(urlMatching(pathRegex))
+        .willReturn(aResponse().withStatus(500)))
+      this
+    }
+
+    def andEnrolmentStoreProxyReturnsUnparseableJson(id: TaxIdentifier): A = {
+      stubFor(getES0(id)
+        .willReturn(aResponse()
+          .withBody("Not Json!")))
+      this
+    }
+
+    def andIsAssignedToClient(id: TaxIdentifier): A = {
+      stubFor(getES0(id)
+        .willReturn(aResponse()
+          .withBody(
+            s"""
+               |{
+               |    "principalUserIds": [],
+               |    "delegatedUserIds": [
+               |       "$agentCredId",
+               |       "98741987654321",
+               |       "98741987654322"
+               |    ]
+               |}
+               |""".stripMargin)))
+      this
+    }
+
+    def andIsNotAssignedToClient(id: TaxIdentifier): A = {
+      stubFor(getES0(id)
+        .willReturn(aResponse()
+          .withBody(
+            s"""
+               |{
+               |    "principalUserIds": [],
+               |    "delegatedUserIds": [
+               |       "98741987654323",
+               |       "98741987654324",
+               |       "98741987654325"
+               |    ]
+               |}
+               |""".stripMargin)))
+      this
+    }
+
+    def andHasNoAssignmentsToAnyClient(id: TaxIdentifier): A = {
+      stubFor(getES0(id)
+        .willReturn(aResponse()
+          .withBody(
+            s"""
+               |{
+               |    "principalUserIds": [],
+               |    "delegatedUserIds": []
+               |}
+               |""".stripMargin)))
+      this
+    }
+  }
+
   trait GovernmentGatewayProxyStubs[A] {
     me: A =>
     def agentCode: String
@@ -218,7 +298,7 @@ trait StubUtils {
       this
     }
 
-    def andIsAllocatedAndAssignedToClient(id: TaxIdentifier): A = {
+    def andIsAssignedToClient(id: TaxIdentifier): A = {
       stubFor(getAssignedAgentsPost(id)
         .willReturn(aResponse()
           .withBody(
