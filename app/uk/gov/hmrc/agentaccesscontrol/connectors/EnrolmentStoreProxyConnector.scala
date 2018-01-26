@@ -19,11 +19,9 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 import java.net.URL
 import javax.inject.{Inject, Named, Singleton}
 
+import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
-import play.api.http.ContentTypes.JSON
-import play.api.http.HeaderNames.CONTENT_TYPE
-import play.api.libs.json.{Format, JsValue}
-import play.api.libs.json.Json.format
+import play.api.libs.json.JsValue
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.domain.{EmpRef, SaUtr}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpResponse}
@@ -34,31 +32,33 @@ import scala.concurrent.Future
 case class AssignedAgentCredentials(userId: String)
 
 @Singleton
-class EnrolmentStoreProxyConnector @Inject() (@Named("enrolment-store-proxy-baseUrl") baseUrl: URL, httpGet: HttpGet, metrics: Metrics)
-      extends HttpAPIMonitor {
-  override val kenshooRegistry = metrics.defaultRegistry
+class EnrolmentStoreProxyConnector @Inject()(@Named("enrolment-store-proxy-baseUrl") baseUrl: URL, httpGet: HttpGet, metrics: Metrics)
+  extends HttpAPIMonitor {
+  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   private def pathES0(enrolmentKey: String): String = {
     new URL(baseUrl, s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=delegated").toString
   }
 
-  def assignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
+  def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
     getES0(s"IR-SA~UTR~$utr")
   }
 
-  def assignedPayeAgents(empRef: EmpRef)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
+  def getAssignedPayeAgents(empRef: EmpRef)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
     val enrolmentKey = s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
-
     getES0(enrolmentKey)
   }
 
   private def getES0(enrolmentKey: String)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
     monitor("ConsumedAPI-EnrolmentStoreProxy-ES0-GET") {
-      httpGet.GET[JsValue](pathES0(enrolmentKey))
-    }.map(parseResponse)
+      httpGet.GET[HttpResponse](pathES0(enrolmentKey))
+    }.map(response => response.status match {
+      case 200 => parseResponse(response.json)
+      case 204 => List.empty
+    })
   }
 
   private def parseResponse(json: JsValue): Seq[AssignedAgentCredentials] = {
-    (json \ "delegatedUserIds").as[List[String]].map(AssignedAgentCredentials(_))
+    (json \ "delegatedUserIds").as[List[String]].map(AssignedAgentCredentials)
   }
 }

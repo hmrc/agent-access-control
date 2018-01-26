@@ -42,8 +42,8 @@ abstract class WireMockISpec extends UnitSpec
     "microservice.services.des.port" -> wiremockPort,
     "microservice.services.auth.host" -> wiremockHost,
     "microservice.services.auth.port" -> wiremockPort,
-    "microservice.services.government-gateway-proxy.host" -> wiremockHost,
-    "microservice.services.government-gateway-proxy.port" -> wiremockPort,
+    "microservice.services.enrolment-store-proxy.host" -> wiremockHost,
+    "microservice.services.enrolment-store-proxy.port" -> wiremockPort,
     "auditing.consumer.baseUri.host" -> wiremockHost,
     "auditing.consumer.baseUri.port" -> wiremockPort,
     "microservice.services.agent-client-relationships.host" -> wiremockHost,
@@ -97,7 +97,7 @@ trait StubUtils {
   class AgentAdmin(override val agentCode: String,
                    override val agentCredId: String,
                    override val oid: String)
-    extends AfiStub[AgentAdmin] with AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with GovernmentGatewayProxyStubs[AgentAdmin] with EnrolmentStoreProxyStubs[AgentAdmin]
+    extends AfiStub[AgentAdmin] with AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with EnrolmentStoreProxyStubs[AgentAdmin]
 
   class MtdAgency(override val arn: Arn)
     extends RelationshipsStub[MtdAgency]
@@ -228,6 +228,8 @@ trait StubUtils {
       this
     }
 
+    def andEnrolmentStoreProxyIsDown(id: TaxIdentifier): A = andEnrolmentStoreProxyReturnsAnError500()
+
     def andEnrolmentStoreProxyReturnsUnparseableJson(id: TaxIdentifier): A = {
       stubFor(getES0(id)
         .willReturn(aResponse()
@@ -281,139 +283,10 @@ trait StubUtils {
                |""".stripMargin)))
       this
     }
-  }
 
-  trait GovernmentGatewayProxyStubs[A] {
-    me: A =>
-    def agentCode: String
-
-    def agentCredId: String
-
-    val path: String = "/government-gateway-proxy/api/admin/GsoAdminGetAssignedAgents"
-
-    def andGGIsDown(id: TaxIdentifier): A = {
-      stubFor(getAssignedAgentsPost(id).
-        willReturn(aResponse().withStatus(500)))
-      this
-    }
-
-    def andIsAllocatedAndAssignedToClient(id: TaxIdentifier): A = {
-      stubFor(getAssignedAgentsPost(id)
-        .willReturn(aResponse()
-          .withBody(
-            s"""
-               |<GsoAdminGetAssignedAgentsXmlOutput RequestID="E665D904F81C4AC89AAB34B562A98966" xmlns="urn:GSO-System-Services:external:2.13.3:GsoAdminGetAssignedAgentsXmlOutput" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-               |	<AllocatedAgents>
-               |		<AgentDetails>
-               |			<AgentId>GGWCESAtests</AgentId>
-               |			<AgentCode>$agentCode</AgentCode>
-               |			<AgentFriendlyName>GGWCESA tests</AgentFriendlyName>
-               |			<AssignedCredentials>
-               |				<Credential>
-               |					<CredentialName>GGWCESA tests</CredentialName>
-               |					<CredentialIdentifier>$agentCredId</CredentialIdentifier>
-               |					<Role>User</Role>
-               |				</Credential>
-               |				<Credential>
-               |					<CredentialName>GGWCESA tests1</CredentialName>
-               |					<CredentialIdentifier>98741987654321</CredentialIdentifier>
-               |					<Role>User</Role>
-               |				</Credential>
-               |			</AssignedCredentials>
-               |		</AgentDetails>
-               |		<AgentDetails>
-               |			<AgentId>GGWCESAtests1</AgentId>
-               |			<AgentCode>123ABCD12345</AgentCode>
-               |			<AgentFriendlyName>GGWCESA test1</AgentFriendlyName>
-               |			<AssignedCredentials>
-               |				<Credential>
-               |					<CredentialName>GGWCESA test1</CredentialName>
-               |					<CredentialIdentifier>98741987654322</CredentialIdentifier>
-               |					<Role>User</Role>
-               |				</Credential>
-               |			</AssignedCredentials>
-               |		</AgentDetails>
-               |	</AllocatedAgents>
-               |</GsoAdminGetAssignedAgentsXmlOutput>
-                 """.stripMargin)))
-      this
-    }
-
-    def andIsAllocatedButNotAssignedToClient(id: TaxIdentifier): A = {
-      stubFor(getAssignedAgentsPost(id)
-        .willReturn(aResponse()
-          .withBody(
-            s"""
-               |<GsoAdminGetAssignedAgentsXmlOutput RequestID="E665D904F81C4AC89AAB34B562A98966" xmlns="urn:GSO-System-Services:external:2.13.3:GsoAdminGetAssignedAgentsXmlOutput" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-               |	<AllocatedAgents>
-               |		<AgentDetails>
-               |			<AgentId>GGWCESAtests</AgentId>
-               |			<AgentCode>$agentCode</AgentCode>
-               |			<AgentFriendlyName>GGWCESA tests</AgentFriendlyName>
-               |			<AssignedCredentials>
-               |				<Credential>
-               |					<CredentialName>GGWCESA tests</CredentialName>
-               |					<CredentialIdentifier>98741987654323</CredentialIdentifier>
-               |					<Role>User</Role>
-               |				</Credential>
-               |				<Credential>
-               |					<CredentialName>GGWCESA tests1</CredentialName>
-               |					<CredentialIdentifier>98741987654324</CredentialIdentifier>
-               |					<Role>User</Role>
-               |				</Credential>
-               |			</AssignedCredentials>
-               |		</AgentDetails>
-               |		<AgentDetails>
-               |			<AgentId>GGWCESAtests1</AgentId>
-               |			<AgentCode>123ABCD12345</AgentCode>
-               |			<AgentFriendlyName>GGWCESA test1</AgentFriendlyName>
-               |			<AssignedCredentials>
-               |				<Credential>
-               |					<CredentialName>GGWCESA test1</CredentialName>
-               |					<CredentialIdentifier>98741987654325</CredentialIdentifier>
-               |					<Role>User</Role>
-               |				</Credential>
-               |			</AssignedCredentials>
-               |		</AgentDetails>
-               |	</AllocatedAgents>
-               |</GsoAdminGetAssignedAgentsXmlOutput>
-                 """.stripMargin)))
-      this
-    }
-
-    def andIsNotAllocatedToClient(id: TaxIdentifier): A = {
-      stubFor(getAssignedAgentsPost(id)
-        .willReturn(aResponse()
-          .withBody(
-            s"""
-               |<GsoAdminGetAssignedAgentsXmlOutput RequestID="E080C4891B8F4717A2788DA540AAC7A5" xmlns="urn:GSO-System-Services:external:2.13.3:GsoAdminGetAssignedAgentsXmlOutput" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-               | <AllocatedAgents/>
-               |</GsoAdminGetAssignedAgentsXmlOutput>
-          """.stripMargin)))
-      this
-    }
-
-    private def getAssignedAgentsPost(id: TaxIdentifier) = id match {
-      case utr: SaUtr => post(urlEqualTo(path))
-        .withRequestBody(matching(s".*>$utr<.*"))
-        .withHeader("Content-Type", equalTo("application/xml; charset=utf-8"))
-      case empRef: EmpRef => post(urlEqualTo(path))
-        .withRequestBody(matching(s".*>${empRef.taxOfficeNumber}<.*>${empRef.taxOfficeReference}<.*"))
-        .withHeader("Content-Type", equalTo("application/xml; charset=utf-8"))
-    }
-
-    def andGovernmentGatewayProxyReturnsAnError500(): A = {
-      stubFor(post(urlEqualTo(path)).willReturn(aResponse().withStatus(500)))
-      this
-    }
-
-    def andGovernmentGatewayReturnsUnparseableXml(id: TaxIdentifier): A = {
-      stubFor(getAssignedAgentsPost(id)
-        .willReturn(aResponse()
-          .withBody(
-            s"""
-               | Not XML!
-          """.stripMargin)))
+    def andEnrolmentStoreProxyReturns204NoContent: A = {
+      stubFor(get(urlMatching(pathRegex))
+        .willReturn(aResponse().withStatus(204)))
       this
     }
   }

@@ -21,11 +21,11 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
   "EnrolmentStoreProxy" when {
 
     "assignedSaAgents is called" should {
-      behave like anES0Call(connector.assignedSaAgents, SaUtr("1234567890"))
+      behave like anES0Call(connector.getAssignedSaAgents, SaUtr("1234567890"))
     }
 
     "assignedPayeAgents is called" should {
-      behave like anES0Call(connector.assignedPayeAgents, EmpRef("123", "4567890"))
+      behave like anES0Call(connector.getAssignedPayeAgents, EmpRef("123", "4567890"))
     }
 
     def anES0Call[ClientId <: TaxIdentifier](connectorFn: ClientId => Future[Seq[AssignedAgentCredentials]], clientId: ClientId): Unit = {
@@ -46,15 +46,22 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
           .agentAdmin("AgentCode")
             .andHasNoAssignmentsForAnyClient
 
-        val allocation = await(connectorFn(clientId))
+        await(connectorFn(clientId)) shouldBe empty
 
-        allocation shouldBe empty
+      }
+
+      "return empty list if Enrolment Store Proxy returns 204" in {
+        given()
+          .agentAdmin("AgentCode")
+          .andEnrolmentStoreProxyReturns204NoContent
+
+        await(connectorFn(clientId)) shouldBe empty
       }
 
       "throw exception for invalid JSON" in {
         given()
           .agentAdmin("AgentCode")
-            .andEnrolmentStoreProxyReturnsUnparseableJson(clientId)
+          .andEnrolmentStoreProxyReturnsUnparseableJson(clientId)
 
         an[JsonParseException] should be thrownBy await(connectorFn(clientId))
       }

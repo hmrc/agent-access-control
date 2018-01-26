@@ -29,7 +29,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 @Singleton
 class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationService,
                                      authConnector: AuthConnector,
-                                     ggAuthorisationService: GovernmentGatewayAuthorisationService,
+                                     espAuthorisationService: EnrolmentStoreProxyAuthorisationService,
                                      auditService: AuditService,
                                      afiRelationshipConnector: AfiRelationshipConnector)
   extends LoggingAuthorisationResults {
@@ -42,16 +42,16 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
     authConnector.currentAuthDetails().flatMap {
       case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), _, ggCredentialId, _, _)) =>
         for {
-          ggw <- ggAuthorisationService.isAuthorisedForSaInGovernmentGateway(agentCode, ggCredentialId, saUtr)
-          maybeCesa <- checkCesaIfNecessary(ggw, agentCode, saAgentReference, saUtr)
+          isAuthorisedInESP <- espAuthorisationService.isAuthorisedForSaInEnrolmentStoreProxy(ggCredentialId, saUtr)
+          maybeCesa <- checkCesaIfNecessary(isAuthorisedInESP, agentCode, saAgentReference, saUtr)
         } yield {
-          val result = ggw && maybeCesa.get
+          val result = isAuthorisedInESP && maybeCesa.get
 
           val cesaDescription = desResultDescription(maybeCesa)
-          auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result, "cesaResult" -> cesaDescription, "gatewayResult" -> ggw)
+          auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result, "cesaResult" -> cesaDescription, "enrolmentStoreResult" -> isAuthorisedInESP)
 
           if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
-          else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr ggw=$ggw cesa=$cesaDescription")
+          else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr esp=$isAuthorisedInESP cesa=$cesaDescription")
         }
       case Some(agentAuthDetails@AuthDetails(None, _, _, _, _)) =>
         auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result = false)
@@ -60,9 +60,9 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
         Future successful notAuthorised("No user is logged in")
     }
 
-  private def checkCesaIfNecessary(ggw: Boolean, agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)
+  private def checkCesaIfNecessary(isAuthorisedInESP: Boolean, agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)
                                   (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Boolean]] =
-    if (ggw) desAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr).map(Some.apply)
+    if (isAuthorisedInESP) desAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr).map(Some.apply)
     else Future successful None
 
 
@@ -71,23 +71,23 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
     authConnector.currentAuthDetails().flatMap {
       case Some(agentAuthDetails@AuthDetails(_, _, ggCredentialId, _, _)) =>
         for {
-          ggw <- ggAuthorisationService.isAuthorisedForPayeInGovernmentGateway(agentCode, ggCredentialId, empRef)
-          maybeEbs <- checkEbsIfNecessary(ggw, agentCode, empRef)
+          isAuthorisedInESP <- espAuthorisationService.isAuthorisedForPayeInEnrolmentStoreProxy(ggCredentialId, empRef)
+          maybeEbs <- checkEbsIfNecessary(isAuthorisedInESP, agentCode, empRef)
         } yield {
-          val result = ggw && maybeEbs.get
+          val result = isAuthorisedInESP && maybeEbs.get
 
           val ebsDescription = desResultDescription(maybeEbs)
-          auditDecision(agentCode, agentAuthDetails, "paye", empRef, result, "ebsResult" -> ebsDescription, "gatewayResult" -> ggw)
+          auditDecision(agentCode, agentAuthDetails, "paye", empRef, result, "ebsResult" -> ebsDescription, "enrolmentStoreResult" -> isAuthorisedInESP)
 
           if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$empRef")
-          else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$empRef ggw=$ggw ebs=$ebsDescription")
+          else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$empRef esp=$isAuthorisedInESP ebs=$ebsDescription")
         }
       case None => Future successful notAuthorised("No user is logged in")
     }
 
-  private def checkEbsIfNecessary(ggw: Boolean, agentCode: AgentCode, empRef: EmpRef)
+  private def checkEbsIfNecessary(isAuthorisedInESP: Boolean, agentCode: AgentCode, empRef: EmpRef)
                                  (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Boolean]] =
-    if (ggw) desAuthorisationService.isAuthorisedInEbs(agentCode, empRef).map(Some.apply)
+    if (isAuthorisedInESP) desAuthorisationService.isAuthorisedInEbs(agentCode, empRef).map(Some.apply)
     else Future successful None
 
   private def desResultDescription(maybeEbs: Option[Boolean]): Any = {

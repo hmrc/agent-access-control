@@ -42,7 +42,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andHasNoRelationInDesWith(clientUtr)
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
@@ -52,7 +52,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnly648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
@@ -62,7 +62,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnlyI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
@@ -72,27 +72,17 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).butIsNotAuthorised()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
-      "the client is not allocated to the agency in GG" in {
+      "the client is not assigned to the agent in Enrolment Store Proxy" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsNotAllocatedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
-
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-      }
-
-      "the client is allocated to the agency but not assigned to the agent in GG" in {
-        given()
-          .agentAdmin(agentCode).isLoggedIn()
-          .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedButNotAssignedToClient(clientUtr)
+          .andIsNotAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
@@ -104,18 +94,18 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andDesIsDown()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 502
       }
 
-      "GG is down" in {
+      "Enrolment Store Proxy is down" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
-          .andGGIsDown(clientUtr)
+          .andEnrolmentStoreProxyIsDown(clientUtr)
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 502
       }
@@ -127,7 +117,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
@@ -137,7 +127,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
@@ -149,7 +139,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-        .andIsAllocatedAndAssignedToClient(clientUtr)
+        .andIsAssignedToClient(clientUtr)
         .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
@@ -160,7 +150,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-        .andIsAllocatedAndAssignedToClient(clientUtr)
+        .andIsAssignedToClient(clientUtr)
         .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
@@ -185,7 +175,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andHasNoRelationInDesWith(clientUtr)
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
@@ -195,7 +185,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnly648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
@@ -205,7 +195,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnlyI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
@@ -215,27 +205,18 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).butIsNotAuthorised()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
-      "the client is not allocated to the agency in GG" in {
+
+      "the client is not assigned to the agent in Enrolment Store Proxy" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsNotAllocatedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
-
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-      }
-
-      "the client is allocated to the agency but not assigned to the agent in GG" in {
-        given()
-          .agentAdmin(agentCode).isLoggedIn()
-          .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedButNotAssignedToClient(clientUtr)
+          .andIsNotAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
@@ -247,18 +228,18 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andDesIsDown()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 502
       }
 
-      "GG is down" in {
+      "Enrolment Store Proxy is down" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
-          .andGGIsDown(clientUtr)
+          .andEnrolmentStoreProxyIsDown(clientUtr)
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 502
       }
@@ -270,7 +251,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
@@ -280,7 +261,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-          .andIsAllocatedAndAssignedToClient(clientUtr)
+          .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
@@ -292,7 +273,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-        .andIsAllocatedAndAssignedToClient(clientUtr)
+        .andIsAssignedToClient(clientUtr)
         .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
@@ -303,7 +284,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-        .andIsAllocatedAndAssignedToClient(clientUtr)
+        .andIsAssignedToClient(clientUtr)
         .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
