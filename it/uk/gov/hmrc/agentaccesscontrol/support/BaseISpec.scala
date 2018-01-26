@@ -209,7 +209,7 @@ trait StubUtils {
 
     def agentCredId: String
 
-    private val pathRegex: String = "/enrolment-store-proxy/enrolment-store/enrolments/[^/]+/users?type=delegated"
+    private val pathRegex: String = "/enrolment-store-proxy/enrolment-store/enrolments/[^/]+/users\\?type=delegated"
 
     private def path(enrolmentKey: String): String = s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=delegated"
 
@@ -219,12 +219,11 @@ trait StubUtils {
         case empRef: EmpRef => s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
       }
 
-      get(urlMatching(path(enrolmentKey)))
-        .withHeader("Content-Type", equalTo("application/json; charset=utf-8"))
+      get(urlPathEqualTo(path(enrolmentKey)))
     }
 
     def andEnrolmentStoreProxyReturnsAnError500(): A = {
-      stubFor(post(urlMatching(pathRegex))
+      stubFor(get(urlMatching(pathRegex))
         .willReturn(aResponse().withStatus(500)))
       this
     }
@@ -270,8 +269,8 @@ trait StubUtils {
       this
     }
 
-    def andHasNoAssignmentsToAnyClient(id: TaxIdentifier): A = {
-      stubFor(getES0(id)
+    def andHasNoAssignmentsForAnyClient: A = {
+      stubFor(get(urlMatching(pathRegex))
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -298,7 +297,7 @@ trait StubUtils {
       this
     }
 
-    def andIsAssignedToClient(id: TaxIdentifier): A = {
+    def andIsAllocatedAndAssignedToClient(id: TaxIdentifier): A = {
       stubFor(getAssignedAgentsPost(id)
         .willReturn(aResponse()
           .withBody(

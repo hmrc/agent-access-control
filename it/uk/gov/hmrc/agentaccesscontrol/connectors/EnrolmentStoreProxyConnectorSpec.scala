@@ -2,14 +2,15 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
 
+import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mock.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaUtr}
+import uk.gov.hmrc.domain.{EmpRef, SaUtr, TaxIdentifier}
 import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
 
-import scala.xml.SAXParseException
+import scala.concurrent.Future
 
 class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
 
@@ -17,65 +18,64 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
 
   val connector = new EnrolmentStoreProxyConnector(new URL(wiremockBaseUrl), WSHttp, app.injector.instanceOf[Metrics])
 
-  "EnrolmentStoreProxy" should {
-    "return sa agent assignments" in {
-      given()
-        .agentAdmin("AgentCode", "000000123245678900")
-          .andIsAssignedToClient(SaUtr("1234567890"))
+  "EnrolmentStoreProxy" when {
 
-      val assigned = await(connector.assignedSaAgents(new SaUtr("1234567890")))
-
-      assigned(0).userId shouldBe "000000123245678900"
-      assigned(1).userId shouldBe "98741987654321"
-      assigned(2).userId shouldBe "98741987654322"
+    "assignedSaAgents is called" should {
+      behave like anES0Call(connector.assignedSaAgents, SaUtr("1234567890"))
     }
 
-    "return paye agent assignments" in {
-      given()
-        .agentAdmin("AgentCode", "000000123245678900")
-          .andIsAssignedToClient(EmpRef("123", "4567890"))
-
-      val assigned = await(connector.assignedPayeAgents(EmpRef("123", "4567890")))
-
-      assigned(0).userId shouldBe "000000123245678900"
-      assigned(1).userId shouldBe "98741987654321"
-      assigned(2).userId shouldBe "98741987654322"
+    "assignedPayeAgents is called" should {
+      behave like anES0Call(connector.assignedPayeAgents, EmpRef("123", "4567890"))
     }
 
-    "return empty list if there are no assigned credentials" in {
-      given()
-        .agentAdmin("AgentCode")
-        .andIsNotAllocatedToClient(SaUtr("1234567890"))
+    def anES0Call[ClientId <: TaxIdentifier](connectorFn: ClientId => Future[Seq[AssignedAgentCredentials]], clientId: ClientId): Unit = {
+      "return agent assignments" in {
+        given()
+          .agentAdmin("AgentCode", "000000123245678900")
+          .andIsAssignedToClient(clientId)
 
-      val allocation = await(connector.assignedSaAgents(new SaUtr("1234567890")))
+        val assigned = await(connectorFn(clientId))
 
-      allocation shouldBe empty
-    }
+        assigned(0).userId shouldBe "000000123245678900"
+        assigned(1).userId shouldBe "98741987654321"
+        assigned(2).userId shouldBe "98741987654322"
+      }
 
-    "throw exception for invalid XML" in {
-      given()
-        .agentAdmin("AgentCode")
-        .andEnrolmentStoreProxyReturnsUnparseableJson(SaUtr("1234567890"))
+      "return empty list if there are no assigned credentials" in {
+        given()
+          .agentAdmin("AgentCode")
+            .andHasNoAssignmentsForAnyClient
 
-      an[SAXParseException] should be thrownBy await(connector.assignedSaAgents(new SaUtr("1234567890")))
-    }
+        val allocation = await(connectorFn(clientId))
 
-    "throw exception when HTTP error" in {
-      given()
-        .agentAdmin("AgentCode")
-        .andEnrolmentStoreProxyReturnsAnError500()
+        allocation shouldBe empty
+      }
 
-      an[Upstream5xxResponse] should be thrownBy await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
-    }
+      "throw exception for invalid JSON" in {
+        given()
+          .agentAdmin("AgentCode")
+            .andEnrolmentStoreProxyReturnsUnparseableJson(clientId)
 
-    "record metrics for outbound call" in {
-      val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
-      given()
-        .agentAdmin("AgentCode")
-        .andIsAllocatedAndAssignedToClient(SaUtr("1234567890"))
+        an[JsonParseException] should be thrownBy await(connectorFn(clientId))
+      }
 
-      await(connector.getAssignedSaAgents(new SaUtr("1234567890")))
-      metricsRegistry.getTimers().get("Timer-ConsumedAPI-ESP-ES0-POST").getCount should be >= 1L
+      "throw exception when HTTP error" in {
+        given()
+          .agentAdmin("AgentCode")
+            .andEnrolmentStoreProxyReturnsAnError500()
+
+        an[Upstream5xxResponse] should be thrownBy await(connectorFn(clientId))
+      }
+
+      "record metrics for outbound call" in {
+        val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
+        given()
+          .agentAdmin("AgentCode")
+            .andIsAssignedToClient(clientId)
+
+        await(connectorFn(clientId))
+        metricsRegistry.getTimers().get("Timer-ConsumedAPI-EnrolmentStoreProxy-ES0-GET").getCount should be >= 1L
+      }
     }
   }
 }

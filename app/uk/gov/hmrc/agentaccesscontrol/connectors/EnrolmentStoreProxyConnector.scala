@@ -22,6 +22,8 @@ import javax.inject.{Inject, Named, Singleton}
 import com.kenshoo.play.metrics.Metrics
 import play.api.http.ContentTypes.JSON
 import play.api.http.HeaderNames.CONTENT_TYPE
+import play.api.libs.json.{Format, JsValue}
+import play.api.libs.json.Json.format
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.domain.{EmpRef, SaUtr}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpResponse}
@@ -52,11 +54,11 @@ class EnrolmentStoreProxyConnector @Inject() (@Named("enrolment-store-proxy-base
 
   private def getES0(enrolmentKey: String)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
     monitor("ConsumedAPI-EnrolmentStoreProxy-ES0-GET") {
-      httpGet.GET(pathES0(enrolmentKey), Seq(CONTENT_TYPE -> JSON))
+      httpGet.GET[JsValue](pathES0(enrolmentKey))
     }.map(parseResponse)
   }
 
-  private def parseResponse(response: HttpResponse): Seq[AssignedAgentCredentials] = {
-    (response.json \ "delegatedUserIds").as[List[AssignedAgentCredentials]]
+  private def parseResponse(json: JsValue): Seq[AssignedAgentCredentials] = {
+    (json \ "delegatedUserIds").as[List[String]].map(AssignedAgentCredentials(_))
   }
 }
