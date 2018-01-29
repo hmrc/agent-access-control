@@ -16,7 +16,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     "return 200 when access is granted" in {
       given().agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
-        .andIsAllocatedAndAssignedToClient(empRef)
+        .andIsAssignedToClient(empRef)
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
@@ -28,7 +28,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     "return 401 when access is not granted" in {
       given().agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
-        .andIsNotAllocatedToClient(empRef)
+        .andIsNotAssignedToClient(empRef)
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
@@ -40,7 +40,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     "return 502 if a downstream service fails" in {
       given().agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
-        .andIsAllocatedAndAssignedToClient(empRef)
+        .andIsAssignedToClient(empRef)
         .andDesIsDown()
 
       val status = authResponseFor(agentCode, empRef, method).status
@@ -53,7 +53,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
-        .andIsAllocatedAndAssignedToClient(empRef)
+        .andIsAssignedToClient(empRef)
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
@@ -65,7 +65,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
-        .andIsAllocatedAndAssignedToClient(empRef)
+        .andIsAssignedToClient(empRef)
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
@@ -82,7 +82,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     "return 200 when access is granted" in {
       given().agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
-        .andIsAllocatedAndAssignedToClient(empRef)
+        .andIsAssignedToClient(empRef)
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
@@ -94,7 +94,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     "return 401 when access is not granted" in {
       given().agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
-        .andIsNotAllocatedToClient(empRef)
+        .andIsNotAssignedToClient(empRef)
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
@@ -106,7 +106,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
     "return 502 if a downstream service fails" in {
       given().agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
-        .andIsAllocatedAndAssignedToClient(empRef)
+        .andIsAssignedToClient(empRef)
         .andDesIsDown()
 
       val status = authResponseFor(agentCode, empRef, method).status
@@ -119,7 +119,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
-        .andIsAllocatedAndAssignedToClient(empRef)
+        .andIsAssignedToClient(empRef)
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 
@@ -131,7 +131,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
-        .andIsAllocatedAndAssignedToClient(empRef)
+        .andIsAssignedToClient(empRef)
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
 

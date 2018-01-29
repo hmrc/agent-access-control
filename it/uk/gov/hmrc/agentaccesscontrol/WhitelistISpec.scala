@@ -77,7 +77,7 @@ class WhitelistISpec extends WireMockWithOneServerPerSuiteISpec {
     given()
       .agentAdmin(agentCode).isLoggedIn()
       .andHasSaAgentReferenceWithEnrolment(saAgentReference)
-      .andIsAllocatedAndAssignedToClient(clientUtr)
+      .andIsAssignedToClient(clientUtr)
       .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
   }
 

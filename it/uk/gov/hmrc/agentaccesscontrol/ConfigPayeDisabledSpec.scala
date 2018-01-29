@@ -1,10 +1,8 @@
 package uk.gov.hmrc.agentaccesscontrol
 
-import java.util.Base64
-
 import play.utils.UriEncoding.encodePathSegment
 import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef}
 import uk.gov.hmrc.http.HttpResponse
 
 class ConfigPayeDisabledSpec extends WireMockWithOneServerPerSuiteISpec {
@@ -25,7 +23,7 @@ class ConfigPayeDisabledSpec extends WireMockWithOneServerPerSuiteISpec {
   def givenLoggedInAgentIsPayeAuthorised(): Unit = {
     given().agentAdmin(agentCode).isLoggedIn()
       .andHasNoIrSaAgentEnrolment()
-      .andIsAllocatedAndAssignedToClient(empRef)
+      .andIsAssignedToClient(empRef)
       .andIsRelatedToPayeClientInDes(empRef)
       .andIsAuthorisedBy648()
   }

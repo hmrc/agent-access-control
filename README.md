@@ -56,7 +56,7 @@ Possible responses:
 
 code | scenario
 ---- | ---
-200 | _saUtr_ is allocated to _agentCode_ for Self-Assessment (GG check) AND the logged in user's agency has a valid authorisation to act on behalf of _saUtr_ for dealing with Self-Assessment (HODs check).
+200 | _saUtr_ is assigned to logged in agent for Self-Assessment (Enrolment Store Proxy check) AND the logged in user's agency (_agentCode_) has a valid authorisation to act on behalf of _saUtr_ for dealing with Self-Assessment (HODs check).
 401 | The conditions are not met.
 502 | In case of any error responses in downstream services.
 504 | In case of a timeout while querying downstream services.
