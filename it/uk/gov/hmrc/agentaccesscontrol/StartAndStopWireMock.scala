@@ -22,10 +22,17 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEachTestData, Suite, TestData}
 import uk.gov.hmrc.play.it.Port
 
+object StartAndStopWireMock {
+  // We have to make the wireMockPort constant per-JVM instead of constant
+  // per-WireMockSupport-instance because config values containing it are
+  // cached in the GGConfig object
+  private lazy val wireMockPort = Port.randomAvailable
+}
+
 trait StartAndStopWireMock extends BeforeAndAfterEachTestData with BeforeAndAfterAll {
   self: Suite =>
 
-  protected val wiremockPort = Port.randomAvailable
+  protected val wiremockPort = StartAndStopWireMock.wireMockPort
   protected val wiremockHost = "localhost"
   protected val wiremockBaseUrl: String = s"http://$wiremockHost:$wiremockPort"
   val wireMockServer = new WireMockServer(wireMockConfig().port(wiremockPort))

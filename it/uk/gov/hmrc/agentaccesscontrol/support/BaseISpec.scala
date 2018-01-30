@@ -22,7 +22,8 @@ import org.mockito.{ArgumentCaptor, Matchers}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import org.scalatestplus.play.{OneAppPerSuite, OneServerPerSuite}
-import play.api.test.FakeApplication
+import play.api.Application
+import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentaccesscontrol.{StartAndStopWireMock, WSHttp}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
 import uk.gov.hmrc.domain._
@@ -58,9 +59,14 @@ abstract class WireMockWithOneAppPerSuiteISpec extends WireMockISpec
 
   protected def additionalConfiguration: Map[String, String] = Map.empty
 
-  override implicit lazy val app: FakeApplication = FakeApplication(
-    additionalConfiguration = wireMockAppConfiguration ++ additionalConfiguration
-  )
+  override implicit lazy val app: Application = appBuilder.build()
+
+  protected def appBuilder: GuiceApplicationBuilder = {
+    new GuiceApplicationBuilder()
+      .configure(
+        wireMockAppConfiguration ++ additionalConfiguration
+      )
+  }
 }
 
 abstract class WireMockWithOneServerPerSuiteISpec extends WireMockISpec
@@ -68,9 +74,14 @@ abstract class WireMockWithOneServerPerSuiteISpec extends WireMockISpec
 
   protected def additionalConfiguration: Map[String, String] = Map.empty
 
-  override implicit lazy val app: FakeApplication = FakeApplication(
-    additionalConfiguration = wireMockAppConfiguration ++ additionalConfiguration
-  )
+  override implicit lazy val app: Application = appBuilder.build()
+
+  protected def appBuilder: GuiceApplicationBuilder = {
+    new GuiceApplicationBuilder()
+      .configure(
+        wireMockAppConfiguration ++ additionalConfiguration
+      )
+  }
 }
 
 trait StubUtils {
@@ -219,7 +230,7 @@ trait StubUtils {
         case empRef: EmpRef => s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
       }
 
-      get(urlPathEqualTo(path(enrolmentKey)))
+      get(urlEqualTo(path(enrolmentKey)))
     }
 
     def andEnrolmentStoreProxyReturnsAnError500(): A = {

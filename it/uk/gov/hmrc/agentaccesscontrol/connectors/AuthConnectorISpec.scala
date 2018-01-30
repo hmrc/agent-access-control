@@ -20,14 +20,14 @@ import java.net.URL
 
 import com.kenshoo.play.metrics.Metrics
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
-import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupport, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
+class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupport {
 
   implicit val hc = HeaderCarrier()
 
@@ -61,17 +61,17 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec {
     }
 
     "record metrics for both /auth/authority and /auth/authority/(oid)/enrolments" in {
-      val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
       given()
         .agentAdmin("ABCDEF123456").isLoggedIn()
         .andHasSaAgentReferenceWithEnrolment(SaAgentReference("REF879"))
+      givenCleanMetricRegistry()
 
       val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
       authDetails.saAgentReference shouldBe Some(SaAgentReference("REF879"))
       authDetails.ggCredentialId shouldBe "0000001232456789"
 
-      metricsRegistry.getTimers.get("Timer-ConsumedAPI-AUTH-GetAuthority-GET").getCount should be >= 1L
-      metricsRegistry.getTimers.get("Timer-ConsumedAPI-AUTH-GetEnrolments-GET").getCount should be >= 1L
+      timerShouldExistsAndBeenUpdated("ConsumedAPI-AUTH-GetAuthority-GET")
+      timerShouldExistsAndBeenUpdated("ConsumedAPI-AUTH-GetEnrolments-GET")
     }
 
     "return None as the saAgentReference if 6 digit agent reference cannot be found" in {
