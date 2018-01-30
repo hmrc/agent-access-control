@@ -36,7 +36,7 @@ class AuthConnector @Inject()(@Named("auth-baseUrl") baseUrl: URL, httpGet: Http
   val authorityUrl = new URL(baseUrl, "/auth/authority")
 
   def currentAuthDetails()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AuthDetails]] =
-    currentAuthority
+    monitor("ConsumedAPI-AUTH-GetAuthority-GET") { currentAuthority }
       .flatMap({ authority =>
         monitor("ConsumedAPI-AUTH-GetEnrolments-GET") {
           enrolments(authority)
