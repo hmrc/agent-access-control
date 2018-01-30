@@ -17,23 +17,28 @@
 package uk.gov.hmrc.agentaccesscontrol.stubs
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import org.scalatest.concurrent.Eventually
+import org.scalatest.time.{Millis, Seconds, Span}
 import org.skyscreamer.jsonassert.JSONCompareMode
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlEvent
 
-object DataStreamStub {
+object DataStreamStub extends Eventually {
+  override implicit val patienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
 
   def verifyAuditRequestSent(event: AgentAccessControlEvent, tags: Map[String, String] = Map.empty, detail: Map[String, String] = Map.empty) = {
-    verify(1, postRequestedFor(urlPathEqualTo(auditUrl))
-      .withRequestBody(similarToJson(
-      s"""{
-         |  "auditSource": "agent-access-control",
-         |  "auditType": "$event",
-         |  "tags": ${Json.toJson(tags)},
-         |  "detail": ${Json.toJson(detail)}
-         |}"""
-      ))
-    )
+    eventually {
+      verify(1, postRequestedFor(urlPathEqualTo(auditUrl))
+        .withRequestBody(similarToJson(
+        s"""{
+           |  "auditSource": "agent-access-control",
+           |  "auditType": "$event",
+           |  "tags": ${Json.toJson(tags)},
+           |  "detail": ${Json.toJson(detail)}
+           |}"""
+        ))
+      )
+    }
   }
 
   private def auditUrl = "/write/audit"
