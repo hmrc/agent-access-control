@@ -69,7 +69,7 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
       authResponseFor(agentCode, vrn, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-Agent-MTD-IT-Access-Control-GET")
+      timerShouldExistsAndBeenUpdated("API-Agent-MTD-VAT-Access-Control-GET")
     }
   }
 
