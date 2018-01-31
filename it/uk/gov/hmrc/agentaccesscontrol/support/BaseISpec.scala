@@ -26,8 +26,8 @@ import org.scalatestplus.play.{OneAppPerSuite, OneServerPerTest}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentaccesscontrol.{StartAndStopWireMock, WSHttp}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
-import uk.gov.hmrc.domain._
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr, TaxIdentifier, SaAgentReference}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
@@ -415,12 +415,21 @@ trait StubUtils {
 
     def hasARelationshipWith(clientId: MtdItId): A = statusReturnedForRelationship(clientId, 200)
 
+    def hasARelationshipWith(vrn: Vrn): A = statusReturnedForRelationship(vrn, 200)
+
     def hasNoRelationshipWith(clientId: MtdItId): A = statusReturnedForRelationship(clientId, 404)
+
+    def hasNoRelationshipWith(vrn: Vrn): A = statusReturnedForRelationship(vrn, 404)
 
     def statusReturnedForRelationship(clientId: MtdItId, status: Int): A = {
       stubFor(get(urlEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/${clientId.value}"))
         .willReturn(aResponse()
           .withStatus(status)))
+      this
+    }
+
+    def statusReturnedForRelationship(vrn: Vrn, status: Int): A = {
+      ///TODO APB-1897 & 1887 Remove 'ignore' after the implementation
       this
     }
   }
