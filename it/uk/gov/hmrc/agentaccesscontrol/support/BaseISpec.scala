@@ -19,9 +19,10 @@ package uk.gov.hmrc.agentaccesscontrol.support
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.mockito.Mockito.verify
 import org.mockito.{ArgumentCaptor, Matchers}
+import org.scalatest.TestData
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
-import org.scalatestplus.play.{OneAppPerSuite, OneServerPerSuite}
+import org.scalatestplus.play.{OneAppPerSuite, OneServerPerTest}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentaccesscontrol.{StartAndStopWireMock, WSHttp}
@@ -52,36 +53,25 @@ abstract class WireMockISpec extends UnitSpec
     "microservice.services.agent-fi-relationship.host" -> wiremockHost,
     "microservice.services.agent-fi-relationship.port" -> wiremockPort
   )
+
+  protected def additionalConfiguration: Map[String, String] = Map.empty
+
+  protected def appBuilder: GuiceApplicationBuilder = {
+    new GuiceApplicationBuilder()
+      .configure(
+        wireMockAppConfiguration ++ additionalConfiguration
+      )
+  }
 }
 
 abstract class WireMockWithOneAppPerSuiteISpec extends WireMockISpec
   with OneAppPerSuite {
-
-  protected def additionalConfiguration: Map[String, String] = Map.empty
-
   override implicit lazy val app: Application = appBuilder.build()
-
-  protected def appBuilder: GuiceApplicationBuilder = {
-    new GuiceApplicationBuilder()
-      .configure(
-        wireMockAppConfiguration ++ additionalConfiguration
-      )
-  }
 }
 
-abstract class WireMockWithOneServerPerSuiteISpec extends WireMockISpec
-  with OneServerPerSuite {
-
-  protected def additionalConfiguration: Map[String, String] = Map.empty
-
-  override implicit lazy val app: Application = appBuilder.build()
-
-  protected def appBuilder: GuiceApplicationBuilder = {
-    new GuiceApplicationBuilder()
-      .configure(
-        wireMockAppConfiguration ++ additionalConfiguration
-      )
-  }
+abstract class WireMockWithOneServerPerTestISpec extends WireMockISpec
+  with OneServerPerTest {
+  override def newAppForTest(testData: TestData): Application = appBuilder.build()
 }
 
 trait StubUtils {

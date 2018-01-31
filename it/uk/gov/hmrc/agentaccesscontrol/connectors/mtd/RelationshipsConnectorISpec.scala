@@ -4,11 +4,11 @@ import java.net.URL
 
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupport, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
 import uk.gov.hmrc.http.HeaderCarrier
 
-class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupport {
+class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
 
   val arn = Arn("B1111B")
   val client = MtdItId("C1111C")
@@ -57,10 +57,11 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
 
       given().mtdAgency(arn)
         .hasARelationshipWith(client)
+      givenCleanMetricRegistry()
 
       await(connector.relationshipExists(arn, client))
 
-      metricsRegistry.getTimers.get("Timer-ConsumedAPI-RELATIONSHIPS-GetAgentClientRelationship-GET").getCount should be >= 1L
+      timerShouldExistsAndBeenUpdated("ConsumedAPI-RELATIONSHIPS-GetAgentClientRelationship-GET")
     }
   }
 

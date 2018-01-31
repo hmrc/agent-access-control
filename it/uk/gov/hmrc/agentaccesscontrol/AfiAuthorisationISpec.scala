@@ -18,12 +18,12 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.{AgentCode, Nino}
 import uk.gov.hmrc.http.HttpResponse
 
-class AfiAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
+class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
 
   val agentCode = AgentCode("ABCDEF123456")
   val clientId = Nino("AE123456C")

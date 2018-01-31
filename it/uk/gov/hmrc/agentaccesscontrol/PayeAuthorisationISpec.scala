@@ -3,11 +3,11 @@ package uk.gov.hmrc.agentaccesscontrol
 import play.utils.UriEncoding.encodePathSegment
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef}
 import uk.gov.hmrc.http.HttpResponse
 
-class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
+class PayeAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
   val agentCode = AgentCode("A11112222A")
   val empRef = EmpRef("123", "123456")
 
@@ -56,9 +56,10 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
         .andIsAssignedToClient(empRef)
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
+      givenCleanMetricRegistry()
 
       authResponseFor(agentCode, empRef, method).status shouldBe 200
-      metricsRegistry.getTimers().get("Timer-API-Agent-PAYE-Access-Control-GET").getCount should be >= 1L
+      timerShouldExistsAndBeenUpdated("API-Agent-PAYE-Access-Control-GET")
     }
 
     "send an AccessControlDecision audit event" in {
@@ -114,17 +115,17 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerSuiteISpec {
       status shouldBe 502
     }
 
-    "record metrics for inbound http call" in {
-      val metricsRegistry = app.injector.instanceOf[MicroserviceMonitoringFilter].kenshooRegistry
+    "record metrics for inbound http call" ignore {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
         .andIsAssignedToClient(empRef)
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
+      givenCleanMetricRegistry()
 
       authResponseFor(agentCode, empRef, method).status shouldBe 200
-      metricsRegistry.getTimers().get("Timer-API-Agent-PAYE-Access-Control-GET").getCount should be >= 1L
+      timerShouldExistsAndBeenUpdated("API-Agent-PAYE-Access-Control-GET")
     }
 
     "send an AccessControlDecision audit event" in {
