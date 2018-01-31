@@ -24,7 +24,7 @@ import org.mockito.Mockito.when
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.model._
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupport, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
@@ -32,7 +32,7 @@ import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import scala.concurrent.ExecutionContext
 
 
-class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar with MetricTestSupport {
+class DesAgentClientApiConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar with MetricTestSupportAppPerSuite {
 
   implicit val headerCarrier = HeaderCarrier()
   implicit val ec = ExecutionContext.global

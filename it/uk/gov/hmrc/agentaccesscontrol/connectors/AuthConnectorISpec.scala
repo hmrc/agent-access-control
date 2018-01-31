@@ -20,14 +20,14 @@ import java.net.URL
 
 import com.kenshoo.play.metrics.Metrics
 import uk.gov.hmrc.agentaccesscontrol.WSHttp
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupport, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupport {
+class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
 
   implicit val hc = HeaderCarrier()
 
