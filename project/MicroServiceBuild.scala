@@ -24,7 +24,7 @@ private object AppDependencies {
   private val pegdownVersion = "1.6.0"
   private val scalatestVersion = "2.2.6"
   private val kenshooMonitoringVersion = "2.4.0"
-  private val mtdIdentifiersVersion = "0.5.0"
+  private val mtdIdentifiersVersion = "0.10.0"
 
   val compile = Seq(
     ws,

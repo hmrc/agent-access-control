@@ -26,8 +26,8 @@ import play.api.mvc.{AnyContent, Request}
 import play.api.test.FakeRequest
 import play.mvc.Http.Status
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
-import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdItAuthorisationService}
-import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
+import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdItAuthorisationService, MtdVatAuthorisationService}
+import uk.gov.hmrc.agentmtdidentifiers.model.{MtdItId, Vrn}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -39,7 +39,8 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
   val auditService = mock[AuditService]
   val authorisationService = mock[AuthorisationService]
   val mtdItAuthorisationService = mock[MtdItAuthorisationService]
-  def controller(enabled: Boolean = true) = new AuthorisationController(auditService, authorisationService, mtdItAuthorisationService, Configuration("features.allowPayeAccess" -> enabled))
+  val mtdVatAuthorisationService = mock[MtdVatAuthorisationService]
+  def controller(enabled: Boolean = true) = new AuthorisationController(auditService, authorisationService, mtdItAuthorisationService, mtdVatAuthorisationService, Configuration("features.allowPayeAccess" -> enabled))
 
 
   override protected def beforeEach(): Unit = {
@@ -91,7 +92,7 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
   private def anMdtitEndpoint(fakeRequest: FakeRequest[_<:AnyContent]) = {
     "return 401 if the MtdAuthorisationService doesn't permit access" in {
 
-      whenMtdAuthorisationServiceIsCalled thenReturn(Future successful false)
+      whenMtdItAuthorisationServiceIsCalled thenReturn(Future successful false)
 
       val response = controller().isAuthorisedForMtdIt(AgentCode(""), MtdItId("mtdItId"))(fakeRequest)
 
@@ -101,7 +102,7 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
 
     "return 200 if the MtdAuthorisationService allows access" in {
 
-      whenMtdAuthorisationServiceIsCalled thenReturn(Future successful true)
+      whenMtdItAuthorisationServiceIsCalled thenReturn(Future successful true)
 
       val response = controller().isAuthorisedForMtdIt(AgentCode(""), MtdItId("mtdItId"))(fakeRequest)
 
@@ -111,9 +112,38 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
 
     "propagate exception if the MtdAuthorisationService fails" in {
 
-      whenMtdAuthorisationServiceIsCalled thenReturn(Future failed new IllegalStateException("some error"))
+      whenMtdItAuthorisationServiceIsCalled thenReturn(Future failed new IllegalStateException("some error"))
 
       an[IllegalStateException] shouldBe thrownBy(status(controller().isAuthorisedForMtdIt(AgentCode(""), MtdItId("mtdItId"))(fakeRequest)))
+    }
+  }
+
+  private def anMtdVatEndpoint(fakeRequest: FakeRequest[_<:AnyContent]) = {
+    "return 401 if the MtdVatAuthorisationService doesn't permit access" in {
+
+      whenMtdVatAuthorisationServiceIsCalled thenReturn(Future successful false)
+
+      val response = controller().isAuthorisedForMtdVat(AgentCode(""), Vrn("vrn"))(fakeRequest)
+
+      status (response) shouldBe Status.UNAUTHORIZED
+    }
+
+
+    "return 200 if the MtdVatAuthorisationService allows access" in {
+
+      whenMtdVatAuthorisationServiceIsCalled thenReturn(Future successful true)
+
+      val response = controller().isAuthorisedForMtdVat(AgentCode(""), Vrn("vrn"))(fakeRequest)
+
+      status(response) shouldBe Status.OK
+    }
+
+
+    "propagate exception if the MtdVatAuthorisationService fails" in {
+
+      whenMtdVatAuthorisationServiceIsCalled thenReturn(Future failed new IllegalStateException("some error"))
+
+      an[IllegalStateException] shouldBe thrownBy(status(controller().isAuthorisedForMtdVat(AgentCode(""), Vrn("vrn"))(fakeRequest)))
     }
   }
 
@@ -182,6 +212,14 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
     behave like anMdtitEndpoint(FakeRequest("POST", "/agent-access-control/mtd-it-auth/agent//client/utr").withJsonBody(Json.parse("{}")))
   }
 
+  "GET isAuthorisedForMtdVat" should {
+    behave like anMtdVatEndpoint(FakeRequest("GET", "/agent-access-control/mtd-vat-auth/agent//client/utr"))
+  }
+
+  "POST isAuthorisedForMtdVat" should {
+    behave like anMtdVatEndpoint(FakeRequest("POST", "/agent-access-control/mtd-vat-auth/agent//client/utr").withJsonBody(Json.parse("{}")))
+  }
+
   "GET isAuthorisedForPaye" should {
     behave like aPayeEndpoint(FakeRequest("GET", "/agent-access-control/epaye-auth/agent//client/utr"))
   }
@@ -204,8 +242,11 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
   def whenAuthorisationServiceIsCalled =
     when(authorisationService.isAuthorisedForSa(any[AgentCode], any[SaUtr])(any[ExecutionContext], any[HeaderCarrier], any[Request[Any]]))
 
-  def whenMtdAuthorisationServiceIsCalled =
+  def whenMtdItAuthorisationServiceIsCalled =
     when(mtdItAuthorisationService.authoriseForMtdIt(any[AgentCode], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier], any[Request[_]]))
+
+  def whenMtdVatAuthorisationServiceIsCalled =
+    when(mtdVatAuthorisationService.authoriseForMtdVat(any[AgentCode], any[Vrn])(any[ExecutionContext], any[HeaderCarrier], any[Request[_]]))
 
   def whenPayeAuthorisationServiceIsCalled =
     when(authorisationService.isAuthorisedForPaye(any[AgentCode], any[EmpRef])(any[ExecutionContext], any[HeaderCarrier], any[Request[_]]))
