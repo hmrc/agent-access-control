@@ -52,7 +52,7 @@ class RelationshipsConnector @Inject()(@Named("agent-client-relationships-baseUr
       new URL(baseUrl,
         s"/agent-client-relationships/agent/${arn.value}/service/$serviceName/client/$clientType/$clientId").toString
 
-    monitor(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET") {
+    monitor(s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {
       httpGet.GET[HttpResponse](relationshipUrl)
     } map { response =>
       assert(response.status == 200, s"Unexpected response status ${response.status}")

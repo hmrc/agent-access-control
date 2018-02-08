@@ -12,15 +12,14 @@ import uk.gov.hmrc.http.HeaderCarrier
 class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
 
   val arn = Arn("B1111B")
-  val client = MtdItId("C1111C")
   implicit val hc = HeaderCarrier()
 
   "relationshipExists for HMRC-MTD-ID" should {
-    behave like aCheckEndpoint(client, "MTDITID")
+    behave like aCheckEndpoint(MtdItId("C1111C"), "MtdItId")
   }
 
   "relationshipExists for HMRC-MTD-VAT" should {
-    behave like aCheckEndpoint(Vrn("101747641"), "VRN")
+    behave like aCheckEndpoint(Vrn("101747641"), "Vrn")
   }
 
   private def aCheckEndpoint(identifier: TaxIdentifier, clientType: String) = {
