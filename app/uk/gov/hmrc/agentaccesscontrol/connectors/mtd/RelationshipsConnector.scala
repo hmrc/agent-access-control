@@ -23,10 +23,11 @@ import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
+import uk.gov.hmrc.domain.TaxIdentifier
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, HttpResponse, NotFoundException }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpResponse, NotFoundException}
 
 case class Relationship(arn: String, clientId: String)
 object Relationship {
@@ -40,10 +41,19 @@ class RelationshipsConnector @Inject()(@Named("agent-client-relationships-baseUr
   extends HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def relationshipExists(arn: Arn, mtdItId: MtdItId)
-                       (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
-    monitor("ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET") {
-      httpGet.GET[HttpResponse](relationshipUrl(arn, mtdItId).toString)
+  def relationshipExists(arn: Arn, identifier: TaxIdentifier)
+                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
+    val (serviceName, clientType, clientId) = identifier match {
+      case _ @ MtdItId(mtdItId) => ("HMRC-MTD-IT", "MTDITID", mtdItId)
+      case _ @ Vrn(vrn) => ("HMRC-MTD-VAT", "VRN", vrn)
+    }
+
+    val relationshipUrl =
+      new URL(baseUrl,
+        s"/agent-client-relationships/agent/${arn.value}/service/$serviceName/client/$clientType/$clientId").toString
+
+    monitor(s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {
+      httpGet.GET[HttpResponse](relationshipUrl)
     } map { response =>
       assert(response.status == 200, s"Unexpected response status ${response.status}")
       true
@@ -51,7 +61,4 @@ class RelationshipsConnector @Inject()(@Named("agent-client-relationships-baseUr
       case _: NotFoundException => false
     }
   }
-
-  private def relationshipUrl(arn: Arn, mtdItId: MtdItId) =
-          new URL(baseUrl, s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/${mtdItId.value}")
 }
