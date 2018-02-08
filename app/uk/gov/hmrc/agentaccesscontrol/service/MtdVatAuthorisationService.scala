@@ -48,9 +48,8 @@ class MtdVatAuthorisationService @Inject()(authConnector: AuthConnector,
     }
   }
 
-  private def hasRelationship(arn: Arn, vrn: Vrn)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
-    Future.successful(true) //TODO APB-1896 & APB-1887 will implement relationship connector method
-  }
+  private def hasRelationship(arn: Arn, vrn: Vrn)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
+    relationshipsConnector.relationshipExists(arn, vrn)
 
   private def auditDecision(
                              agentCode: AgentCode, agentAuthDetails: AuthDetails, vrn: Vrn,

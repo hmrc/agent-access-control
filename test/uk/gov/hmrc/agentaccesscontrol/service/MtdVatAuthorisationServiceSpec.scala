@@ -81,8 +81,7 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
       verify(relationshipsConnector, never).relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier])
     }
 
-    //TODO APB-1897 & 1887 Remove 'ignore' after the implementation
-    "deny access for a mtd agent without a client relationship" ignore {
+    "deny access for a mtd agent without a client relationship" in {
       asAgentIsLoggedIn()
       whenRelationshipsConnectorIsCalled thenReturn false
 
@@ -102,8 +101,7 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
           .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-vat", vrn, Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn.value))(hc, fakeRequest)
       }
 
-      //TODO APB-1897 & 1887 Remove 'ignore' after the implementation
-      "decision is made to deny access" ignore {
+      "decision is made to deny access" in {
         asAgentIsLoggedIn()
         whenRelationshipsConnectorIsCalled thenReturn false
 

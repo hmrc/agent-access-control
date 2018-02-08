@@ -413,23 +413,19 @@ trait StubUtils {
     me: A =>
     def arn: Arn
 
-    def hasARelationshipWith(clientId: MtdItId): A = statusReturnedForRelationship(clientId, 200)
+    def hasARelationshipWith(identifier: TaxIdentifier): A = statusReturnedForRelationship(identifier, 200)
 
-    def hasARelationshipWith(vrn: Vrn): A = statusReturnedForRelationship(vrn, 200)
+    def hasNoRelationshipWith(identifier: TaxIdentifier): A = statusReturnedForRelationship(identifier, 404)
 
-    def hasNoRelationshipWith(clientId: MtdItId): A = statusReturnedForRelationship(clientId, 404)
+    def statusReturnedForRelationship(identifier: TaxIdentifier, status: Int): A = {
+      val url = identifier match {
+        case _ @ MtdItId(mtdItId) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
+        case _ @ Vrn(vrn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
+      }
 
-    def hasNoRelationshipWith(vrn: Vrn): A = statusReturnedForRelationship(vrn, 404)
-
-    def statusReturnedForRelationship(clientId: MtdItId, status: Int): A = {
-      stubFor(get(urlEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/${clientId.value}"))
+      stubFor(get(urlEqualTo(url))
         .willReturn(aResponse()
           .withStatus(status)))
-      this
-    }
-
-    def statusReturnedForRelationship(vrn: Vrn, status: Int): A = {
-      ///TODO APB-1897 & 1887 Remove 'ignore' after the implementation
       this
     }
   }
