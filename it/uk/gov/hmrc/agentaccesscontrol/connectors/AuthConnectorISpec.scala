@@ -18,9 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
 
-import com.kenshoo.play.metrics.Metrics
-import uk.gov.hmrc.agentaccesscontrol.WSHttp
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec }
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.http.HeaderCarrier
@@ -111,7 +109,7 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTest
       }
     }
 
-    def newAuthConnector() = new AuthConnector(new URL(wiremockBaseUrl), WSHttp, app.injector.instanceOf[Metrics])
+    def newAuthConnector() = app.injector.instanceOf[AuthConnector]
   }
 
 }

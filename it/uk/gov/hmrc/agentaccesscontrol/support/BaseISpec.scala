@@ -18,17 +18,18 @@ package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.mockito.Mockito.verify
-import org.mockito.{ArgumentCaptor, Matchers}
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentCaptor
 import org.scalatest.TestData
 import org.scalatest.concurrent.Eventually
-import org.scalatest.mock.MockitoSugar
-import org.scalatestplus.play.{OneAppPerSuite, OneServerPerTest}
+import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.play.{ OneAppPerSuite, OneServerPerTest }
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.agentaccesscontrol.{StartAndStopWireMock, WSHttp}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr, TaxIdentifier, SaAgentReference}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, MtdItId, Vrn }
+import uk.gov.hmrc.domain.{ AgentCode, EmpRef, Nino, SaAgentReference, SaUtr, TaxIdentifier }
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpVerbs }
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.test.UnitSpec
@@ -46,21 +47,20 @@ abstract class WireMockISpec extends UnitSpec
     "microservice.services.auth.port" -> wiremockPort,
     "microservice.services.enrolment-store-proxy.host" -> wiremockHost,
     "microservice.services.enrolment-store-proxy.port" -> wiremockPort,
+    "auditing.enabled" -> true,
     "auditing.consumer.baseUri.host" -> wiremockHost,
     "auditing.consumer.baseUri.port" -> wiremockPort,
     "microservice.services.agent-client-relationships.host" -> wiremockHost,
     "microservice.services.agent-client-relationships.port" -> wiremockPort,
     "microservice.services.agent-fi-relationship.host" -> wiremockHost,
-    "microservice.services.agent-fi-relationship.port" -> wiremockPort
-  )
+    "microservice.services.agent-fi-relationship.port" -> wiremockPort)
 
   protected def additionalConfiguration: Map[String, String] = Map.empty
 
   protected def appBuilder: GuiceApplicationBuilder = {
     new GuiceApplicationBuilder()
       .configure(
-        wireMockAppConfiguration ++ additionalConfiguration
-      )
+        wireMockAppConfiguration ++ additionalConfiguration)
   }
 }
 
@@ -95,9 +95,10 @@ trait StubUtils {
     new PreconditionBuilder()
   }
 
-  class AgentAdmin(override val agentCode: String,
-                   override val agentCredId: String,
-                   override val oid: String)
+  class AgentAdmin(
+    override val agentCode: String,
+    override val agentCredId: String,
+    override val oid: String)
     extends AfiStub[AgentAdmin] with AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with EnrolmentStoreProxyStubs[AgentAdmin]
 
   class MtdAgency(override val arn: Arn)
@@ -324,8 +325,7 @@ trait StubUtils {
         s"""
            |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
            | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"}]
-         """.stripMargin
-      )))
+         """.stripMargin)))
       this
     }
 
@@ -345,8 +345,7 @@ trait StubUtils {
            |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
            | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
            | {"key":"IR-SA-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the IR Agent Reference"}, {"key":"IRAgentReference","value":"${saAgentReference.value}"}],"state":"$enrolmentState"}]
-         """.stripMargin
-      )))
+         """.stripMargin)))
       this
     }
 
@@ -358,8 +357,7 @@ trait StubUtils {
            | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
            | {"key":"IR-SA-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the IR Agent Reference"}, {"key":"IRAgentReference","value":"${saAgentReference.value}"}],"state":"Activated"},
            | {"key":"HMRC-AS-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the ARN"}, {"key":"AgentReferenceNumber","value":"${arn.value}"}],"state":"Activated"}]
-         """.stripMargin
-      )))
+         """.stripMargin)))
       this
     }
 
@@ -369,8 +367,7 @@ trait StubUtils {
            |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
            | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
            | {"key":"HMRC-AS-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the ARN"}, {"key":"AgentReferenceNumber","value":"${arn.value}"}],"state":"Activated"}]
-         """.stripMargin
-      )))
+         """.stripMargin)))
       this
     }
 
@@ -403,8 +400,7 @@ trait StubUtils {
            |  }
            |  $onlyUsedByAuditingAuthorityJson
            |}
-       """.stripMargin
-      )))
+       """.stripMargin)))
       this
     }
   }
@@ -419,8 +415,8 @@ trait StubUtils {
 
     def statusReturnedForRelationship(identifier: TaxIdentifier, status: Int): A = {
       val url = identifier match {
-        case _ @ MtdItId(mtdItId) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
-        case _ @ Vrn(vrn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
+        case _@ MtdItId(mtdItId) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
+        case _@ Vrn(vrn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
       }
 
       stubFor(get(urlEqualTo(url))
@@ -432,8 +428,8 @@ trait StubUtils {
 
   trait MockAuditingContext extends MockitoSugar with Eventually {
     val mockAuditConnector = mock[AuditConnector]
-    val wsHttp = new WSHttp {
-      override lazy val auditConnector = mockAuditConnector
+    val wsHttp = new HttpVerbs {
+      lazy val auditConnector = mockAuditConnector
     }
 
     def capturedEvent() = {
@@ -441,7 +437,7 @@ trait StubUtils {
       // to use eventually to avoid a race condition in this test
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[MergedDataEvent])
-        verify(mockAuditConnector).sendMergedEvent(captor.capture())(Matchers.any[HeaderCarrier], Matchers.any[ExecutionContext])
+        verify(mockAuditConnector).sendMergedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
         captor.getValue
       }
     }

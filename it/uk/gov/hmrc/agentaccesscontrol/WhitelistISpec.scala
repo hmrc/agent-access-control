@@ -18,8 +18,8 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import java.util.Base64
 
-import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerTestISpec}
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.agentaccesscontrol.support.{ Resource, WireMockWithOneServerPerTestISpec }
+import uk.gov.hmrc.domain.{ AgentCode, SaAgentReference, SaUtr }
 import uk.gov.hmrc.http.HttpResponse
 
 class WhitelistISpec extends WireMockWithOneServerPerTestISpec {
@@ -31,7 +31,6 @@ class WhitelistISpec extends WireMockWithOneServerPerTestISpec {
   override protected def additionalConfiguration: Map[String, String] = Map(
     "microservice.whitelist.enabled" -> "true",
     "microservice.whitelist.ips" -> Base64.getEncoder().encodeToString("192.168.1.2,192.168.1.3".getBytes))
-
 
   "SA delegated auth rule" should {
     "respond with NOT_IMPLEMENTED if whitelist is enabled and there is no IP address in header" in {
@@ -72,13 +71,13 @@ class WhitelistISpec extends WireMockWithOneServerPerTestISpec {
     }
   }
 
-
   def givenLoggedInAgentIsAuthorised(): Unit = {
     given()
       .agentAdmin(agentCode).isLoggedIn()
       .andHasSaAgentReferenceWithEnrolment(saAgentReference)
       .andIsAssignedToClient(clientUtr)
-      .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+      .andIsRelatedToSaClientInDes(clientUtr)
+      .andAuthorisedByBoth648AndI648()
   }
 
   def authResponseFor(agentCode: AgentCode, clientSaUtr: SaUtr, trueClientIp: Option[String]): HttpResponse =

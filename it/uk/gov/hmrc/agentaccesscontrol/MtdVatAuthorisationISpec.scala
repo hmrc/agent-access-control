@@ -2,8 +2,8 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Vrn}
+import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec }
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Vrn }
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.http.HttpResponse
 
@@ -12,7 +12,7 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
   val arn = Arn("01234567890")
   val vrn = Vrn("12345677890")
 
-  "GET /agent-access-control/mtd-vat-auth/agent/:agentCode/client/:vrn" ignore {
+  "GET /agent-access-control/mtd-vat-auth/agent/:agentCode/client/:vrn" should {
     val method = "GET"
     "grant access when the agency and client are subscribed to the appropriate services and have a relationship" in {
       given().agentAdmin(agentCode).isLoggedIn()
@@ -69,11 +69,11 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
       authResponseFor(agentCode, vrn, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-Agent-MTD-VAT-Access-Control-GET")
+      timerShouldExistsAndBeenUpdated("API-|mtd-vat-auth|agent|:|client|:-GET")
     }
   }
 
-  "POST /agent-access-control/mtd-vat-auth/agent/:agentCode/client/:mtdItId" ignore {
+  "POST /agent-access-control/mtd-vat-auth/agent/:agentCode/client/:mtdItId" should {
     val method = "POST"
     "grant access when the agency and client are subscribed to the appropriate services and have a relationship" in {
       given().agentAdmin(agentCode).isLoggedIn()
@@ -130,7 +130,7 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
       authResponseFor(agentCode, vrn, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-Agent-MTD-VAT-Access-Control-GET")
+      timerShouldExistsAndBeenUpdated("API-|mtd-vat-auth|agent|:|client|:-POST")
     }
   }
 

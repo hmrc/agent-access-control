@@ -1,8 +1,8 @@
 package uk.gov.hmrc.agentaccesscontrol
 
 import play.utils.UriEncoding.encodePathSegment
-import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerTestISpec}
-import uk.gov.hmrc.domain.{AgentCode, EmpRef}
+import uk.gov.hmrc.agentaccesscontrol.support.{ Resource, WireMockWithOneServerPerTestISpec }
+import uk.gov.hmrc.domain.{ AgentCode, EmpRef }
 import uk.gov.hmrc.http.HttpResponse
 
 class ConfigPayeDisabledSpec extends WireMockWithOneServerPerTestISpec {

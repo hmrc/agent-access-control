@@ -17,15 +17,15 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import play.api.Play.current
-import play.api.libs.json.{Json, Writes}
-import play.api.libs.ws.{WS, WSRequest, WSResponse}
+import play.api.libs.json.{ Json, Writes }
+import play.api.libs.ws.{ WS, WSRequest, WSResponse }
 import play.api.mvc.Results
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
 import uk.gov.hmrc.play.http.ws.WSHttpResponse
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 
 object Http {
 
@@ -33,8 +33,7 @@ object Http {
     request.get()
   }
 
-  def post[A](url: String, body: A, headers: Seq[(String, String)] = Seq.empty)
-    (implicit writes: Writes[A], hc: HeaderCarrier): HttpResponse = perform(url) { request =>
+  def post[A](url: String, body: A, headers: Seq[(String, String)] = Seq.empty)(implicit writes: Writes[A], hc: HeaderCarrier): HttpResponse = perform(url) { request =>
     request.post(Json.toJson(body))
   }
 
@@ -61,7 +60,7 @@ class Resource(path: String)(port: Int) {
   def get(trueClientIp: Option[String] = None) =
     Http.get(url)(HeaderCarrier(trueClientIp = trueClientIp))
 
-  def post[A](trueClientIp: Option[String] = None, body: A) (implicit writes: Writes[A])= {
+  def post[A](trueClientIp: Option[String] = None, body: A)(implicit writes: Writes[A]) = {
     implicit val headerCarrier = HeaderCarrier(trueClientIp = trueClientIp)
     Http.post(url, body)
   }

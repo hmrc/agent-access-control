@@ -3,7 +3,7 @@ package uk.gov.hmrc.agentaccesscontrol.support
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.Matchers
-import org.scalatestplus.play.{OneAppPerSuite, OneServerPerTest}
+import org.scalatestplus.play.{ OneAppPerSuite, OneServerPerTest }
 import play.api.Application
 
 import scala.collection.JavaConversions

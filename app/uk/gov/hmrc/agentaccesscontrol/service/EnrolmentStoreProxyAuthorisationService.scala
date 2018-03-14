@@ -16,17 +16,17 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 
 import uk.gov.hmrc.agentaccesscontrol.connectors.EnrolmentStoreProxyConnector
-import uk.gov.hmrc.domain.{EmpRef, SaUtr}
+import uk.gov.hmrc.domain.{ EmpRef, SaUtr }
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent.Future
 
 @Singleton
-class EnrolmentStoreProxyAuthorisationService @Inject()(val enrolmentStoreProxyConnector: EnrolmentStoreProxyConnector) extends LoggingAuthorisationResults {
+class EnrolmentStoreProxyAuthorisationService @Inject() (val enrolmentStoreProxyConnector: EnrolmentStoreProxyConnector) extends LoggingAuthorisationResults {
 
   def isAuthorisedForSaInEnrolmentStoreProxy(ggCredentialId: String, saUtr: SaUtr)(implicit hc: HeaderCarrier): Future[Boolean] = {
     enrolmentStoreProxyConnector.getAssignedSaAgents(saUtr) map { assignedAgents =>

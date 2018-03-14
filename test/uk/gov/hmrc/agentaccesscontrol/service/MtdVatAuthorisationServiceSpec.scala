@@ -32,17 +32,17 @@ package uk.gov.hmrc.agentaccesscontrol.service
  * limitations under the License.
  */
 
-import org.mockito.Matchers._
 import org.mockito.Mockito._
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
+import uk.gov.hmrc.agentaccesscontrol.connectors.{ AuthConnector, AuthDetails }
 import uk.gov.hmrc.agentaccesscontrol.support.ResettingMockitoSugar
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, MtdItId, Vrn }
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.test.UnitSpec
+import org.mockito.ArgumentMatchers.any
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global

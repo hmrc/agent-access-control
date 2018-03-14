@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentaccesscontrol.binders
+package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import uk.gov.hmrc.play.test.UnitSpec
+import java.net.URL
+import javax.inject.{ Inject, Named, Singleton }
 
-class EmpRefBinderSpec extends UnitSpec {
+import uk.gov.hmrc.auth.core._
+import uk.gov.hmrc.http.HttpPost
+import uk.gov.hmrc.play.http.ws.WSPost
 
-  "bind" should {
-    "parse an empref" in {
-      val result = PathBinders.EmpRefBinder.bind("foo", "123/02345677").right.get
+@Singleton
+class MicroserviceAuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL)
+  extends PlayAuthConnector {
 
-      result.taxOfficeNumber shouldBe "123"
-      result.taxOfficeReference shouldBe "02345677"
-    }
+  override val serviceUrl = baseUrl.toString
 
-    "not parse an invalid string" in {
-      val result = PathBinders.EmpRefBinder.bind("foo", "not_an_empref").left.get
-
-      result shouldBe "Cannot parse parameter 'foo' with value 'not_an_empref' as EmpRef"
-    }
+  override def http = new HttpPost with WSPost {
+    override val hooks = NoneRequired
   }
 }
