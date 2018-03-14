@@ -35,6 +35,7 @@ class AfiRelationshipConnector @Inject() (
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   def hasRelationship(arn: String, clientId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
+
     val afiRelationshipUrl = new URL(
       url,
       s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId").toString
@@ -47,7 +48,7 @@ class AfiRelationshipConnector @Inject() (
         case _: NotFoundException => false
       }
 
-    monitor(s"ConsumedAPI-AgentClientRelationships-Check-GET") {
+    monitor("ConsumedAPI-AgentFiRelationship-Check-GET") {
       httpGet.GET[HttpResponse](afiRelationshipUrl)
     } map { response =>
       assert(response.status == 200, s"Unexpected response status ${response.status}")
