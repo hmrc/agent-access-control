@@ -16,31 +16,31 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 
 import play.api.mvc.Request
-import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
-import uk.gov.hmrc.agentaccesscontrol.connectors.{AfiRelationshipConnector, AuthConnector, AuthDetails}
+import uk.gov.hmrc.agentaccesscontrol.audit.{ AgentAccessControlEvent, AuditService }
+import uk.gov.hmrc.agentaccesscontrol.connectors.{ AfiRelationshipConnector, AuthConnector, AuthDetails }
 import uk.gov.hmrc.domain._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
-class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationService,
-                                     authConnector: AuthConnector,
-                                     espAuthorisationService: EnrolmentStoreProxyAuthorisationService,
-                                     auditService: AuditService,
-                                     afiRelationshipConnector: AfiRelationshipConnector)
+class AuthorisationService @Inject() (
+  desAuthorisationService: DesAuthorisationService,
+  authConnector: AuthConnector,
+  espAuthorisationService: EnrolmentStoreProxyAuthorisationService,
+  auditService: AuditService,
+  afiRelationshipConnector: AfiRelationshipConnector)
   extends LoggingAuthorisationResults {
 
   private val accessGranted = true
   private val accessDenied = false
 
-  def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr)
-                       (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
+  def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
-      case Some(agentAuthDetails@AuthDetails(Some(saAgentReference), _, ggCredentialId, _, _)) =>
+      case Some(agentAuthDetails @ AuthDetails(Some(saAgentReference), _, ggCredentialId, _, _)) =>
         for {
           isAuthorisedInESP <- espAuthorisationService.isAuthorisedForSaInEnrolmentStoreProxy(ggCredentialId, saUtr)
           maybeCesa <- checkCesaIfNecessary(isAuthorisedInESP, agentCode, saAgentReference, saUtr)
@@ -53,23 +53,20 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
           if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
           else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr esp=$isAuthorisedInESP cesa=$cesaDescription")
         }
-      case Some(agentAuthDetails@AuthDetails(None, _, _, _, _)) =>
+      case Some(agentAuthDetails @ AuthDetails(None, _, _, _, _)) =>
         auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result = false)
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
       case None =>
         Future successful notAuthorised("No user is logged in")
     }
 
-  private def checkCesaIfNecessary(isAuthorisedInESP: Boolean, agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)
-                                  (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Boolean]] =
+  private def checkCesaIfNecessary(isAuthorisedInESP: Boolean, agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Boolean]] =
     if (isAuthorisedInESP) desAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr).map(Some.apply)
     else Future successful None
 
-
-  def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef)
-                         (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
+  def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
-      case Some(agentAuthDetails@AuthDetails(_, _, ggCredentialId, _, _)) =>
+      case Some(agentAuthDetails @ AuthDetails(_, _, ggCredentialId, _, _)) =>
         for {
           isAuthorisedInESP <- espAuthorisationService.isAuthorisedForPayeInEnrolmentStoreProxy(ggCredentialId, empRef)
           maybeEbs <- checkEbsIfNecessary(isAuthorisedInESP, agentCode, empRef)
@@ -85,8 +82,7 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
       case None => Future successful notAuthorised("No user is logged in")
     }
 
-  private def checkEbsIfNecessary(isAuthorisedInESP: Boolean, agentCode: AgentCode, empRef: EmpRef)
-                                 (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Boolean]] =
+  private def checkEbsIfNecessary(isAuthorisedInESP: Boolean, agentCode: AgentCode, empRef: EmpRef)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Boolean]] =
     if (isAuthorisedInESP) desAuthorisationService.isAuthorisedInEbs(agentCode, empRef).map(Some.apply)
     else Future successful None
 
@@ -94,10 +90,9 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
     maybeEbs.getOrElse("notChecked")
   }
 
-  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino)
-                        (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
+  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
     authConnector.currentAuthDetails().flatMap {
-      case Some(authDetails@AuthDetails(_, Some(arn), _, _, _)) =>
+      case Some(authDetails @ AuthDetails(_, Some(arn), _, _, _)) =>
         val arnValue = arn.value
         afiRelationshipConnector.hasRelationship(arnValue, nino.value) map { hasRelationship =>
           if (hasRelationship) {
@@ -112,11 +107,9 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
     }
   }
 
-
   private def auditDecision(
-                             agentCode: AgentCode, agentAuthDetails: AuthDetails, regime: String, taxIdentifier: TaxIdentifier,
-                             result: Boolean, extraDetails: (String, Any)*)
-                           (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
+    agentCode: AgentCode, agentAuthDetails: AuthDetails, regime: String, taxIdentifier: TaxIdentifier,
+    result: Boolean, extraDetails: (String, Any)*)(implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
     val optionalDetails = Seq(
       agentAuthDetails.saAgentReference.map("saAgentReference" -> _),
       agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
@@ -128,7 +121,8 @@ class AuthorisationService @Inject()(desAuthorisationService: DesAuthorisationSe
       agentCode,
       regime,
       taxIdentifier,
-      Seq("credId" -> agentAuthDetails.ggCredentialId,
+      Seq(
+        "credId" -> agentAuthDetails.ggCredentialId,
         "accessGranted" -> result)
         ++ extraDetails
         ++ optionalDetails)

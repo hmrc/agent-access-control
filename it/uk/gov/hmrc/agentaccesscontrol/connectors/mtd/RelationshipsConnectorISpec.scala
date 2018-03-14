@@ -2,10 +2,12 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
 import java.net.URL
 
+import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
+import uk.gov.hmrc.agentaccesscontrol.module.HttpVerbs
+import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec }
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, MtdItId, Vrn }
 import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -55,7 +57,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
       given().mtdAgency(arn)
         .hasARelationshipWith(identifier)
 
-      await(connector.relationshipExists(arn, identifier))
+      await(auditConnector.relationshipExists(arn, identifier))
 
       anOutboundCallShouldBeAudited(arn, identifier)
     }
@@ -69,19 +71,22 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
 
       await(connector.relationshipExists(arn, identifier))
 
-      timerShouldExistsAndBeenUpdated("ConsumedAPI-RELATIONSHIPS-GetAgentClientRelationship-GET")
+      timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET")
     }
   }
 
   abstract class Context extends MockAuditingContext {
-    def connector = new RelationshipsConnector(new URL(wiremockBaseUrl), wsHttp, app.injector.instanceOf[Metrics])
+
+    val httpGetMock = new HttpVerbs(mockAuditConnector, "")
+    def auditConnector = new RelationshipsConnector(new URL(wiremockBaseUrl), httpGetMock, FakeMetrics)
+    def connector = app.injector.instanceOf[RelationshipsConnector]
 
     def anOutboundCallShouldBeAudited(arn: Arn, identifier: TaxIdentifier) = {
       val event = capturedEvent()
 
       val url = identifier match {
-        case _ @ MtdItId(mtdItId) => s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
-        case _ @ Vrn(vrn) => s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
+        case _@ MtdItId(mtdItId) => s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
+        case _@ Vrn(vrn) => s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
       }
 
       event.auditType shouldBe "OutboundCall"
@@ -89,4 +94,9 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
       event.request.tags("path") shouldBe url
     }
   }
+}
+
+object FakeMetrics extends Metrics {
+  override def defaultRegistry: MetricRegistry = new MetricRegistry
+  override def toJson: String = ???
 }

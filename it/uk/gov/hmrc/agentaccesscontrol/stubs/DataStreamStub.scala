@@ -18,8 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.stubs
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{Millis, Seconds, Span}
-import org.skyscreamer.jsonassert.JSONCompareMode
+import org.scalatest.time.{ Millis, Seconds, Span }
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlEvent
 
@@ -30,19 +29,22 @@ object DataStreamStub extends Eventually {
     eventually {
       verify(1, postRequestedFor(urlPathEqualTo(auditUrl))
         .withRequestBody(similarToJson(
-        s"""{
+          s"""{
            |  "auditSource": "agent-access-control",
            |  "auditType": "$event",
            |  "tags": ${Json.toJson(tags)},
            |  "detail": ${Json.toJson(detail)}
-           |}"""
-        ))
-      )
+           |}""")))
     }
   }
 
   private def auditUrl = "/write/audit"
 
-  private def similarToJson(value: String) = equalToJson(value.stripMargin, JSONCompareMode.LENIENT)
+  def givenAuditConnector(): Unit = {
+    stubFor(post(urlPathEqualTo(auditUrl)).willReturn(aResponse().withStatus(204)))
+    stubFor(post(urlPathEqualTo(auditUrl + "/merged")).willReturn(aResponse().withStatus(204)))
+  }
+
+  private def similarToJson(value: String) = equalToJson(value.stripMargin, true, true)
 
 }

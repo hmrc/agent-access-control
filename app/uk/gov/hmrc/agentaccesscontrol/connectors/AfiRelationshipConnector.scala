@@ -17,26 +17,35 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
-import javax.inject.{Inject, Named}
+import javax.inject.{ Inject, Named }
 
-import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpResponse, NotFoundException}
+import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
+import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, HttpResponse, NotFoundException }
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+
 import scala.concurrent.Future
 
-class AfiRelationshipConnector @Inject()(@Named("agent-fi-relationship-baseUrl") url: URL,
-                                         httpGet: HttpGet) {
+class AfiRelationshipConnector @Inject() (
+  @Named("agent-fi-relationship-baseUrl") url: URL,
+  httpGet: HttpGet,
+  metrics: Metrics) extends HttpAPIMonitor {
 
-  private def buildUrl(arn: String, clientId: String): String = {
-    s"${url.toString}/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId"
-  }
+  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   def hasRelationship(arn: String, clientId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    httpGet.GET[HttpResponse](buildUrl(arn, clientId)).
-      map{response ⇒
-        assert(response.status == 200, s"Unexpected response status ${response.status}")
-        true
-      }.recover {
-        case _: NotFoundException => false
-      }
+
+    val afiRelationshipUrl = new URL(
+      url,
+      s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId").toString
+
+    monitor("ConsumedAPI-AgentFiRelationship-Check-GET") {
+      httpGet.GET[HttpResponse](afiRelationshipUrl)
+    } map { response =>
+      true
+    } recover {
+      case _: NotFoundException => false
+    }
   }
 }

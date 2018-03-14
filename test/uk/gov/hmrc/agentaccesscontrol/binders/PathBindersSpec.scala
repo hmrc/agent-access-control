@@ -24,7 +24,6 @@ class EmpRefBinderSpec extends UnitSpec {
     "parse an empref" in {
       val result = PathBinders.EmpRefBinder.bind("foo", "123/02345677").right.get
 
-
       result.taxOfficeNumber shouldBe "123"
       result.taxOfficeReference shouldBe "02345677"
     }

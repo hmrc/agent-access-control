@@ -3,9 +3,9 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.afi
 import java.net.URL
 
 import uk.gov.hmrc.agentaccesscontrol.connectors.AfiRelationshipConnector
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec }
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.{AgentCode, Nino}
+import uk.gov.hmrc.domain.{ AgentCode, Nino }
 import uk.gov.hmrc.http.HeaderCarrier
 
 class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
@@ -41,7 +41,8 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
   }
 
   abstract class Context extends MockAuditingContext {
-    def connector = new AfiRelationshipConnector(new URL(wiremockBaseUrl), wsHttp)
+    def connector = app.injector.instanceOf[AfiRelationshipConnector]
   }
 
 }
+

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
 import java.net.URL
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{ Inject, Named, Singleton }
 
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
@@ -27,42 +27,39 @@ import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.domain._
 
-import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpReads, NotFoundException}
+import scala.concurrent.{ ExecutionContext, Future }
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, HttpReads, NotFoundException }
 import uk.gov.hmrc.http.logging.Authorization
 
 @Singleton
-class DesAgentClientApiConnector @Inject() (@Named("des-baseUrl") desBaseUrl: URL,
-                                            @Named("des.authorization-token") authorizationToken: String,
-                                            @Named("des.environment") environment: String,
-                                            httpGet: HttpGet,
-                                            metrics: Metrics)
+class DesAgentClientApiConnector @Inject() (
+  @Named("des-baseUrl") desBaseUrl: URL,
+  @Named("des.authorization-token") authorizationToken: String,
+  @Named("des.environment") environment: String,
+  httpGet: HttpGet,
+  metrics: Metrics)
   extends HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   private implicit val foundResponseReads: Reads[SaFoundResponse] = (
     (__ \ "Auth_64-8").read[Boolean] and
-    (__ \ "Auth_i64-8").read[Boolean]
-    ) (SaFoundResponse)
+    (__ \ "Auth_i64-8").read[Boolean])(SaFoundResponse)
 
   private implicit val payeFoundResponseReads: Reads[PayeFoundResponse] =
     (__ \ "Auth_64-8").read[Boolean].map(PayeFoundResponse.apply)
 
-
-  def getSaAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier, ec: ExecutionContext):
-        Future[SaDesAgentClientFlagsApiResponse] = {
+  def getSaAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse] = {
     val url = saUrlFor(saAgentReference, saUtr)
-    getWithDesHeaders("GetSaAgentClientRelationship",url) map { r =>
+    getWithDesHeaders("GetSaAgentClientRelationship", url) map { r =>
       foundResponseReads.reads(Json.parse(r.body)).get
     } recover {
       case _: NotFoundException => SaNotFoundResponse
     }
   }
 
-  def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(implicit hc: HeaderCarrier, ec: ExecutionContext):
-        Future[PayeDesAgentClientFlagsApiResponse] = {
+  def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse] = {
     val url = payeUrlFor(agentCode, empRef)
-    getWithDesHeaders("GetPayeAgentClientRelationship",url) map { r =>
+    getWithDesHeaders("GetPayeAgentClientRelationship", url) map { r =>
       payeFoundResponseReads.reads(Json.parse(r.body)).get
     } recover {
       case _: NotFoundException => PayeNotFoundResponse

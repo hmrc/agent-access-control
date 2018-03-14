@@ -11,5 +11,3 @@ POST       /mtd-it-auth/agent/:agentCode/client/:mtdItId        @uk.gov.hmrc.age
 POST       /afi-auth/agent/:agentCode/client/:nino              @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForAfi(agentCode: uk.gov.hmrc.domain.AgentCode, nino: uk.gov.hmrc.domain.Nino)
 POST       /mtd-vat-auth/agent/:agentCode/client/:vrn           @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForMtdVat(agentCode: uk.gov.hmrc.domain.AgentCode, vrn: uk.gov.hmrc.agentmtdidentifiers.model.Vrn)
 
-# For whitelisting
-GET        /forbidden                                           @uk.gov.hmrc.agentaccesscontrol.controllers.WhitelistController.forbidden

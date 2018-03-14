@@ -18,8 +18,8 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec }
+import uk.gov.hmrc.domain.{ AgentCode, SaAgentReference, SaUtr }
 import uk.gov.hmrc.http.HttpResponse
 
 class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
@@ -123,7 +123,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
-      "the client has authorised the agent with both 64-8 and i64-8" in  {
+      "the client has authorised the agent with both 64-8 and i64-8" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
@@ -143,7 +143,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-      timerShouldExistsAndBeenUpdated("API-Agent-SA-Access-Control-GET")
+      timerShouldExistsAndBeenUpdated("API-|sa-auth|agent|:|client|:-GET")
     }
 
     "send an AccessControlDecision audit event" in {
@@ -211,7 +211,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
-
       "the client is not assigned to the agent in Enrolment Store Proxy" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
@@ -257,7 +256,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
-      "the client has authorised the agent with both 64-8 and i64-8" in  {
+      "the client has authorised the agent with both 64-8 and i64-8" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
@@ -268,7 +267,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
       }
     }
 
-    "record metrics for inbound http call" ignore {
+    "record metrics for inbound http call" in {
       given()
         .agentAdmin(agentCode).isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
@@ -277,7 +276,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-      timerShouldExistsAndBeenUpdated("API-Agent-SA-Access-Control-GET")
+      timerShouldExistsAndBeenUpdated("API-|sa-auth|agent|:|client|:-POST")
     }
 
     "send an AccessControlDecision audit event" in {
@@ -294,7 +293,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         Map("path" -> s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientUtr"))
     }
   }
-  
+
   def authResponseFor(agentCode: AgentCode, clientSaUtr: SaUtr, method: String): HttpResponse = {
     val resource = new Resource(s"/agent-access-control/sa-auth/agent/${agentCode.value}/client/${clientSaUtr.value}")(port)
     method match {

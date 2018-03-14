@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEachTestData, Suite, TestData}
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEachTestData, Suite, TestData }
 import uk.gov.hmrc.play.it.Port
 
 object StartAndStopWireMock {

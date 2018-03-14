@@ -2,8 +2,8 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
+import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec }
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, MtdItId }
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.http.HttpResponse
 
@@ -69,7 +69,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
 
       authResponseFor(agentCode, clientId, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-Agent-MTD-IT-Access-Control-GET")
+      timerShouldExistsAndBeenUpdated("API-|mtd-it-auth|agent|:|client|:-GET")
     }
   }
 
@@ -121,7 +121,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         Map("path" -> s"/agent-access-control/mtd-it-auth/agent/$agentCode/client/${clientId.value}"))
     }
 
-    "record metrics for access control request" ignore {
+    "record metrics for access control request" in {
       given().agentAdmin(agentCode).isLoggedIn()
         .andHasHmrcAsAgentEnrolment(arn)
       given().mtdAgency(arn)
@@ -130,7 +130,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
 
       authResponseFor(agentCode, clientId, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-Agent-MTD-IT-Access-Control-GET")
+      timerShouldExistsAndBeenUpdated("API-|mtd-it-auth|agent|:|client|:-POST")
     }
   }
 

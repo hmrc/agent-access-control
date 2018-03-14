@@ -19,18 +19,17 @@ package uk.gov.hmrc.agentaccesscontrol.service
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
-import uk.gov.hmrc.agentaccesscontrol.connectors.{AfiRelationshipConnector, AuthConnector, AuthDetails}
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
+import uk.gov.hmrc.agentaccesscontrol.connectors.{ AfiRelationshipConnector, AuthConnector, AuthDetails }
+import uk.gov.hmrc.domain.{ AgentCode, EmpRef, SaAgentReference, SaUtr }
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
-
+import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier }
 
 class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val agentCode = AgentCode("ABCDEF123456")
@@ -38,10 +37,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val clientSaUtr = SaUtr("CLIENTSAUTR456")
   val empRef = EmpRef("123", "01234567")
 
-
   implicit val hc = HeaderCarrier()
   implicit val fakeRequest = FakeRequest("GET", s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientSaUtr")
-
 
   "isAuthorisedForSa" should {
     "return false if SA agent reference cannot be found (as CESA cannot be checked)" in new Context {

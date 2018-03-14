@@ -4,11 +4,10 @@ import java.net.URL
 
 import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
-import org.scalatest.mock.MockitoSugar
-import uk.gov.hmrc.agentaccesscontrol.WSHttp
+import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.domain.{EmpRef, SaUtr, TaxIdentifier}
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
+import uk.gov.hmrc.domain.{ EmpRef, SaUtr, TaxIdentifier }
+import uk.gov.hmrc.http.{ HeaderCarrier, Upstream5xxResponse }
 
 import scala.concurrent.Future
 
@@ -16,7 +15,7 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
 
   implicit val hc = HeaderCarrier()
 
-  val connector = new EnrolmentStoreProxyConnector(new URL(wiremockBaseUrl), WSHttp, app.injector.instanceOf[Metrics])
+  val connector = app.injector.instanceOf[EnrolmentStoreProxyConnector]
 
   "EnrolmentStoreProxy" when {
 
@@ -44,7 +43,7 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
       "return empty list if there are no assigned credentials" in {
         given()
           .agentAdmin("AgentCode")
-            .andHasNoAssignmentsForAnyClient
+          .andHasNoAssignmentsForAnyClient
 
         await(connectorFn(clientId)) shouldBe empty
 
@@ -69,7 +68,7 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
       "throw exception when HTTP error" in {
         given()
           .agentAdmin("AgentCode")
-            .andEnrolmentStoreProxyReturnsAnError500()
+          .andEnrolmentStoreProxyReturnsAnError500()
 
         an[Upstream5xxResponse] should be thrownBy await(connectorFn(clientId))
       }
@@ -78,7 +77,7 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
         val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
         given()
           .agentAdmin("AgentCode")
-            .andIsAssignedToClient(clientId)
+          .andIsAssignedToClient(clientId)
 
         await(connectorFn(clientId))
         metricsRegistry.getTimers().get("Timer-ConsumedAPI-EnrolmentStoreProxy-ES0-GET").getCount should be >= 1L
