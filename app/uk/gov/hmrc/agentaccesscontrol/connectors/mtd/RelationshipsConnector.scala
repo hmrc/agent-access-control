@@ -56,7 +56,6 @@ class RelationshipsConnector @Inject() (
     monitor(s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {
       httpGet.GET[HttpResponse](relationshipUrl)
     } map { response =>
-      assert(response.status == 200, s"Unexpected response status ${response.status}")
       true
     } recover {
       case _: NotFoundException => false

@@ -40,18 +40,9 @@ class AfiRelationshipConnector @Inject() (
       url,
       s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId").toString
 
-    httpGet.GET[HttpResponse](afiRelationshipUrl).
-      map { response ⇒
-        assert(response.status == 200, s"Unexpected response status ${response.status}")
-        true
-      }.recover {
-        case _: NotFoundException => false
-      }
-
     monitor("ConsumedAPI-AgentFiRelationship-Check-GET") {
       httpGet.GET[HttpResponse](afiRelationshipUrl)
     } map { response =>
-      assert(response.status == 200, s"Unexpected response status ${response.status}")
       true
     } recover {
       case _: NotFoundException => false

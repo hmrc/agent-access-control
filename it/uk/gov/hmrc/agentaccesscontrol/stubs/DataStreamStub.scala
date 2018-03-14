@@ -40,6 +40,11 @@ object DataStreamStub extends Eventually {
 
   private def auditUrl = "/write/audit"
 
+  def givenAuditConnector(): Unit = {
+    stubFor(post(urlPathEqualTo(auditUrl)).willReturn(aResponse().withStatus(204)))
+    stubFor(post(urlPathEqualTo(auditUrl + "/merged")).willReturn(aResponse().withStatus(204)))
+  }
+
   private def similarToJson(value: String) = equalToJson(value.stripMargin, true, true)
 
 }
