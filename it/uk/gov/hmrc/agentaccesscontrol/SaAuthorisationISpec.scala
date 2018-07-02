@@ -19,6 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec }
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.{ AgentCode, SaAgentReference, SaUtr }
 import uk.gov.hmrc.http.HttpResponse
 
@@ -27,6 +28,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
   val agentCode = AgentCode("ABCDEF123456")
   val saAgentReference = SaAgentReference("ABC456")
   val clientUtr = SaUtr("123")
+  val arn = Arn("AARN0000002")
 
   "GET /agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
     val method = "GET"
@@ -123,6 +125,30 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
+      "agent uses an MTD cred and has mapped" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingSingular("sa", arn)
+          .andHasSaAgentReference(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+      }
+
+      "agent uses an MTD cred and has multiple mapped" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingMultiple("sa", arn)
+          .andHasSaAgentReference(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+      }
+
       "the client has authorised the agent with both 64-8 and i64-8" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
@@ -167,6 +193,24 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
       "agent is not logged in" in {
         given()
           .agentAdmin(agentCode).isNotLoggedIn()
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+      }
+
+      "agent uses an MTD cred and has no mappings" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenNotFound404Mapping("sa", arn)
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+      }
+
+      "agent uses an MTD cred and searched with invalid or unsupported key" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenBadRequest400Mapping("sa", arn)
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
@@ -250,6 +294,30 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+      }
+
+      "agent uses an MTD cred and has mapped" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingSingular("sa", arn)
+          .andHasSaAgentReference(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+      }
+
+      "agent uses an MTD cred and has multiple mapped" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingMultiple("sa", arn)
+          .andHasSaAgentReference(saAgentReference)
           .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 

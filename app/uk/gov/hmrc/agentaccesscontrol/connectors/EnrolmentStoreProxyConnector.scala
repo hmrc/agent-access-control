@@ -23,7 +23,7 @@ import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.domain.{ EmpRef, SaUtr }
+import uk.gov.hmrc.domain.{ EmpRef, SaAgentReference, SaUtr }
 import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, HttpResponse }
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 

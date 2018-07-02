@@ -1,9 +1,6 @@
-import play.core.PlayVersion
 import sbt.Tests.{Group, SubProcess}
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
 import uk.gov.hmrc.SbtAutoBuildPlugin
-
-import scalariform.formatter.preferences._
+import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
 
 lazy val scoverageSettings = {
   import scoverage.ScoverageKeys
@@ -19,7 +16,7 @@ lazy val scoverageSettings = {
 
 lazy val compileDeps = Seq(
   ws,
-  "uk.gov.hmrc" %% "bootstrap-play-25" % "1.5.0",
+  "uk.gov.hmrc" %% "bootstrap-play-25" % "1.6.0",
   "uk.gov.hmrc" %% "auth-client" % "2.6.0",
   "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.10.0",
   "uk.gov.hmrc" %% "play-whitelist-filter" % "2.0.0",
