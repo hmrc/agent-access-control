@@ -17,9 +17,9 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import org.mockito.Mockito.verify
-import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentCaptor
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.verify
 import org.scalatest.TestData
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
@@ -28,7 +28,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, MtdItId, Vrn }
-import uk.gov.hmrc.domain.{ AgentCode, EmpRef, Nino, SaAgentReference, SaUtr, TaxIdentifier }
+import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.{ HeaderCarrier, HttpVerbs }
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
@@ -52,6 +52,8 @@ abstract class WireMockISpec extends UnitSpec
     "auditing.consumer.baseUri.port" -> wiremockPort,
     "microservice.services.agent-client-relationships.host" -> wiremockHost,
     "microservice.services.agent-client-relationships.port" -> wiremockPort,
+    "microservice.services.agent-mapping.host" -> wiremockHost,
+    "microservice.services.agent-mapping.port" -> wiremockPort,
     "microservice.services.agent-fi-relationship.host" -> wiremockHost,
     "microservice.services.agent-fi-relationship.port" -> wiremockPort)
 
@@ -99,10 +101,10 @@ trait StubUtils {
     override val agentCode: String,
     override val agentCredId: String,
     override val oid: String)
-    extends AfiStub[AgentAdmin] with AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with EnrolmentStoreProxyStubs[AgentAdmin]
+    extends AfiStub[AgentAdmin] with AuthStubs[AgentAdmin] with DesStub[AgentAdmin] with EnrolmentStoreProxyStubs[AgentAdmin] with MappingStubs[AgentAdmin]
 
   class MtdAgency(override val arn: Arn)
-    extends RelationshipsStub[MtdAgency]
+    extends RelationshipsStub[MtdAgency] with MappingStubs[MtdAgency]
 
   trait AfiStub[A] {
     me: A =>
@@ -204,6 +206,73 @@ trait StubUtils {
       }
     }
 
+  }
+
+  trait MappingStubs[A] {
+    me: A =>
+
+    def givenSaMappingSingular(key: String, arn: Arn): A = {
+      stubFor(get(urlMatching(s"/mappings/key/$key/arn/${arn.value}"))
+        .willReturn(
+          aResponse().withBody(
+            s"""
+               |{
+               |  "mappings":[
+               |    {
+               |      "arn":"${arn.value}",
+               |      "identifier":"ABC456"
+               |    }
+               |  ]
+               |}
+             """.stripMargin)))
+      this
+    }
+
+    def givenSaMappingMultiple(key: String, arn: Arn): A = {
+      stubFor(get(urlMatching(s"/mappings/key/$key/arn/${arn.value}"))
+        .willReturn(
+          aResponse().withBody(
+            s"""
+               |{
+               |  "mappings":[
+               |    {
+               |      "arn":"${arn.value}",
+               |      "identifier":"ABC456"
+               |    },
+               |    {
+               |      "arn":"${arn.value}",
+               |      "identifier":"SA6012"
+               |    },
+               |    {
+               |      "arn":"${arn.value}",
+               |      "identifier":"A1709A"
+               |    }
+               |  ]
+               |}
+             """.stripMargin)))
+      this
+    }
+
+    def givenNotFound404Mapping(key: String, arn: Arn): A = {
+      stubFor(get(urlMatching(s"/mappings/key/$key/arn/${arn.value}"))
+        .willReturn(
+          aResponse().withStatus(404)))
+      this
+    }
+
+    def givenBadRequest400Mapping(key: String, arn: Arn): A = {
+      stubFor(get(urlMatching(s"/mappings/key/$key/arn/${arn.value}"))
+        .willReturn(
+          aResponse().withStatus(400)))
+      this
+    }
+
+    def givenServiceUnavailable502Mapping(key: String, arn: Arn): A = {
+      stubFor(get(urlMatching(s"/mappings/key/$key/arn/${arn.value}"))
+        .willReturn(
+          aResponse().withStatus(502)))
+      this
+    }
   }
 
   trait EnrolmentStoreProxyStubs[A] {
@@ -357,6 +426,14 @@ trait StubUtils {
            | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
            | {"key":"IR-SA-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the IR Agent Reference"}, {"key":"IRAgentReference","value":"${saAgentReference.value}"}],"state":"Activated"},
            | {"key":"HMRC-AS-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the ARN"}, {"key":"AgentReferenceNumber","value":"${arn.value}"}],"state":"Activated"}]
+         """.stripMargin)))
+      this
+    }
+
+    def andHasArnWithEnrolment(arn: uk.gov.hmrc.agentmtdidentifiers.model.Arn): A = {
+      stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(
+        s"""
+           | [{"key":"HMRC-AS-AGENT","identifiers":[{"key":"AgentReferenceNumber","value":"${arn.value}"}],"state":"Activated"}]
          """.stripMargin)))
       this
     }
