@@ -89,6 +89,72 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
+
+      "agent uses an MTD cred and has no mappings" in {
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
+          .andIsAssignedToClient(clientUtr)
+          .andHasArnWithEnrolment(arn)
+          .givenNotFound404Mapping("sa", arn)
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+      }
+
+      "agent uses an MTD cred and searched with invalid or unsupported key" in {
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .andIsAssignedToClient(clientUtr)
+          .givenBadRequest400Mapping("sa", arn)
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+      }
+
+      "agent uses an MTD cred, has a mappings but no client delegated" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingSingular("sa", arn)
+          .andHasSaAgentReference(saAgentReference)
+          .andHasSaEnrolmentForAgent(saAgentReference)
+          .andIsNotAssignedToClient(clientUtr)
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+      }
+
+      "agent uses an MTD cred, has multiple mappings but no client delegated" in {
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingMultiple("sa", arn)
+          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
+          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
+          .andHasSaAgentReference(saAgentReference)
+          .andIsNotAssignedToClient(clientUtr)
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+      }
+
+      "agent uses an MTD cred, has multiple mappings, gg has delegate relatioship but ETMP has no relationship" in {
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingMultiple("sa", arn)
+          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
+          .andHasSaAgentReference(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .butIsNotAuthorised()
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+      }
     }
 
     "respond with 502 (bad gateway)" when {
@@ -125,23 +191,57 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
-      "agent uses an MTD cred and has mapped" in {
+      "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with only one groupId" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingSingular("sa", arn)
           .andHasSaAgentReference(saAgentReference)
+          .andHasSaEnrolmentForAgent(saAgentReference)
           .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
-      "agent uses an MTD cred and has multiple mapped" in {
+      "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with multiple groupId" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingSingular("sa", arn)
+          .andHasSaAgentReference(saAgentReference)
+          .andHasSaEnrolmentForAgent(saAgentReference)
+          .andIsAssignedToClient(clientUtr, "823982983983")
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+      }
+
+      "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with multiple groupId" in {
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingMultiple("sa", arn)
+          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
+          .andHasSaAgentReference(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+      }
+
+      "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with groupId" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingMultiple("sa", arn)
+          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
           .andHasSaAgentReference(saAgentReference)
           .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
@@ -199,7 +299,9 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "agent uses an MTD cred and has no mappings" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
+          .andIsAssignedToClient(clientUtr)
           .andHasArnWithEnrolment(arn)
           .givenNotFound404Mapping("sa", arn)
 
@@ -208,9 +310,55 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "agent uses an MTD cred and searched with invalid or unsupported key" in {
         given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .andIsAssignedToClient(clientUtr)
+          .givenBadRequest400Mapping("sa", arn)
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+      }
+
+      "agent uses an MTD cred, has a mappings but no client delegated" in {
+        given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasArnWithEnrolment(arn)
-          .givenBadRequest400Mapping("sa", arn)
+          .givenSaMappingSingular("sa", arn)
+          .andHasSaAgentReference(saAgentReference)
+          .andHasSaEnrolmentForAgent(saAgentReference)
+          .andIsNotAssignedToClient(clientUtr)
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+      }
+
+      "agent uses an MTD cred, has multiple mappings but no client delegated" in {
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingMultiple("sa", arn)
+          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
+          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
+          .andHasSaAgentReference(saAgentReference)
+          .andIsNotAssignedToClient(clientUtr)
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+      }
+
+      "agent uses an MTD cred, has multiple mappings, gg has delegate relatioship but ETMP has no relationship" in {
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingMultiple("sa", arn)
+          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
+          .andHasSaAgentReference(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .butIsNotAuthorised()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
@@ -300,11 +448,40 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
-      "agent uses an MTD cred and has mapped" in {
+      "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with only one groupId" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingSingular("sa", arn)
+          .andHasSaAgentReference(saAgentReference)
+          .andHasSaEnrolmentForAgent(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+      }
+
+      "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with multiple groupId" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingSingular("sa", arn)
+          .andHasSaAgentReference(saAgentReference)
+          .andHasSaEnrolmentForAgent(saAgentReference)
+          .andIsAssignedToClient(clientUtr)
+          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+
+        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+      }
+
+      "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with multiple groupId" in {
+        given()
+          .agentAdmin(agentCode).isLoggedIn()
+          .andHasArnWithEnrolment(arn)
+          .givenSaMappingMultiple("sa", arn)
+          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
           .andHasSaAgentReference(saAgentReference)
           .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
@@ -312,11 +489,14 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
-      "agent uses an MTD cred and has multiple mapped" in {
+      "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with groupId" in {
         given()
           .agentAdmin(agentCode).isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingMultiple("sa", arn)
+          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
+          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329")
+          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
           .andHasSaAgentReference(saAgentReference)
           .andIsAssignedToClient(clientUtr)
           .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()

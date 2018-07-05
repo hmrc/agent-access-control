@@ -17,9 +17,8 @@
 package uk.gov.hmrc.agentaccesscontrol.service
 
 import javax.inject.{ Inject, Singleton }
-
 import uk.gov.hmrc.agentaccesscontrol.connectors.EnrolmentStoreProxyConnector
-import uk.gov.hmrc.domain.{ EmpRef, SaUtr }
+import uk.gov.hmrc.domain.{ AgentUserId, EmpRef, SaAgentReference, SaUtr }
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
@@ -29,16 +28,27 @@ import scala.concurrent.Future
 class EnrolmentStoreProxyAuthorisationService @Inject() (val enrolmentStoreProxyConnector: EnrolmentStoreProxyConnector) extends LoggingAuthorisationResults {
 
   def isAuthorisedForSaInEnrolmentStoreProxy(ggCredentialId: String, saUtr: SaUtr)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    enrolmentStoreProxyConnector.getAssignedSaAgents(saUtr) map { assignedAgents =>
-      assignedAgents.exists(_.userId == ggCredentialId)
+    getDelegatedAgentUserIdsFor(saUtr) map { assignedAgents =>
+      assignedAgents.exists(_.value == ggCredentialId)
     }
   }
 
   def isAuthorisedForPayeInEnrolmentStoreProxy(ggCredentialId: String, empRef: EmpRef)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    enrolmentStoreProxyConnector.getAssignedPayeAgents(empRef) map { assignedAgents =>
-      val result = assignedAgents.exists(_.userId == ggCredentialId)
+    enrolmentStoreProxyConnector.getIRPAYEDelegatedUserIdsFor(empRef) map { assignedAgents =>
+      val result = assignedAgents.exists(_.value == ggCredentialId)
       if (result) authorised(s"ES0 returned assigned agent credential: $ggCredentialId for client: $empRef")
       else notAuthorised(s"ES0 did not return assigned agent credential: $ggCredentialId for client $empRef")
     }
+  }
+
+  def getDelegatedAgentUserIdsFor(saUtr: SaUtr)(implicit hc: HeaderCarrier): Future[Set[AgentUserId]] =
+    enrolmentStoreProxyConnector.getIRSADelegatedUserIdsFor(saUtr)
+
+  def getAgentUserIdsFor(saAgentReference: SaAgentReference)(implicit hc: HeaderCarrier): Future[Set[AgentUserId]] = {
+    enrolmentStoreProxyConnector.getIRSAAGENTPrincipalUserIdsFor(saAgentReference)
+  }
+
+  def getAgentUserIdsFor(saAgentReferences: Seq[SaAgentReference])(implicit hc: HeaderCarrier): Future[Seq[(SaAgentReference, Set[AgentUserId])]] = {
+    Future.sequence(saAgentReferences.map(r => getAgentUserIdsFor(r).map((r, _))))
   }
 }
