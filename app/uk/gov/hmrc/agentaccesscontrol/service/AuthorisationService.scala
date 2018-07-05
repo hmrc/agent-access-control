@@ -100,6 +100,7 @@ class AuthorisationService @Inject() (
     }
   }
 
+  //noinspection ScalaStyle
   def authoriseMtdAgentForIRSA(delegatedAgentUserIds: Set[AgentUserId], agentCode: AgentCode, saUtr: SaUtr, agentAuthDetails: AuthDetails, arn: Arn)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[(Boolean, Boolean, Option[Boolean])] = for {
     saAgentReferences <- mappingConnector.getAgentMappings("sa", arn).map(_.mappings.map(m => SaAgentReference(m.identifier)))
     agentUserIdsMap <- espAuthorisationService.getAgentUserIdsFor(saAgentReferences)

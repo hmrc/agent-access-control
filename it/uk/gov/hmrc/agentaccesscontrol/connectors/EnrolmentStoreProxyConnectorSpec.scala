@@ -1,13 +1,11 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import java.net.URL
-
 import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.domain.{ AgentUserId, EmpRef, SaUtr, TaxIdentifier }
-import uk.gov.hmrc.http.{ HeaderCarrier, Upstream5xxResponse }
+import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaUtr, TaxIdentifier}
+import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
 
 import scala.concurrent.Future
 
@@ -31,13 +29,13 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
       "return agent assignments" in {
         given()
           .agentAdmin("AgentCode", "000000123245678900")
-          .andIsAssignedToClient(clientId)
+          .andIsAssignedToClient(clientId, "98741987654321", "98741987654322")
 
         val assigned = await(connectorFn(clientId)).toSeq
 
-        assigned(0).value shouldBe "000000123245678900"
-        assigned(1).value shouldBe "98741987654321"
-        assigned(2).value shouldBe "98741987654322"
+        assigned(0).value shouldBe "98741987654321"
+        assigned(1).value shouldBe "98741987654322"
+        assigned(2).value shouldBe "000000123245678900"
       }
 
       "return empty list if there are no assigned credentials" in {

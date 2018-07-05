@@ -17,8 +17,8 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
-import javax.inject.{ Inject, Named, Singleton }
 
+import javax.inject.{ Inject, Named, Singleton }
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import play.api.Logger
@@ -28,6 +28,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet }
 
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.control.NonFatal
 
 @Singleton
 class MappingConnector @Inject() (
@@ -40,7 +41,7 @@ class MappingConnector @Inject() (
     monitor(s"ConsumedAPI-AgentMapping-Check-$key-GET") {
       httpGet.GET[AgentReferenceMappings](genMappingUrl(key, arn).toString)
     }.recover {
-      case _ =>
+      case NonFatal(_) =>
         Logger.warn("Something went wrong")
         AgentReferenceMappings.apply(List.empty)
     }

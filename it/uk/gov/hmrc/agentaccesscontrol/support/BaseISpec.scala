@@ -316,7 +316,7 @@ trait StubUtils {
       this
     }
 
-    def andIsAssignedToClient(id: TaxIdentifier): A = {
+    def andIsAssignedToClient(id: TaxIdentifier, otherDelegatedUserIds: String*): A = {
       stubFor(getES0Delegated(id)
         .willReturn(aResponse()
           .withBody(
@@ -324,39 +324,21 @@ trait StubUtils {
                |{
                |    "principalUserIds": [],
                |    "delegatedUserIds": [
-               |       "$agentCredId",
-               |       "98741987654321",
-               |       "98741987654322"
+               |       ${(otherDelegatedUserIds :+ agentCredId).map(a => "\"" + a + "\"").mkString(",")}
                |    ]
                |}
                |""".stripMargin)))
       this
     }
 
-    def andHasSaEnrolmentForAgent(id: TaxIdentifier): A = {
+    def andHasSaEnrolmentForAgent(id: TaxIdentifier, otherPrincipalUserIds: String*): A = {
       stubFor(getES0Principal(id)
         .willReturn(aResponse()
           .withBody(
             s"""
                |{
                |    "principalUserIds": [
-               |       "$agentCredId"
-               |     ]
-               |}
-               |""".stripMargin)))
-      this
-    }
-
-    def andHasSaEnrolmentForAgentMultiple(id: TaxIdentifier): A = {
-      stubFor(getES0Principal(id)
-        .willReturn(aResponse()
-          .withBody(
-            s"""
-               |{
-               |    "principalUserIds": [
-               |       "98741987654329",
-               |       "98741987654322",
-               |       "$agentCredId"
+               |       ${(otherPrincipalUserIds :+ agentCredId).map(a => "\"" + a + "\"").mkString(",")}
                |     ]
                |}
                |""".stripMargin)))
