@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaUtr, TaxIdentifier}
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
+import uk.gov.hmrc.domain.{ AgentUserId, EmpRef, SaUtr, TaxIdentifier }
+import uk.gov.hmrc.http.{ HeaderCarrier, Upstream5xxResponse }
 
 import scala.concurrent.Future
 

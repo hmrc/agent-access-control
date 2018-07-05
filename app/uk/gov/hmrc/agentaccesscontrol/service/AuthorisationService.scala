@@ -74,8 +74,8 @@ class AuthorisationService @Inject() (
         "cesaResult" -> cesaDescription,
         "enrolmentStoreResult" -> isAuthorisedInESP)
 
-      if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
-      else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr esp=$isAuthorisedInESP cesa=$cesaDescription")
+      if (result) authorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(saAgentReference))
+      else notAuthorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(saAgentReference))
     }
   }
 
@@ -85,7 +85,7 @@ class AuthorisationService @Inject() (
       delegatedAgentUserIds <- espAuthorisationService.getDelegatedAgentUserIdsFor(saUtr)
       (authorised, isAuthorisedInESP, maybeCesa) <- if (delegatedAgentUserIds.isEmpty)
         Future.successful(
-          (notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr clientHasDelegatedAgents=false"), false, None))
+          (notAuthorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(arn), Some(false)), false, None))
       else authoriseMtdAgentForIRSA(delegatedAgentUserIds, agentCode, saUtr, agentAuthDetails, arn)
     } yield {
       auditDecision(
@@ -113,9 +113,9 @@ class AuthorisationService @Inject() (
         } else desAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr)
           .andThen {
             case Success(false) =>
-              Logger.warn(s"Relationship not found in CESA for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}")
+              Logger.info(s"Relationship not found in CESA for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}")
             case Failure(e) =>
-              Logger.warn(s"Could not check relationship in CESA for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}", e)
+              Logger.info(s"Could not check relationship in CESA for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}", e)
           }
           .map(b => (b, Some(b)))
           .recover {
@@ -124,9 +124,9 @@ class AuthorisationService @Inject() (
     }.map(results => results.collectFirst { case (true, c) => (true, c) }.getOrElse((false, results.collectFirst { case (_, Some(b)) => b })))
   } yield (
     if (found) {
-      authorised(s"Access allowed for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} client=${saUtr.value}")
+      authorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(arn))
     } else {
-      notAuthorised(s"Access not allowed for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} client=${saUtr.value} clientHasDelegatedAgents=true")
+      notAuthorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(arn), Some(true))
     }, true, maybeCesa)
 
   def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
@@ -142,8 +142,8 @@ class AuthorisationService @Inject() (
           val ebsDescription = desResultDescription(maybeEbs)
           auditDecision(agentCode, agentAuthDetails, "paye", empRef, result, "ebsResult" -> ebsDescription, "enrolmentStoreResult" -> isAuthorisedInESP)
 
-          if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$empRef")
-          else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$empRef esp=$isAuthorisedInESP ebs=$ebsDescription")
+          if (result) authorised(agentCode, empRef, agentAuthDetails.ggCredentialId)
+          else notAuthorised(agentCode, empRef, agentAuthDetails.ggCredentialId)
         }
       case None => Future successful notAuthorised("No user is logged in")
     }
