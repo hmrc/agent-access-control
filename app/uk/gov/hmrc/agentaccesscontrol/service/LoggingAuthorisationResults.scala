@@ -19,6 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol.service
 import play.api.Logger
 
 trait LoggingAuthorisationResults {
+
   protected def notAuthorised(message: String): Boolean = {
     Logger.info(s"Not authorised: $message")
     false

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.domain.{ EmpRef, SaUtr, TaxIdentifier }
+import uk.gov.hmrc.domain.{ AgentUserId, EmpRef, SaUtr, TaxIdentifier }
 import uk.gov.hmrc.http.{ HeaderCarrier, Upstream5xxResponse }
 
 import scala.concurrent.Future
@@ -20,24 +20,24 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
   "EnrolmentStoreProxy" when {
 
     "assignedSaAgents is called" should {
-      behave like anES0Call(connector.getAssignedSaAgents, SaUtr("1234567890"))
+      behave like anES0Call(connector.getIRSADelegatedUserIdsFor, SaUtr("1234567890"))
     }
 
     "assignedPayeAgents is called" should {
-      behave like anES0Call(connector.getAssignedPayeAgents, EmpRef("123", "4567890"))
+      behave like anES0Call(connector.getIRPAYEDelegatedUserIdsFor, EmpRef("123", "4567890"))
     }
 
-    def anES0Call[ClientId <: TaxIdentifier](connectorFn: ClientId => Future[Seq[AssignedAgentCredentials]], clientId: ClientId): Unit = {
+    def anES0Call[ClientId <: TaxIdentifier](connectorFn: ClientId => Future[Set[AgentUserId]], clientId: ClientId): Unit = {
       "return agent assignments" in {
         given()
           .agentAdmin("AgentCode", "000000123245678900")
           .andIsAssignedToClient(clientId)
 
-        val assigned = await(connectorFn(clientId))
+        val assigned = await(connectorFn(clientId)).toSeq
 
-        assigned(0).userId shouldBe "000000123245678900"
-        assigned(1).userId shouldBe "98741987654321"
-        assigned(2).userId shouldBe "98741987654322"
+        assigned(0).value shouldBe "000000123245678900"
+        assigned(1).value shouldBe "98741987654321"
+        assigned(2).value shouldBe "98741987654322"
       }
 
       "return empty list if there are no assigned credentials" in {
