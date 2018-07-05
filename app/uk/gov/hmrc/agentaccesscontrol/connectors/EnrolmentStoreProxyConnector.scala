@@ -36,29 +36,40 @@ class EnrolmentStoreProxyConnector @Inject() (@Named("enrolment-store-proxy-base
   extends HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  private def pathES0(enrolmentKey: String): String = {
-    new URL(baseUrl, s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=delegated").toString
+  private def pathES0(enrolmentKey: String, usersType: String): String = {
+    new URL(baseUrl, s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=$usersType").toString
+  }
+
+  def getGGCredentialsOfAgents(saAgentReference: SaAgentReference)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
+    getES0(s"IR-SA-AGENT~IRAgentReference~${saAgentReference.value}", "principal")
   }
 
   def getAssignedSaAgents(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
-    getES0(s"IR-SA~UTR~$utr")
+    getES0(s"IR-SA~UTR~$utr", "delegated")
   }
 
   def getAssignedPayeAgents(empRef: EmpRef)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
     val enrolmentKey = s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
-    getES0(enrolmentKey)
+    getES0(enrolmentKey, "delegated")
   }
 
-  private def getES0(enrolmentKey: String)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
+  private def getES0(enrolmentKey: String, usersType: String)(implicit hc: HeaderCarrier): Future[Seq[AssignedAgentCredentials]] = {
     monitor("ConsumedAPI-EnrolmentStoreProxy-ES0-GET") {
-      httpGet.GET[HttpResponse](pathES0(enrolmentKey))
+      httpGet.GET[HttpResponse](pathES0(enrolmentKey, usersType))
     }.map(response => response.status match {
-      case 200 => parseResponse(response.json)
+      case 200 => usersType match {
+        case "delegated" => parseResponseDelegated(response.json)
+        case "principal" => parseResponsePrincipal(response.json)
+      }
       case 204 => List.empty
     })
   }
 
-  private def parseResponse(json: JsValue): Seq[AssignedAgentCredentials] = {
+  private def parseResponseDelegated(json: JsValue): Seq[AssignedAgentCredentials] = {
     (json \ "delegatedUserIds").as[List[String]].map(AssignedAgentCredentials)
+  }
+
+  private def parseResponsePrincipal(json: JsValue): Seq[AssignedAgentCredentials] = {
+    (json \ "principalUserIds").as[List[String]].map(AssignedAgentCredentials)
   }
 }

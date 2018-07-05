@@ -212,7 +212,7 @@ trait StubUtils {
     me: A =>
 
     def givenSaMappingSingular(key: String, arn: Arn): A = {
-      stubFor(get(urlMatching(s"/mappings/key/$key/arn/${arn.value}"))
+      stubFor(get(urlMatching(s"/agent-mapping/mappings/key/$key/arn/${arn.value}"))
         .willReturn(
           aResponse().withBody(
             s"""
@@ -229,7 +229,7 @@ trait StubUtils {
     }
 
     def givenSaMappingMultiple(key: String, arn: Arn): A = {
-      stubFor(get(urlMatching(s"/mappings/key/$key/arn/${arn.value}"))
+      stubFor(get(urlMatching(s"/agent-mapping/mappings/key/$key/arn/${arn.value}"))
         .willReturn(
           aResponse().withBody(
             s"""
@@ -254,21 +254,21 @@ trait StubUtils {
     }
 
     def givenNotFound404Mapping(key: String, arn: Arn): A = {
-      stubFor(get(urlMatching(s"/mappings/key/$key/arn/${arn.value}"))
+      stubFor(get(urlMatching(s"/agent-mapping/mappings/key/$key/arn/${arn.value}"))
         .willReturn(
           aResponse().withStatus(404)))
       this
     }
 
     def givenBadRequest400Mapping(key: String, arn: Arn): A = {
-      stubFor(get(urlMatching(s"/mappings/key/$key/arn/${arn.value}"))
+      stubFor(get(urlMatching(s"/agent-mapping/mappings/key/$key/arn/${arn.value}"))
         .willReturn(
           aResponse().withStatus(400)))
       this
     }
 
     def givenServiceUnavailable502Mapping(key: String, arn: Arn): A = {
-      stubFor(get(urlMatching(s"/mappings/key/$key/arn/${arn.value}"))
+      stubFor(get(urlMatching(s"/agent-mapping/mappings/key/$key/arn/${arn.value}"))
         .willReturn(
           aResponse().withStatus(502)))
       this
@@ -282,15 +282,23 @@ trait StubUtils {
 
     private val pathRegex: String = "/enrolment-store-proxy/enrolment-store/enrolments/[^/]+/users\\?type=delegated"
 
-    private def path(enrolmentKey: String): String = s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=delegated"
+    private def pathDelegated(enrolmentKey: String): String = s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=delegated"
+    private def pathPrincipal(enrolmentKey: String): String = s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=principal"
 
-    private def getES0(id: TaxIdentifier) = {
+    private def getES0Delegated(id: TaxIdentifier) = {
       val enrolmentKey = id match {
         case utr: SaUtr => s"IR-SA~UTR~$utr"
         case empRef: EmpRef => s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
       }
 
-      get(urlEqualTo(path(enrolmentKey)))
+      get(urlEqualTo(pathDelegated(enrolmentKey)))
+    }
+
+    private def getES0Principal(id: TaxIdentifier) = {
+      val enrolmentKey = id match {
+        case saAgentRef: SaAgentReference => s"IR-SA-AGENT~IRAgentReference~${saAgentRef.value}"
+      }
+      get(urlEqualTo(pathPrincipal(enrolmentKey)))
     }
 
     def andEnrolmentStoreProxyReturnsAnError500(): A = {
@@ -302,14 +310,14 @@ trait StubUtils {
     def andEnrolmentStoreProxyIsDown(id: TaxIdentifier): A = andEnrolmentStoreProxyReturnsAnError500()
 
     def andEnrolmentStoreProxyReturnsUnparseableJson(id: TaxIdentifier): A = {
-      stubFor(getES0(id)
+      stubFor(getES0Delegated(id)
         .willReturn(aResponse()
           .withBody("Not Json!")))
       this
     }
 
     def andIsAssignedToClient(id: TaxIdentifier): A = {
-      stubFor(getES0(id)
+      stubFor(getES0Delegated(id)
         .willReturn(aResponse()
           .withBody(
             s"""
@@ -325,8 +333,38 @@ trait StubUtils {
       this
     }
 
+    def andHasSaEnrolmentForAgent(id: TaxIdentifier): A = {
+      stubFor(getES0Principal(id)
+        .willReturn(aResponse()
+          .withBody(
+            s"""
+               |{
+               |    "principalUserIds": [
+               |       "$agentCredId"
+               |     ]
+               |}
+               |""".stripMargin)))
+      this
+    }
+
+    def andHasSaEnrolmentForAgentMultiple(id: TaxIdentifier): A = {
+      stubFor(getES0Principal(id)
+        .willReturn(aResponse()
+          .withBody(
+            s"""
+               |{
+               |    "principalUserIds": [
+               |       "98741987654329",
+               |       "98741987654322",
+               |       "$agentCredId"
+               |     ]
+               |}
+               |""".stripMargin)))
+      this
+    }
+
     def andIsNotAssignedToClient(id: TaxIdentifier): A = {
-      stubFor(getES0(id)
+      stubFor(getES0Delegated(id)
         .willReturn(aResponse()
           .withBody(
             s"""

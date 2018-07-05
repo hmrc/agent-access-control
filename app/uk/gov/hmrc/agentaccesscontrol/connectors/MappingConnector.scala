@@ -21,6 +21,7 @@ import javax.inject.{ Inject, Named, Singleton }
 
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
+import play.api.Logger
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.model.AgentReferenceMappings
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
@@ -39,11 +40,13 @@ class MappingConnector @Inject() (
     monitor(s"ConsumedAPI-AgentMapping-Check-$key-GET") {
       httpGet.GET[AgentReferenceMappings](genMappingUrl(key, arn).toString)
     }.recover {
-      case _ => AgentReferenceMappings.apply(List.empty)
+      case _ =>
+        Logger.warn("Something went wrong")
+        AgentReferenceMappings.apply(List.empty)
     }
   }
 
   def genMappingUrl(key: String, arn: Arn): URL = {
-    new URL(baseUrl, s"/mappings/key/$key/arn/${arn.value}")
+    new URL(baseUrl, s"/agent-mapping/mappings/key/$key/arn/${arn.value}")
   }
 }

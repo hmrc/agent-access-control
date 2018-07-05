@@ -16,15 +16,17 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
+import play.api.Logger
 import play.api.mvc.Request
-import uk.gov.hmrc.agentaccesscontrol.audit.{ AgentAccessControlEvent, AuditService }
-import uk.gov.hmrc.agentaccesscontrol.connectors.{ AfiRelationshipConnector, AuthConnector, AuthDetails, MappingConnector }
+import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
+import uk.gov.hmrc.agentaccesscontrol.connectors._
+import uk.gov.hmrc.agentaccesscontrol.model.PossibleAgentRefsToCreds
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton
@@ -42,44 +44,69 @@ class AuthorisationService @Inject() (
 
   def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
-      case Some(agentAuthDetails @ AuthDetails(Some(saAgentReference), _, ggCredentialId, _, _)) =>
-        checkDelegatedSa(agentCode, saUtr, agentAuthDetails, saAgentReference)
+      case Some(agentAuthDetails @ AuthDetails(Some(saAgentReference), _, _, _, _)) =>
+        checkDelegatedSa(agentCode, saUtr, agentAuthDetails, saAgentReference, None)
       case Some(agentAuthDetails @ AuthDetails(_, Some(arn), _, _, _)) =>
         for {
           saAgentReferences <- mappingConnector.getAgentMappings("sa", arn).map(_.mappings.map(m => SaAgentReference(m.identifier)))
-          authorised <- checkDelegatedSa(agentCode, saUtr, agentAuthDetails, saAgentReferences)
+          credentials <- espAuthorisationService.getActiveGGCredential(saAgentReferences)
+          pairs <- possiblePairs(saAgentReferences , credentials)
+          authorised <- checkDelegatedSa(agentCode, saUtr, agentAuthDetails, pairs)
         } yield authorised
       case Some(agentAuthDetails @ AuthDetails(None, _, _, _, _)) =>
-        auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result = false)
+        auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result = false, None)
         Future successful notAuthorised(s"No 6 digit agent reference found for agent $agentCode")
       case None =>
         Future successful notAuthorised("No user is logged in")
     }
 
-  def checkDelegatedSa(agentCode: AgentCode, saUtr: SaUtr, agentAuthDetails: AuthDetails, saAgentReferences: List[SaAgentReference])(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
-    saAgentReferences match {
-      case x :: xs => checkDelegatedSa(agentCode, saUtr, agentAuthDetails, x).flatMap {
-        case true => Future.successful(true)
-        case false => checkDelegatedSa(agentCode, saUtr, agentAuthDetails, xs)
-      }.recoverWith {
-        case NonFatal(e) => checkDelegatedSa(agentCode, saUtr, agentAuthDetails, xs)
+  private def possiblePairs(saList: List[SaAgentReference], credList: Seq[AssignedAgentCredentials]) = {
+    val pairs = for {
+      sa <- saList
+      cred <- credList
+    } yield PossibleAgentRefsToCreds(sa, cred)
+    Future successful pairs
+  }
+
+  def checkDelegatedSa(agentCode: AgentCode,
+                       saUtr: SaUtr,
+                       agentAuthDetails: AuthDetails,
+                       possibleAgentRefsToCredsList: List[PossibleAgentRefsToCreds])
+                      (implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
+    possibleAgentRefsToCredsList match {
+      case pairCred::pairCreds =>
+        checkDelegatedSa(agentCode, saUtr, agentAuthDetails, pairCred.saAgentReference, Some(pairCred.assignedAgentCredentials.userId)).flatMap {
+        case true => Future successful true
+        case false =>
+          Logger.warn(s"$agentCode Combination given is not authorised")
+          checkDelegatedSa(agentCode, saUtr, agentAuthDetails, pairCreds)
       }
-      case Nil => Future.successful(false)
+      case Nil =>
+        Logger.warn(s"No pairs found for $agentCode")
+        Future successful false
     }
   }
 
-  def checkDelegatedSa(agentCode: AgentCode, saUtr: SaUtr, agentAuthDetails: AuthDetails, saAgentReference: SaAgentReference)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
+  def checkDelegatedSa(agentCode: AgentCode, saUtr: SaUtr, agentAuthDetails: AuthDetails, saAgentReference: SaAgentReference, oldGGCredential: Option[String])(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
     for {
-      isAuthorisedInESP <- espAuthorisationService.isAuthorisedForSaInEnrolmentStoreProxy(agentAuthDetails.ggCredentialId, saUtr)
+      isAuthorisedInESP <- espAuthorisationService.isAuthorisedForSaInEnrolmentStoreProxy(oldGGCredential.getOrElse(agentAuthDetails.ggCredentialId), saUtr)
       maybeCesa <- checkCesaIfNecessary(isAuthorisedInESP, agentCode, saAgentReference, saUtr)
     } yield {
       val result = isAuthorisedInESP && maybeCesa.get
 
       val cesaDescription = desResultDescription(maybeCesa)
-      auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result, "cesaResult" -> cesaDescription, "enrolmentStoreResult" -> isAuthorisedInESP)
+      auditDecision(
+        agentCode,
+        agentAuthDetails,
+        "sa",
+        saUtr,
+        result,
+        oldGGCredential,
+        "cesaResult" -> cesaDescription,
+        "enrolmentStoreResult" -> isAuthorisedInESP)
 
-      if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr")
-      else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$saUtr esp=$isAuthorisedInESP cesa=$cesaDescription")
+      if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${oldGGCredential.getOrElse(agentAuthDetails.ggCredentialId)} client=$saUtr")
+      else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${oldGGCredential.getOrElse(agentAuthDetails.ggCredentialId)} client=$saUtr esp=$isAuthorisedInESP cesa=$cesaDescription")
     }
   }
 
@@ -97,7 +124,7 @@ class AuthorisationService @Inject() (
           val result = isAuthorisedInESP && maybeEbs.get
 
           val ebsDescription = desResultDescription(maybeEbs)
-          auditDecision(agentCode, agentAuthDetails, "paye", empRef, result, "ebsResult" -> ebsDescription, "enrolmentStoreResult" -> isAuthorisedInESP)
+          auditDecision(agentCode, agentAuthDetails, "paye", empRef, result, None, "ebsResult" -> ebsDescription, "enrolmentStoreResult" -> isAuthorisedInESP)
 
           if (result) authorised(s"Access allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$empRef")
           else notAuthorised(s"Access not allowed for agentCode=$agentCode ggCredential=${agentAuthDetails.ggCredentialId} client=$empRef esp=$isAuthorisedInESP ebs=$ebsDescription")
@@ -119,10 +146,10 @@ class AuthorisationService @Inject() (
         val arnValue = arn.value
         afiRelationshipConnector.hasRelationship(arnValue, nino.value) map { hasRelationship =>
           if (hasRelationship) {
-            auditDecision(agentCode, authDetails, "afi", nino, accessGranted, "" -> "")
+            auditDecision(agentCode, authDetails, "afi", nino, accessGranted, None, "" -> "")
             found("Relationship Found")
           } else {
-            auditDecision(agentCode, authDetails, "afi", nino, accessDenied, "" -> "")
+            auditDecision(agentCode, authDetails, "afi", nino, accessDenied, None, "" -> "")
             notFound("No relationship found")
           }
         }
@@ -131,12 +158,18 @@ class AuthorisationService @Inject() (
   }
 
   private def auditDecision(
-    agentCode: AgentCode, agentAuthDetails: AuthDetails, regime: String, taxIdentifier: TaxIdentifier,
-    result: Boolean, extraDetails: (String, Any)*)(implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
+    agentCode: AgentCode,
+    agentAuthDetails: AuthDetails,
+    regime: String,
+    taxIdentifier: TaxIdentifier,
+    result: Boolean,
+    oldGGCredential: Option[String],
+    extraDetails: (String, Any)*)(implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
     val optionalDetails = Seq(
       agentAuthDetails.saAgentReference.map("saAgentReference" -> _),
       agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
-      agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
+      agentAuthDetails.agentUserRole.map("agentUserRole" -> _),
+      oldGGCredential.map("oldGGCredential" -> _)).flatten
 
     auditService.auditEvent(
       AgentAccessControlEvent.AgentAccessControlDecision,
