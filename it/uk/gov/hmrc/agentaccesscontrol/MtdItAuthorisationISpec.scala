@@ -2,8 +2,8 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec }
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, MtdItId }
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.http.HttpResponse
 
@@ -15,9 +15,12 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
   "GET /agent-access-control/mtd-it-auth/agent/:agentCode/client/:mtdItId" should {
     val method = "GET"
     "grant access when the agency and client are subscribed to the appropriate services and have a relationship" in {
-      given().agentAdmin(agentCode).isLoggedIn()
+      given()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasHmrcAsAgentEnrolment(arn)
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .hasARelationshipWith(clientId)
 
       val status = authResponseFor(agentCode, clientId, method).status
@@ -27,7 +30,9 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
 
     "not grant access" when {
       "the agency is not subscribed to the appropriate service" in {
-        given().agentAdmin(agentCode).isLoggedIn()
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasNoHmrcAsAgentEnrolment()
 
         val status = authResponseFor(agentCode, clientId, method).status
@@ -36,9 +41,12 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       }
 
       "there is no relationship between the agency and client" in {
-        given().agentAdmin(agentCode).isLoggedIn()
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasHmrcAsAgentEnrolment(arn)
-        given().mtdAgency(arn)
+        given()
+          .mtdAgency(arn)
           .hasNoRelationshipWith(clientId)
 
         val status = authResponseFor(agentCode, clientId, method).status
@@ -48,9 +56,12 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
     }
 
     "send an AccessControlDecision audit event" in {
-      given().agentAdmin(agentCode).isLoggedIn()
+      given()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasHmrcAsAgentEnrolment(arn)
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .hasARelationshipWith(clientId)
 
       authResponseFor(agentCode, clientId, method).status shouldBe 200
@@ -61,9 +72,12 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
     }
 
     "record metrics for access control request" in {
-      given().agentAdmin(agentCode).isLoggedIn()
+      given()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasHmrcAsAgentEnrolment(arn)
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .hasARelationshipWith(clientId)
       givenCleanMetricRegistry()
 
@@ -76,9 +90,12 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
   "POST /agent-access-control/mtd-it-auth/agent/:agentCode/client/:mtdItId" should {
     val method = "POST"
     "grant access when the agency and client are subscribed to the appropriate services and have a relationship" in {
-      given().agentAdmin(agentCode).isLoggedIn()
+      given()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasHmrcAsAgentEnrolment(arn)
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .hasARelationshipWith(clientId)
 
       val status = authResponseFor(agentCode, clientId, method).status
@@ -88,7 +105,9 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
 
     "not grant access" when {
       "the agency is not subscribed to the appropriate service" in {
-        given().agentAdmin(agentCode).isLoggedIn()
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasNoHmrcAsAgentEnrolment()
 
         val status = authResponseFor(agentCode, clientId, method).status
@@ -97,9 +116,12 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       }
 
       "there is no relationship between the agency and client" in {
-        given().agentAdmin(agentCode).isLoggedIn()
+        given()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasHmrcAsAgentEnrolment(arn)
-        given().mtdAgency(arn)
+        given()
+          .mtdAgency(arn)
           .hasNoRelationshipWith(clientId)
 
         val status = authResponseFor(agentCode, clientId, method).status
@@ -109,9 +131,12 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
     }
 
     "send an AccessControlDecision audit event" in {
-      given().agentAdmin(agentCode).isLoggedIn()
+      given()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasHmrcAsAgentEnrolment(arn)
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .hasARelationshipWith(clientId)
 
       authResponseFor(agentCode, clientId, method).status shouldBe 200
@@ -122,9 +147,12 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
     }
 
     "record metrics for access control request" in {
-      given().agentAdmin(agentCode).isLoggedIn()
+      given()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasHmrcAsAgentEnrolment(arn)
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .hasARelationshipWith(clientId)
       givenCleanMetricRegistry()
 
@@ -135,9 +163,10 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
   }
 
   def authResponseFor(agentCode: AgentCode, mtdItId: MtdItId, method: String): HttpResponse = {
-    val resource = new Resource(s"/agent-access-control/mtd-it-auth/agent/${agentCode.value}/client/${mtdItId.value}")(port)
+    val resource =
+      new Resource(s"/agent-access-control/mtd-it-auth/agent/${agentCode.value}/client/${mtdItId.value}")(port)
     method match {
-      case "GET" => resource.get()
+      case "GET"  => resource.get()
       case "POST" => resource.post(body = """{"foo": "bar"}""")
     }
   }

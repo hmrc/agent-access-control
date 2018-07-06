@@ -1,7 +1,7 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import uk.gov.hmrc.agentaccesscontrol.model.{ AgentReferenceMapping, AgentReferenceMappings }
-import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec }
+import uk.gov.hmrc.agentaccesscontrol.model.{AgentReferenceMapping, AgentReferenceMappings}
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -19,8 +19,8 @@ class MappingConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricT
       given().mtdAgency(arn).givenSaMappingSingular("sa", arn)
       givenCleanMetricRegistry()
 
-      await(connector.getAgentMappings("sa", arn)) shouldBe AgentReferenceMappings(List(
-        AgentReferenceMapping(arn.value, "ABC456")))
+      await(connector.getAgentMappings("sa", arn)) shouldBe AgentReferenceMappings(
+        List(AgentReferenceMapping(arn.value, "ABC456")))
       timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentMapping-Check-sa-GET")
     }
 
@@ -28,10 +28,11 @@ class MappingConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricT
       given().mtdAgency(arn).givenSaMappingMultiple("sa", arn)
       givenCleanMetricRegistry()
 
-      await(connector.getAgentMappings("sa", arn)) shouldBe AgentReferenceMappings(List(
-        AgentReferenceMapping(arn.value, "ABC456"),
-        AgentReferenceMapping(arn.value, "SA6012"),
-        AgentReferenceMapping(arn.value, "A1709A")))
+      await(connector.getAgentMappings("sa", arn)) shouldBe AgentReferenceMappings(
+        List(
+          AgentReferenceMapping(arn.value, "ABC456"),
+          AgentReferenceMapping(arn.value, "SA6012"),
+          AgentReferenceMapping(arn.value, "A1709A")))
       timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentMapping-Check-sa-GET")
     }
 

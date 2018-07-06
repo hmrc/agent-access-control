@@ -3,9 +3,9 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.afi
 import java.net.URL
 
 import uk.gov.hmrc.agentaccesscontrol.connectors.AfiRelationshipConnector
-import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec }
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.{ AgentCode, Nino }
+import uk.gov.hmrc.domain.{AgentCode, Nino}
 import uk.gov.hmrc.http.HeaderCarrier
 
 class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
@@ -17,21 +17,27 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
 
   "hasRelationship" should {
     "return true when relationship exists" in new Context {
-      given().agentAdmin(agentCode).isLoggedIn()
+      given()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasRelationship(arn, clientId)
 
       await(connector.hasRelationship(arn.value, clientId.value)) shouldBe true
     }
 
     "return false when relationship does not exist" in new Context {
-      given().agentAdmin(agentCode).isLoggedIn()
+      given()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasNoRelationship(arn, clientId)
 
       await(connector.hasRelationship(arn.value, clientId.value)) shouldBe false
     }
 
     "throw exception when unexpected status code encountered" in new Context {
-      given().agentAdmin(agentCode).isLoggedIn()
+      given()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .statusReturnedForRelationship(arn, clientId, 300)
 
       intercept[Exception] {
@@ -45,4 +51,3 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
   }
 
 }
-

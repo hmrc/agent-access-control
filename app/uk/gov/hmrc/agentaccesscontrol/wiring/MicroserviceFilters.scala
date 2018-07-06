@@ -16,24 +16,23 @@
 
 package uk.gov.hmrc.agentaccesscontrol.wiring
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
 import com.kenshoo.play.metrics.MetricsFilter
 import play.api.http.DefaultHttpFilters
-import uk.gov.hmrc.play.bootstrap.filters.{ AuditFilter, CacheControlFilter, LoggingFilter }
+import uk.gov.hmrc.play.bootstrap.filters.{AuditFilter, CacheControlFilter, LoggingFilter}
 import uk.gov.hmrc.whitelist.AkamaiWhitelistFilter
 import play.api._
 import java.util.Base64
 
-import play.api.mvc.{ Call, EssentialFilter }
+import play.api.mvc.{Call, EssentialFilter}
 import uk.gov.hmrc.play.microservice.filters.MicroserviceFilterSupport
 
 @Singleton
-class MicroserviceFilters @Inject() (
+class MicroserviceFilters @Inject()(
   metricsFilter: MetricsFilter,
   auditFilter: AuditFilter,
   loggingFilter: LoggingFilter,
   cacheFilter: CacheControlFilter,
-  monitoringFilter: MicroserviceMonitoringFilter) extends DefaultHttpFilters(metricsFilter, monitoringFilter, auditFilter, loggingFilter, cacheFilter) {
-}
-
+  monitoringFilter: MicroserviceMonitoringFilter)
+    extends DefaultHttpFilters(metricsFilter, monitoringFilter, auditFilter, loggingFilter, cacheFilter) {}

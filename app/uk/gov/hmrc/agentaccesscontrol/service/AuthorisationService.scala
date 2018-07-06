@@ -16,33 +16,35 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.mvc.Request
-import uk.gov.hmrc.agentaccesscontrol.audit.{ AgentAccessControlEvent, AuditService }
+import uk.gov.hmrc.agentaccesscontrol.audit.{AgentAccessControlEvent, AuditService}
 import uk.gov.hmrc.agentaccesscontrol.connectors._
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 @Singleton
-class AuthorisationService @Inject() (
+class AuthorisationService @Inject()(
   desAuthorisationService: DesAuthorisationService,
   authConnector: AuthConnector,
   espAuthorisationService: EnrolmentStoreProxyAuthorisationService,
   auditService: AuditService,
   mappingConnector: MappingConnector,
   afiRelationshipConnector: AfiRelationshipConnector)
-  extends LoggingAuthorisationResults {
+    extends LoggingAuthorisationResults {
 
   private val accessGranted = true
   private val accessDenied = false
 
-  def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
+  def isAuthorisedForSa(
+    agentCode: AgentCode,
+    saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
       case Some(agentAuthDetails @ AuthDetails(Some(saAgentReference), _, _, _, _)) =>
         authoriseNonMtdAgentForIRSA(agentCode, saUtr, agentAuthDetails, saAgentReference)
@@ -56,11 +58,20 @@ class AuthorisationService @Inject() (
     }
 
   //noinspection ScalaStyle
-  def authoriseNonMtdAgentForIRSA(agentCode: AgentCode, saUtr: SaUtr, agentAuthDetails: AuthDetails, saAgentReference: SaAgentReference)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
+  def authoriseNonMtdAgentForIRSA(
+    agentCode: AgentCode,
+    saUtr: SaUtr,
+    agentAuthDetails: AuthDetails,
+    saAgentReference: SaAgentReference)(
+    implicit ec: ExecutionContext,
+    hc: HeaderCarrier,
+    request: Request[Any]): Future[Boolean] =
     for {
-      isAuthorisedInESP <- espAuthorisationService.isAuthorisedForSaInEnrolmentStoreProxy(agentAuthDetails.ggCredentialId, saUtr)
-      maybeCesa <- if (isAuthorisedInESP) desAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr).map(Some.apply)
-      else Future successful None
+      isAuthorisedInESP <- espAuthorisationService
+                            .isAuthorisedForSaInEnrolmentStoreProxy(agentAuthDetails.ggCredentialId, saUtr)
+      maybeCesa <- if (isAuthorisedInESP)
+                    desAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr).map(Some.apply)
+                  else Future successful None
     } yield {
       val result = isAuthorisedInESP && maybeCesa.get
 
@@ -71,22 +82,38 @@ class AuthorisationService @Inject() (
         "sa",
         saUtr,
         result,
-        "cesaResult" -> cesaDescription,
+        "cesaResult"           -> cesaDescription,
         "enrolmentStoreResult" -> isAuthorisedInESP)
 
       if (result) authorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(saAgentReference))
       else notAuthorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(saAgentReference))
     }
-  }
 
   //noinspection ScalaStyle
-  def authoriseMtdAgentForIRSA(agentCode: AgentCode, saUtr: SaUtr, agentAuthDetails: AuthDetails, arn: Arn)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
+  def authoriseMtdAgentForIRSA(agentCode: AgentCode, saUtr: SaUtr, agentAuthDetails: AuthDetails, arn: Arn)(
+    implicit ec: ExecutionContext,
+    hc: HeaderCarrier,
+    request: Request[Any]): Future[Boolean] =
     for {
       delegatedAgentUserIds <- espAuthorisationService.getDelegatedAgentUserIdsFor(saUtr)
       (authorised, isAuthorisedInESP, maybeCesa) <- if (delegatedAgentUserIds.isEmpty)
-        Future.successful(
-          (notAuthorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(arn), Some(false)), false, None))
-      else authoriseMtdAgentForIRSA(delegatedAgentUserIds, agentCode, saUtr, agentAuthDetails, arn)
+                                                     Future.successful(
+                                                       (
+                                                         notAuthorised(
+                                                           agentCode,
+                                                           saUtr,
+                                                           agentAuthDetails.ggCredentialId,
+                                                           Some(arn),
+                                                           Some(false)),
+                                                         false,
+                                                         None))
+                                                   else
+                                                     authoriseMtdAgentForIRSA(
+                                                       delegatedAgentUserIds,
+                                                       agentCode,
+                                                       saUtr,
+                                                       agentAuthDetails,
+                                                       arn)
     } yield {
       auditDecision(
         agentCode,
@@ -94,66 +121,98 @@ class AuthorisationService @Inject() (
         "sa",
         saUtr,
         authorised,
-        "cesaResult" -> desResultDescription(maybeCesa),
+        "cesaResult"           -> desResultDescription(maybeCesa),
         "enrolmentStoreResult" -> isAuthorisedInESP)
       authorised
     }
-  }
 
   //noinspection ScalaStyle
-  def authoriseMtdAgentForIRSA(delegatedAgentUserIds: Set[AgentUserId], agentCode: AgentCode, saUtr: SaUtr, agentAuthDetails: AuthDetails, arn: Arn)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[(Boolean, Boolean, Option[Boolean])] = for {
-    saAgentReferences <- mappingConnector.getAgentMappings("sa", arn).map(_.mappings.map(m => SaAgentReference(m.identifier)))
-    agentUserIdsMap <- espAuthorisationService.getAgentUserIdsFor(saAgentReferences)
-    (found, maybeCesa) <- Future.traverse(agentUserIdsMap) {
-      case (saAgentReference, agentUserIds) =>
-        val matchingAgentUserIds = delegatedAgentUserIds.intersect(agentUserIds)
-        if (matchingAgentUserIds.isEmpty) {
-          Logger.warn(s"Relationship not found in EACD for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}")
-          Future.successful((false, None))
-        } else desAuthorisationService.isAuthorisedInCesa(agentCode, saAgentReference, saUtr)
-          .andThen {
-            case Success(false) =>
-              Logger.info(s"Relationship not found in CESA for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}")
-            case Failure(e) =>
-              Logger.info(s"Could not check relationship in CESA for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}", e)
-          }
-          .map(b => (b, Some(b)))
-          .recover {
-            case NonFatal(_) => (false, Some(false))
-          }
-    }.map(results => results.collectFirst { case (true, c) => (true, c) }.getOrElse((false, results.collectFirst { case (_, Some(b)) => b })))
-  } yield (
-    if (found) {
-      authorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(arn))
-    } else {
-      notAuthorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(arn), Some(true))
-    }, true, maybeCesa)
+  def authoriseMtdAgentForIRSA(
+    delegatedAgentUserIds: Set[AgentUserId],
+    agentCode: AgentCode,
+    saUtr: SaUtr,
+    agentAuthDetails: AuthDetails,
+    arn: Arn)(
+    implicit ec: ExecutionContext,
+    hc: HeaderCarrier,
+    request: Request[Any]): Future[(Boolean, Boolean, Option[Boolean])] =
+    for {
+      saAgentReferences <- mappingConnector
+                            .getAgentMappings("sa", arn)
+                            .map(_.mappings.map(m => SaAgentReference(m.identifier)))
+      agentUserIdsMap <- espAuthorisationService.getAgentUserIdsFor(saAgentReferences)
+      (found, maybeCesa) <- Future
+                             .traverse(agentUserIdsMap) {
+                               case (saAgentReference, agentUserIds) =>
+                                 val matchingAgentUserIds = delegatedAgentUserIds.intersect(agentUserIds)
+                                 if (matchingAgentUserIds.isEmpty) {
+                                   Logger.warn(
+                                     s"Relationship not found in EACD for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}")
+                                   Future.successful((false, None))
+                                 } else
+                                   desAuthorisationService
+                                     .isAuthorisedInCesa(agentCode, saAgentReference, saUtr)
+                                     .andThen {
+                                       case Success(false) =>
+                                         Logger.info(
+                                           s"Relationship not found in CESA for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}")
+                                       case Failure(e) =>
+                                         Logger.info(
+                                           s"Could not check relationship in CESA for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}",
+                                           e
+                                         )
+                                     }
+                                     .map(b => (b, Some(b)))
+                                     .recover {
+                                       case NonFatal(_) => (false, Some(false))
+                                     }
+                             }
+                             .map(results =>
+                               results
+                                 .collectFirst { case (true, c)                              => (true, c) }
+                                 .getOrElse((false, results.collectFirst { case (_, Some(b)) => b })))
+    } yield
+      (if (found) {
+        authorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(arn))
+      } else {
+        notAuthorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(arn), Some(true))
+      }, true, maybeCesa)
 
-  def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
+  def isAuthorisedForPaye(
+    agentCode: AgentCode,
+    empRef: EmpRef)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
       case Some(agentAuthDetails @ AuthDetails(_, _, ggCredentialId, _, _)) =>
         for {
           isAuthorisedInESP <- espAuthorisationService.isAuthorisedForPayeInEnrolmentStoreProxy(ggCredentialId, empRef)
-          maybeEbs <- if (isAuthorisedInESP) desAuthorisationService.isAuthorisedInEbs(agentCode, empRef).map(Some.apply)
-          else Future successful None
+          maybeEbs <- if (isAuthorisedInESP)
+                       desAuthorisationService.isAuthorisedInEbs(agentCode, empRef).map(Some.apply)
+                     else Future successful None
         } yield {
           val result = isAuthorisedInESP && maybeEbs.get
 
           val ebsDescription = desResultDescription(maybeEbs)
-          auditDecision(agentCode, agentAuthDetails, "paye", empRef, result, "ebsResult" -> ebsDescription, "enrolmentStoreResult" -> isAuthorisedInESP)
+          auditDecision(
+            agentCode,
+            agentAuthDetails,
+            "paye",
+            empRef,
+            result,
+            "ebsResult"            -> ebsDescription,
+            "enrolmentStoreResult" -> isAuthorisedInESP)
 
           if (result) authorised(agentCode, empRef, agentAuthDetails.ggCredentialId)
           else notAuthorised(agentCode, empRef, agentAuthDetails.ggCredentialId)
         }
       case None => Future successful notAuthorised("No user is logged in")
     }
-  }
 
-  private def desResultDescription(maybeEbs: Option[Boolean]): Any = {
+  private def desResultDescription(maybeEbs: Option[Boolean]): Any =
     maybeEbs.getOrElse("notChecked")
-  }
 
-  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] = {
+  def isAuthorisedForAfi(
+    agentCode: AgentCode,
+    nino: Nino)(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[Boolean] =
     authConnector.currentAuthDetails().flatMap {
       case Some(authDetails @ AuthDetails(_, Some(arn), _, _, _)) =>
         val arnValue = arn.value
@@ -168,7 +227,6 @@ class AuthorisationService @Inject() (
         }
       case _ => Future successful notFound("Error retrieving arn")
     }
-  }
 
   private def auditDecision(
     agentCode: AgentCode,
@@ -180,8 +238,9 @@ class AuthorisationService @Inject() (
 
     val optionalDetails = Seq(
       agentAuthDetails.saAgentReference.map("saAgentReference" -> _),
-      agentAuthDetails.affinityGroup.map("affinityGroup" -> _),
-      agentAuthDetails.agentUserRole.map("agentUserRole" -> _)).flatten
+      agentAuthDetails.affinityGroup.map("affinityGroup"       -> _),
+      agentAuthDetails.agentUserRole.map("agentUserRole"       -> _)
+    ).flatten
 
     auditService.auditEvent(
       AgentAccessControlEvent.AgentAccessControlDecision,
@@ -191,6 +250,7 @@ class AuthorisationService @Inject() (
       taxIdentifier,
       Seq("credId" -> agentAuthDetails.ggCredentialId, "accessGranted" -> result)
         ++ extraDetails
-        ++ optionalDetails)
+        ++ optionalDetails
+    )
   }
 }

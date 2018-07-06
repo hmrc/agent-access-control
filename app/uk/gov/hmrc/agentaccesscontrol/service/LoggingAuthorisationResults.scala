@@ -17,12 +17,20 @@
 package uk.gov.hmrc.agentaccesscontrol.service
 
 import play.api.Logger
-import uk.gov.hmrc.domain.{ AgentCode, TaxIdentifier }
+import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
 
 trait LoggingAuthorisationResults {
 
-  protected def notAuthorised(agentCode: AgentCode, clientTaxIdentifier: TaxIdentifier, agentUserId: String, agentReference: Option[TaxIdentifier] = None, hasAgents: Option[Boolean] = None): Boolean = {
-    Logger.info(s"Not authorised: Access not allowed for ${agentReference.map(ar => s"agent=$ar").getOrElse("")} agentCode=${agentCode.value} agentUserId=$agentUserId client=$clientTaxIdentifier ${hasAgents.map(ha => s"clientHasAgents=$ha").getOrElse("")}")
+  protected def notAuthorised(
+    agentCode: AgentCode,
+    clientTaxIdentifier: TaxIdentifier,
+    agentUserId: String,
+    agentReference: Option[TaxIdentifier] = None,
+    hasAgents: Option[Boolean] = None): Boolean = {
+    Logger.info(
+      s"Not authorised: Access not allowed for ${agentReference.map(ar => s"agent=$ar").getOrElse("")} agentCode=${agentCode.value} agentUserId=$agentUserId client=$clientTaxIdentifier ${hasAgents
+        .map(ha => s"clientHasAgents=$ha")
+        .getOrElse("")}")
     false
   }
 
@@ -36,8 +44,13 @@ trait LoggingAuthorisationResults {
     true
   }
 
-  protected def authorised(agentCode: AgentCode, clientTaxIdentifier: TaxIdentifier, agentUserId: String, agentReference: Option[TaxIdentifier] = None): Boolean = {
-    Logger.info(s"Authorised: Access allowed for agent=$agentReference agentCode=${agentCode.value} agentUserId=$agentUserId client=$clientTaxIdentifier")
+  protected def authorised(
+    agentCode: AgentCode,
+    clientTaxIdentifier: TaxIdentifier,
+    agentUserId: String,
+    agentReference: Option[TaxIdentifier] = None): Boolean = {
+    Logger.info(
+      s"Authorised: Access allowed for agent=$agentReference agentCode=${agentCode.value} agentUserId=$agentUserId client=$clientTaxIdentifier")
     true
   }
 

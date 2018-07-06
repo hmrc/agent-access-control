@@ -37,9 +37,9 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.{ AuthConnector, AuthDetails }
+import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
 import uk.gov.hmrc.agentaccesscontrol.support.ResettingMockitoSugar
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, MtdItId, Vrn }
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.test.UnitSpec
 import org.mockito.ArgumentMatchers.any
@@ -78,7 +78,8 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
       val result = await(service.authoriseForMtdVat(agentCode, vrn))
 
       result shouldBe false
-      verify(relationshipsConnector, never).relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier])
+      verify(relationshipsConnector, never)
+        .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier])
     }
 
     "deny access for a mtd agent without a client relationship" in {
@@ -98,7 +99,13 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
         await(service.authoriseForMtdVat(agentCode, vrn))
 
         verify(auditService)
-          .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-vat", vrn, Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn.value))(hc, fakeRequest)
+          .auditEvent(
+            AgentAccessControlDecision,
+            "agent access decision",
+            agentCode,
+            "mtd-vat",
+            vrn,
+            Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn.value))(hc, fakeRequest)
       }
 
       "decision is made to deny access" in {
@@ -108,7 +115,13 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
         await(service.authoriseForMtdVat(agentCode, vrn))
 
         verify(auditService)
-          .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-vat", vrn, Seq("credId" -> "ggId", "accessGranted" -> false, "arn" -> arn.value))(hc, fakeRequest)
+          .auditEvent(
+            AgentAccessControlDecision,
+            "agent access decision",
+            agentCode,
+            "mtd-vat",
+            vrn,
+            Seq("credId" -> "ggId", "accessGranted" -> false, "arn" -> arn.value))(hc, fakeRequest)
       }
 
       "no HMRC-AS-AGENT enrolment exists" in {
@@ -117,7 +130,13 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
         await(service.authoriseForMtdVat(agentCode, vrn))
 
         verify(auditService)
-          .auditEvent(AgentAccessControlDecision, "agent access decision", agentCode, "mtd-vat", vrn, Seq("credId" -> "ggId", "accessGranted" -> false))(hc, fakeRequest)
+          .auditEvent(
+            AgentAccessControlDecision,
+            "agent access decision",
+            agentCode,
+            "mtd-vat",
+            vrn,
+            Seq("credId" -> "ggId", "accessGranted" -> false))(hc, fakeRequest)
       }
     }
   }
@@ -126,8 +145,10 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
     when(relationshipsConnector.relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier]))
 
   def asAgentIsLoggedIn() =
-    when(authConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, Some(arn), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
+    when(authConnector.currentAuthDetails()).thenReturn(
+      Some(AuthDetails(None, Some(arn), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 
   def agentWithoutHmrcAsAgentEnrolmentIsLoggedIn() =
-    when(authConnector.currentAuthDetails()).thenReturn(Some(AuthDetails(None, None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
+    when(authConnector.currentAuthDetails())
+      .thenReturn(Some(AuthDetails(None, None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 }

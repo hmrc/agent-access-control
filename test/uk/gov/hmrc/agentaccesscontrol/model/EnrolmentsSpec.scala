@@ -35,12 +35,14 @@ class EnrolmentsSpec extends UnitSpec {
 
     "return Some(agent reference)" when {
       "there is IRAgentReference in IR-SA-AGENT enrolment" in {
-        val authEnrolment = AuthEnrolment("IR-SA-AGENT", Seq(EnrolmentIdentifier("IRAgentReference", "123456")), "Activated")
+        val authEnrolment =
+          AuthEnrolment("IR-SA-AGENT", Seq(EnrolmentIdentifier("IRAgentReference", "123456")), "Activated")
         Enrolments(Set(authEnrolment)).saAgentReferenceOption shouldBe Some(SaAgentReference("123456"))
       }
 
       "there is IRAgentReference in IR-SA-AGENT enrolment, but the enrolment is pending" in {
-        val authEnrolment = AuthEnrolment("IR-SA-AGENT", Seq(EnrolmentIdentifier("IRAgentReference", "123456")), "Pending")
+        val authEnrolment =
+          AuthEnrolment("IR-SA-AGENT", Seq(EnrolmentIdentifier("IRAgentReference", "123456")), "Pending")
         Enrolments(Set(authEnrolment)).saAgentReferenceOption shouldBe Some(SaAgentReference("123456"))
       }
     }
@@ -59,12 +61,14 @@ class EnrolmentsSpec extends UnitSpec {
 
     "return Some(agent reference)" when {
       "there is AgentReferenceNumber in HMRC-AS-AGENT enrolment" in {
-        val authEnrolment = AuthEnrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")), "Activated")
+        val authEnrolment =
+          AuthEnrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")), "Activated")
         Enrolments(Set(authEnrolment)).arnOption shouldBe Some(Arn("TARN0000001"))
       }
 
       "there is AgentReferenceNumber in HMRC-AS-AGENT enrolment, but the enrolment is pending" in {
-        val authEnrolment = AuthEnrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")), "Pending")
+        val authEnrolment =
+          AuthEnrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")), "Pending")
         Enrolments(Set(authEnrolment)).arnOption shouldBe Some(Arn("TARN0000001"))
       }
     }

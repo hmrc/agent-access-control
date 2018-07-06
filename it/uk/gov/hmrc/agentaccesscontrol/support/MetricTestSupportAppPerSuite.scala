@@ -3,7 +3,7 @@ package uk.gov.hmrc.agentaccesscontrol.support
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.Matchers
-import org.scalatestplus.play.{ OneAppPerSuite, OneServerPerTest }
+import org.scalatestplus.play.{OneAppPerSuite, OneServerPerTest}
 import play.api.Application
 
 import scala.collection.JavaConversions
@@ -19,9 +19,8 @@ trait MetricTestSupport extends Matchers {
     metricsRegistry = registry
   }
 
-  def timerShouldExistsAndBeenUpdated(metric: String): Unit = {
+  def timerShouldExistsAndBeenUpdated(metric: String): Unit =
     metricsRegistry.getTimers.get(s"Timer-$metric").getCount should be >= 1L
-  }
 
 }
 

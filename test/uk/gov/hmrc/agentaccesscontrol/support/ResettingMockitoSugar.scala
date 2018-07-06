@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.support
 
 import org.mockito.Mockito
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{ BeforeAndAfterEach, Suite }
+import org.scalatest.{BeforeAndAfterEach, Suite}
 
 import scala.reflect.Manifest
 
