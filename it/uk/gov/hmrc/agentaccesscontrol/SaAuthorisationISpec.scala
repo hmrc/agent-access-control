@@ -18,9 +18,9 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec }
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.{ AgentCode, SaAgentReference, SaUtr }
+import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.HttpResponse
 
 class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
@@ -35,14 +35,16 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
     "respond with 401" when {
       "agent is not logged in" in {
         given()
-          .agentAdmin(agentCode).isNotLoggedIn()
+          .agentAdmin(agentCode)
+          .isNotLoggedIn()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "agent and client has no relation in DES" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
           .andHasNoRelationInDesWith(clientUtr)
@@ -52,40 +54,48 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "the client has authorised the agent only with 64-8, but not i64-8" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnly648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andIsAuthorisedByOnly648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client has authorised the agent only with i64-8, but not 64-8" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnlyI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andIsAuthorisedByOnlyI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client has not authorised the agent" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).butIsNotAuthorised()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .butIsNotAuthorised()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client is not assigned to the agent in Enrolment Store Proxy" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsNotAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
@@ -114,7 +124,8 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "agent uses an MTD cred, has a mappings but no client delegated" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingSingular("sa", arn)
           .andHasSaAgentReference(saAgentReference)
@@ -160,7 +171,8 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
     "respond with 502 (bad gateway)" when {
       "DES is down" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
           .andDesIsDown()
@@ -170,9 +182,11 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "Enrolment Store Proxy is down" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
           .andEnrolmentStoreProxyIsDown(clientUtr)
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 502
@@ -183,36 +197,42 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "agent is enrolled to IR-SA-AGENT but the enrolment is not activated and the the client has authorised the agent with both 64-8 and i64-8" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
       "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with only one groupId" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingSingular("sa", arn)
           .andHasSaAgentReference(saAgentReference)
           .andHasSaEnrolmentForAgent(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
       "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with multiple groupId" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingSingular("sa", arn)
           .andHasSaAgentReference(saAgentReference)
           .andHasSaEnrolmentForAgent(saAgentReference)
           .andIsAssignedToClient(clientUtr, "823982983983")
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
@@ -236,7 +256,8 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with groupId" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingMultiple("sa", arn)
           .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
@@ -244,17 +265,20 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
           .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
           .andHasSaAgentReference(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
       "the client has authorised the agent with both 64-8 and i64-8" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
@@ -262,10 +286,12 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
     "record metrics for inbound http call" in {
       given()
-        .agentAdmin(agentCode).isLoggedIn()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
         .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+        .andIsRelatedToSaClientInDes(clientUtr)
+        .andAuthorisedByBoth648AndI648()
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
@@ -274,10 +300,12 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
     "send an AccessControlDecision audit event" in {
       given()
-        .agentAdmin(agentCode).isLoggedIn()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
         .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+        .andIsRelatedToSaClientInDes(clientUtr)
+        .andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
 
@@ -292,7 +320,8 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
     "respond with 401" when {
       "agent is not logged in" in {
         given()
-          .agentAdmin(agentCode).isNotLoggedIn()
+          .agentAdmin(agentCode)
+          .isNotLoggedIn()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
@@ -321,7 +350,8 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "agent uses an MTD cred, has a mappings but no client delegated" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingSingular("sa", arn)
           .andHasSaAgentReference(saAgentReference)
@@ -365,7 +395,8 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "agent and client has no relation in DES" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
           .andHasNoRelationInDesWith(clientUtr)
@@ -375,40 +406,48 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "the client has authorised the agent only with 64-8, but not i64-8" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnly648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andIsAuthorisedByOnly648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client has authorised the agent only with i64-8, but not 64-8" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andIsAuthorisedByOnlyI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andIsAuthorisedByOnlyI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client has not authorised the agent" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).butIsNotAuthorised()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .butIsNotAuthorised()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
 
       "the client is not assigned to the agent in Enrolment Store Proxy" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsNotAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
@@ -417,7 +456,8 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
     "respond with 502 (bad gateway)" when {
       "DES is down" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
           .andDesIsDown()
@@ -427,9 +467,11 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "Enrolment Store Proxy is down" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
           .andEnrolmentStoreProxyIsDown(clientUtr)
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 502
@@ -440,43 +482,50 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       "agent is enrolled to IR-SA-AGENT but the enrolment is not activated and the the client has authorised the agent with both 64-8 and i64-8" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
       "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with only one groupId" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingSingular("sa", arn)
           .andHasSaAgentReference(saAgentReference)
           .andHasSaEnrolmentForAgent(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
       "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with multiple groupId" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingSingular("sa", arn)
           .andHasSaAgentReference(saAgentReference)
           .andHasSaEnrolmentForAgent(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
       "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with multiple groupId" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingMultiple("sa", arn)
           .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
@@ -484,14 +533,16 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
           .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
           .andHasSaAgentReference(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
       "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with groupId" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasArnWithEnrolment(arn)
           .givenSaMappingMultiple("sa", arn)
           .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
@@ -499,17 +550,20 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
           .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
           .andHasSaAgentReference(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
 
       "the client has authorised the agent with both 64-8 and i64-8" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasSaAgentReferenceWithEnrolment(saAgentReference)
           .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+          .andIsRelatedToSaClientInDes(clientUtr)
+          .andAuthorisedByBoth648AndI648()
 
         authResponseFor(agentCode, clientUtr, method).status shouldBe 200
       }
@@ -517,10 +571,12 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
     "record metrics for inbound http call" in {
       given()
-        .agentAdmin(agentCode).isLoggedIn()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
         .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+        .andIsRelatedToSaClientInDes(clientUtr)
+        .andAuthorisedByBoth648AndI648()
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
@@ -529,10 +585,12 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
     "send an AccessControlDecision audit event" in {
       given()
-        .agentAdmin(agentCode).isLoggedIn()
+        .agentAdmin(agentCode)
+        .isLoggedIn()
         .andHasSaAgentReferenceWithPendingEnrolment(saAgentReference)
         .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr).andAuthorisedByBoth648AndI648()
+        .andIsRelatedToSaClientInDes(clientUtr)
+        .andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
 
@@ -543,9 +601,10 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
   }
 
   def authResponseFor(agentCode: AgentCode, clientSaUtr: SaUtr, method: String): HttpResponse = {
-    val resource = new Resource(s"/agent-access-control/sa-auth/agent/${agentCode.value}/client/${clientSaUtr.value}")(port)
+    val resource =
+      new Resource(s"/agent-access-control/sa-auth/agent/${agentCode.value}/client/${clientSaUtr.value}")(port)
     method match {
-      case "GET" => resource.get()
+      case "GET"  => resource.get()
       case "POST" => resource.post(body = """{"foo": "bar"}""")
     }
   }

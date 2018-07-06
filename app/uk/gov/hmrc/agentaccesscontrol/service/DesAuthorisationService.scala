@@ -16,33 +16,35 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model._
-import uk.gov.hmrc.domain.{ AgentCode, EmpRef, SaAgentReference, SaUtr }
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
-class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentClientApiConnector)
-  extends LoggingAuthorisationResults {
+class DesAuthorisationService @Inject()(desAgentClientApiConnector: DesAgentClientApiConnector)
+    extends LoggingAuthorisationResults {
 
-  def isAuthorisedInCesa(agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
+  def isAuthorisedInCesa(agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)(
+    implicit ec: ExecutionContext,
+    hc: HeaderCarrier): Future[Boolean] =
     desAgentClientApiConnector
       .getSaAgentClientRelationship(saAgentReference, saUtr)
       .map(handleCesaResponse(agentCode, saUtr, _))
-  }
 
-  def isAuthorisedInEbs(agentCode: AgentCode, empRef: EmpRef)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
+  def isAuthorisedInEbs(agentCode: AgentCode, empRef: EmpRef)(
+    implicit ec: ExecutionContext,
+    hc: HeaderCarrier): Future[Boolean] =
     desAgentClientApiConnector
       .getPayeAgentClientRelationship(agentCode, empRef)
       .map(handleEBSResponse(agentCode, empRef, _))
 
-  }
-
-  private def handleCesaResponse(agentCode: AgentCode, saUtr: SaUtr, response: SaDesAgentClientFlagsApiResponse)(implicit headerCarrier: HeaderCarrier): Boolean = {
+  private def handleCesaResponse(agentCode: AgentCode, saUtr: SaUtr, response: SaDesAgentClientFlagsApiResponse)(
+    implicit headerCarrier: HeaderCarrier): Boolean =
     response match {
       case SaNotFoundResponse => {
         notAuthorised(s"DES API returned not found for agent $agentCode and client $saUtr")
@@ -51,12 +53,13 @@ class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentCli
         authorised(s"DES API returned true for both flags for agent $agentCode and client $saUtr")
       }
       case SaFoundResponse(auth64_8, authI64_8) => {
-        notAuthorised(s"DES API returned false for at least one flag agent $agentCode and client $saUtr. 64-8=$auth64_8, i64-8=$authI64_8")
+        notAuthorised(
+          s"DES API returned false for at least one flag agent $agentCode and client $saUtr. 64-8=$auth64_8, i64-8=$authI64_8")
       }
     }
-  }
 
-  private def handleEBSResponse(agentCode: AgentCode, empRef: EmpRef, response: PayeDesAgentClientFlagsApiResponse)(implicit headerCarrier: HeaderCarrier): Boolean = {
+  private def handleEBSResponse(agentCode: AgentCode, empRef: EmpRef, response: PayeDesAgentClientFlagsApiResponse)(
+    implicit headerCarrier: HeaderCarrier): Boolean =
     response match {
       case PayeNotFoundResponse =>
         notAuthorised(s"DES API returned not found for agent $agentCode and client $empRef")
@@ -65,6 +68,5 @@ class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentCli
       case PayeFoundResponse(false) =>
         notAuthorised(s"DES API returned false for auth64-8 flag agent $agentCode and client $empRef")
     }
-  }
 
 }

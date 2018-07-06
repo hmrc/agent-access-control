@@ -1,8 +1,8 @@
 package uk.gov.hmrc.agentaccesscontrol
 
 import play.utils.UriEncoding.encodePathSegment
-import uk.gov.hmrc.agentaccesscontrol.support.{ Resource, WireMockWithOneServerPerTestISpec }
-import uk.gov.hmrc.domain.{ AgentCode, EmpRef }
+import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerTestISpec}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef}
 import uk.gov.hmrc.http.HttpResponse
 
 class ConfigPayeDisabledSpec extends WireMockWithOneServerPerTestISpec {
@@ -20,14 +20,17 @@ class ConfigPayeDisabledSpec extends WireMockWithOneServerPerTestISpec {
     }
   }
 
-  def givenLoggedInAgentIsPayeAuthorised(): Unit = {
-    given().agentAdmin(agentCode).isLoggedIn()
+  def givenLoggedInAgentIsPayeAuthorised(): Unit =
+    given()
+      .agentAdmin(agentCode)
+      .isLoggedIn()
       .andHasNoIrSaAgentEnrolment()
       .andIsAssignedToClient(empRef)
       .andIsRelatedToPayeClientInDes(empRef)
       .andIsAuthorisedBy648()
-  }
 
   def authResponseFor(agentCode: AgentCode, empRef: EmpRef): HttpResponse =
-    new Resource(s"/agent-access-control/epaye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}")(port).get()
+    new Resource(
+      s"/agent-access-control/epaye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}")(
+      port).get()
 }

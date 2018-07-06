@@ -22,7 +22,7 @@ import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.connectors.EnrolmentStoreProxyConnector
-import uk.gov.hmrc.domain.{ AgentCode, AgentUserId, EmpRef, SaUtr }
+import uk.gov.hmrc.domain.{AgentCode, AgentUserId, EmpRef, SaUtr}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -41,13 +41,15 @@ class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec with MockitoS
   "isAuthorisedForSaInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
       when(esProxyConnector.getIRSADelegatedUserIdsFor(saUtr)(hc)),
-      (agentCode: AgentCode, credId: String) => service.isAuthorisedForSaInEnrolmentStoreProxy(credId, saUtr))
+      (agentCode: AgentCode, credId: String) => service.isAuthorisedForSaInEnrolmentStoreProxy(credId, saUtr)
+    )
   }
 
   "isAuthorisedForPayeInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
       when(esProxyConnector.getIRPAYEDelegatedUserIdsFor(empRef)(hc)),
-      (agentCode: AgentCode, credId: String) => service.isAuthorisedForPayeInEnrolmentStoreProxy(credId, empRef))
+      (agentCode: AgentCode, credId: String) => service.isAuthorisedForPayeInEnrolmentStoreProxy(credId, empRef)
+    )
   }
 
   private def aGovernmentGatewayAssignmentCheck(
@@ -85,7 +87,6 @@ class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec with MockitoS
     }
   }
 
-  override protected def beforeEach(): Unit = {
+  override protected def beforeEach(): Unit =
     Mockito.reset(esProxyConnector)
-  }
 }

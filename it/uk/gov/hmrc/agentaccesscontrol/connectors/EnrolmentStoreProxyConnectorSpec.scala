@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.domain.{ AgentUserId, EmpRef, SaUtr, TaxIdentifier }
-import uk.gov.hmrc.http.{ HeaderCarrier, Upstream5xxResponse }
+import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaUtr, TaxIdentifier}
+import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
 
 import scala.concurrent.Future
 
@@ -25,7 +25,9 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
       behave like anES0Call(connector.getIRPAYEDelegatedUserIdsFor, EmpRef("123", "4567890"))
     }
 
-    def anES0Call[ClientId <: TaxIdentifier](connectorFn: ClientId => Future[Set[AgentUserId]], clientId: ClientId): Unit = {
+    def anES0Call[ClientId <: TaxIdentifier](
+      connectorFn: ClientId => Future[Set[AgentUserId]],
+      clientId: ClientId): Unit = {
       "return agent assignments" in {
         given()
           .agentAdmin("AgentCode", "000000123245678900")

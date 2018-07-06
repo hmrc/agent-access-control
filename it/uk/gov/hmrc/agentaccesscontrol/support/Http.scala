@@ -17,15 +17,15 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import play.api.Play.current
-import play.api.libs.json.{ Json, Writes }
-import play.api.libs.ws.{ WS, WSRequest, WSResponse }
+import play.api.libs.json.{Json, Writes}
+import play.api.libs.ws.{WS, WSRequest, WSResponse}
 import play.api.mvc.Results
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.http.ws.WSHttpResponse
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{Await, Future}
 
 object Http {
 
@@ -33,7 +33,9 @@ object Http {
     request.get()
   }
 
-  def post[A](url: String, body: A, headers: Seq[(String, String)] = Seq.empty)(implicit writes: Writes[A], hc: HeaderCarrier): HttpResponse = perform(url) { request =>
+  def post[A](url: String, body: A, headers: Seq[(String, String)] = Seq.empty)(
+    implicit writes: Writes[A],
+    hc: HeaderCarrier): HttpResponse = perform(url) { request =>
     request.post(Json.toJson(body))
   }
 
@@ -47,7 +49,8 @@ object Http {
   }
 
   private def perform(url: String)(fun: WSRequest => Future[WSResponse])(implicit hc: HeaderCarrier): WSHttpResponse =
-    await(fun(WS.url(url).withHeaders(hc.headers: _*).withRequestTimeout(Duration(20, SECONDS))).map(new WSHttpResponse(_)))
+    await(
+      fun(WS.url(url).withHeaders(hc.headers: _*).withRequestTimeout(Duration(20, SECONDS))).map(new WSHttpResponse(_)))
 
   private def await[A](future: Future[A]) = Await.result(future, Duration(10, SECONDS))
 

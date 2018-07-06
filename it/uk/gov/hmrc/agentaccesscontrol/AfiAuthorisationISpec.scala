@@ -18,9 +18,9 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentaccesscontrol.support.{ Resource, WireMockWithOneServerPerTestISpec }
+import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.{ AgentCode, Nino }
+import uk.gov.hmrc.domain.{AgentCode, Nino}
 import uk.gov.hmrc.http.HttpResponse
 
 class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
@@ -34,7 +34,8 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
     "respond with 200" when {
       "the client has authorised the agent" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasHmrcAsAgentEnrolment(arn)
           .andHasRelationship(arn, clientId)
 
@@ -50,7 +51,8 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
     "respond with 404" when {
       "the client has not authorised the agent" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasHmrcAsAgentEnrolment(arn)
           .andHasNoRelationship(arn, clientId)
 
@@ -68,7 +70,8 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
     "respond with 200" when {
       "the client has authorised the agent" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasHmrcAsAgentEnrolment(arn)
           .andHasRelationship(arn, clientId)
 
@@ -84,7 +87,8 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
     "respond with 404" when {
       "the client has not authorised the agent" in {
         given()
-          .agentAdmin(agentCode).isLoggedIn()
+          .agentAdmin(agentCode)
+          .isLoggedIn()
           .andHasHmrcAsAgentEnrolment(arn)
           .andHasNoRelationship(arn, clientId)
 
@@ -100,7 +104,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
   def authResponseFor(agentCode: AgentCode, nino: Nino, method: String): HttpResponse = {
     val resource = new Resource(s"/agent-access-control/afi-auth/agent/${agentCode.value}/client/${nino.value}")(port)
     method match {
-      case "GET" => resource.get()
+      case "GET"  => resource.get()
       case "POST" => resource.post(body = """{"foo": "bar"}""")
     }
   }

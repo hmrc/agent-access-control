@@ -6,8 +6,8 @@ import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.module.HttpVerbs
-import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec }
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, MtdItId, Vrn }
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
 import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -26,7 +26,8 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
 
   private def aCheckEndpoint(identifier: TaxIdentifier, clientType: String) = {
     "return true when relationship exists" in new Context {
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .hasARelationshipWith(identifier)
       givenCleanMetricRegistry()
 
@@ -35,7 +36,8 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
     }
 
     "return false when relationship does not exist" in new Context {
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .hasNoRelationshipWith(identifier)
       givenCleanMetricRegistry()
 
@@ -44,7 +46,8 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
     }
 
     "throw exception when unexpected status code encountered" in new Context {
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .statusReturnedForRelationship(identifier, 300)
 
       intercept[Exception] {
@@ -54,7 +57,8 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
 
     //TODO review the need for this auditing - I don't think intra-MDTP calls need to be audited only calls outside MDTP
     "audit the call" in new Context {
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .hasARelationshipWith(identifier)
 
       await(auditConnector.relationshipExists(arn, identifier))
@@ -65,7 +69,8 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
     "record metrics" in new Context {
       val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
 
-      given().mtdAgency(arn)
+      given()
+        .mtdAgency(arn)
         .hasARelationshipWith(identifier)
       givenCleanMetricRegistry()
 
@@ -85,8 +90,10 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
       val event = capturedEvent()
 
       val url = identifier match {
-        case _@ MtdItId(mtdItId) => s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
-        case _@ Vrn(vrn) => s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
+        case _ @MtdItId(mtdItId) =>
+          s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
+        case _ @Vrn(vrn) =>
+          s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
       }
 
       event.auditType shouldBe "OutboundCall"

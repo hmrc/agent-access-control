@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
 
-import uk.gov.hmrc.agentaccesscontrol.support.{ MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec }
+import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.http.HeaderCarrier
@@ -32,7 +32,8 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTest
   "currentAuthDetails" should {
     "return sa agent reference and other auth details" in {
       given()
-        .agentAdmin("ABCDEF123456").isLoggedIn()
+        .agentAdmin("ABCDEF123456")
+        .isLoggedIn()
         .andHasSaAgentReferenceAndArnWithEnrolments(SaAgentReference("REF879"), Arn("AARN0000002"))
 
       val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
@@ -48,7 +49,8 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTest
     // include them in audit logs
     "handle affinityGroup and agentUserRole being missing" in {
       given()
-        .agentAdmin("ABCDEF123456").isLoggedIn(onlyUsedByAuditingAuthorityJson = "")
+        .agentAdmin("ABCDEF123456")
+        .isLoggedIn(onlyUsedByAuditingAuthorityJson = "")
         .andHasSaAgentReferenceWithEnrolment(SaAgentReference("REF879"))
 
       val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
@@ -60,7 +62,8 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTest
 
     "record metrics for both /auth/authority and /auth/authority/(oid)/enrolments" in {
       given()
-        .agentAdmin("ABCDEF123456").isLoggedIn()
+        .agentAdmin("ABCDEF123456")
+        .isLoggedIn()
         .andHasSaAgentReferenceWithEnrolment(SaAgentReference("REF879"))
       givenCleanMetricRegistry()
 
@@ -74,7 +77,8 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTest
 
     "return None as the saAgentReference if 6 digit agent reference cannot be found" in {
       given()
-        .agentAdmin("ABCDEF123456").isLoggedIn()
+        .agentAdmin("ABCDEF123456")
+        .isLoggedIn()
         .andHasNoSaAgentReference()
 
       val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
@@ -84,7 +88,8 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTest
 
     "return None as the ARN if no ARN found in the enrolments" in {
       given()
-        .agentAdmin("ABCDEF123456").isLoggedIn()
+        .agentAdmin("ABCDEF123456")
+        .isLoggedIn()
         .andHasNoIrSaAgentEnrolment()
 
       val authDetails: AuthDetails = await(newAuthConnector().currentAuthDetails).get
@@ -94,14 +99,16 @@ class AuthConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTest
 
     "return None if the user is not logged in" in {
       given()
-        .agentAdmin("ABCDEF123456").isNotLoggedIn()
+        .agentAdmin("ABCDEF123456")
+        .isNotLoggedIn()
 
       await(newAuthConnector().currentAuthDetails) shouldBe None
     }
 
     "return a failed future if any errors happen" in {
       given()
-        .agentAdmin("ABCDEF123456").isLoggedIn()
+        .agentAdmin("ABCDEF123456")
+        .isLoggedIn()
         .andGettingEnrolmentsFailsWith500()
 
       an[Exception] shouldBe thrownBy {

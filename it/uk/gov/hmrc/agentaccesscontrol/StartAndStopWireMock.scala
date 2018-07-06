@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEachTestData, Suite, TestData }
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEachTestData, Suite, TestData}
 import uk.gov.hmrc.play.it.Port
 
 object StartAndStopWireMock {
@@ -43,11 +43,9 @@ trait StartAndStopWireMock extends BeforeAndAfterEachTestData with BeforeAndAfte
     WireMock.configureFor(wiremockHost, wiremockPort)
   }
 
-  override def beforeEach(testData: TestData) = {
+  override def beforeEach(testData: TestData) =
     WireMock.reset()
-  }
 
-  override protected def afterAll(): Unit = {
+  override protected def afterAll(): Unit =
     wireMockServer.stop()
-  }
 }

@@ -32,7 +32,8 @@ object AuthEnrolment {
 
 case class Enrolments(enrolments: Set[AuthEnrolment]) {
 
-  def saAgentReferenceOption: Option[SaAgentReference] = saAgentEnrolment.flatMap(_.identifier("IRAgentReference")).map(SaAgentReference)
+  def saAgentReferenceOption: Option[SaAgentReference] =
+    saAgentEnrolment.flatMap(_.identifier("IRAgentReference")).map(SaAgentReference)
   def arnOption: Option[Arn] = asAgentEnrolment.flatMap(_.identifier("AgentReferenceNumber")).map(Arn.apply)
 
   private def asAgentEnrolment: Option[AuthEnrolment] = getEnrolment("HMRC-AS-AGENT")
