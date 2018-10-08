@@ -21,8 +21,11 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 
 case class EnrolmentIdentifier(key: String, value: String)
-case class AuthEnrolment(key: String, identifiers: Seq[EnrolmentIdentifier], state: String) {
-  def identifier(key: String): Option[String] = identifiers.find(_.key == key).map(_.value)
+case class AuthEnrolment(key: String,
+                         identifiers: Seq[EnrolmentIdentifier],
+                         state: String) {
+  def identifier(key: String): Option[String] =
+    identifiers.find(_.key == key).map(_.value)
 }
 
 object AuthEnrolment {
@@ -33,14 +36,22 @@ object AuthEnrolment {
 case class Enrolments(enrolments: Set[AuthEnrolment]) {
 
   def saAgentReferenceOption: Option[SaAgentReference] =
-    saAgentEnrolment.flatMap(_.identifier("IRAgentReference")).map(SaAgentReference)
-  def arnOption: Option[Arn] = asAgentEnrolment.flatMap(_.identifier("AgentReferenceNumber")).map(Arn.apply)
+    saAgentEnrolment
+      .flatMap(_.identifier("IRAgentReference"))
+      .map(SaAgentReference)
+  def arnOption: Option[Arn] =
+    asAgentEnrolment
+      .flatMap(_.identifier("AgentReferenceNumber"))
+      .map(Arn.apply)
 
-  private def asAgentEnrolment: Option[AuthEnrolment] = getEnrolment("HMRC-AS-AGENT")
+  private def asAgentEnrolment: Option[AuthEnrolment] =
+    getEnrolment("HMRC-AS-AGENT")
 
-  private def saAgentEnrolment: Option[AuthEnrolment] = getEnrolment("IR-SA-AGENT")
+  private def saAgentEnrolment: Option[AuthEnrolment] =
+    getEnrolment("IR-SA-AGENT")
 
-  private def getEnrolment(key: String): Option[AuthEnrolment] = enrolments.find(e => e.key == key)
+  private def getEnrolment(key: String): Option[AuthEnrolment] =
+    enrolments.find(e => e.key == key)
 }
 
 object Enrolments {

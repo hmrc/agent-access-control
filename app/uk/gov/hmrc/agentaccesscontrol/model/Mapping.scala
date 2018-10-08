@@ -22,7 +22,8 @@ import play.api.libs.json.Json.format
 case class AgentReferenceMappings(mappings: List[AgentReferenceMapping])
 
 object AgentReferenceMappings {
-  implicit val formats: Format[AgentReferenceMappings] = format[AgentReferenceMappings]
+  implicit val formats: Format[AgentReferenceMappings] =
+    format[AgentReferenceMappings]
 }
 
 trait ArnToIdentifierMapping {
@@ -30,8 +31,10 @@ trait ArnToIdentifierMapping {
   def identifier: String
 }
 
-case class AgentReferenceMapping(arn: String, identifier: String) extends ArnToIdentifierMapping
+case class AgentReferenceMapping(arn: String, identifier: String)
+    extends ArnToIdentifierMapping
 
 object AgentReferenceMapping {
-  implicit val formats: Format[AgentReferenceMapping] = format[AgentReferenceMapping]
+  implicit val formats: Format[AgentReferenceMapping] =
+    format[AgentReferenceMapping]
 }
