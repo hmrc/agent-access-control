@@ -22,23 +22,31 @@ import javax.inject.{Inject, Named}
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpResponse, NotFoundException}
+import uk.gov.hmrc.http.{
+  HeaderCarrier,
+  HttpGet,
+  HttpResponse,
+  NotFoundException
+}
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent.Future
 
 class AfiRelationshipConnector @Inject()(
-  @Named("agent-fi-relationship-baseUrl") url: URL,
-  httpGet: HttpGet,
-  metrics: Metrics)
+    @Named("agent-fi-relationship-baseUrl") url: URL,
+    httpGet: HttpGet,
+    metrics: Metrics)
     extends HttpAPIMonitor {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def hasRelationship(arn: String, clientId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  def hasRelationship(arn: String, clientId: String)(
+      implicit hc: HeaderCarrier): Future[Boolean] = {
 
     val afiRelationshipUrl =
-      new URL(url, s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId").toString
+      new URL(
+        url,
+        s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId").toString
 
     monitor("ConsumedAPI-AgentFiRelationship-Check-GET") {
       httpGet.GET[HttpResponse](afiRelationshipUrl)

@@ -27,7 +27,12 @@ import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
 import uk.gov.hmrc.domain.TaxIdentifier
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpResponse, NotFoundException}
+import uk.gov.hmrc.http.{
+  HeaderCarrier,
+  HttpGet,
+  HttpResponse,
+  NotFoundException
+}
 
 case class Relationship(arn: String, clientId: String)
 object Relationship {
@@ -36,15 +41,15 @@ object Relationship {
 
 @Singleton
 class RelationshipsConnector @Inject()(
-  @Named("agent-client-relationships-baseUrl") baseUrl: URL,
-  httpGet: HttpGet,
-  metrics: Metrics)
+    @Named("agent-client-relationships-baseUrl") baseUrl: URL,
+    httpGet: HttpGet,
+    metrics: Metrics)
     extends HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   def relationshipExists(arn: Arn, identifier: TaxIdentifier)(
-    implicit ec: ExecutionContext,
-    hc: HeaderCarrier): Future[Boolean] = {
+      implicit ec: ExecutionContext,
+      hc: HeaderCarrier): Future[Boolean] = {
     val (serviceName, clientType, clientId) = identifier match {
       case _ @MtdItId(mtdItId) => ("HMRC-MTD-IT", "MTDITID", mtdItId)
       case _ @Vrn(vrn)         => ("HMRC-MTD-VAT", "VRN", vrn)
@@ -55,7 +60,8 @@ class RelationshipsConnector @Inject()(
         baseUrl,
         s"/agent-client-relationships/agent/${arn.value}/service/$serviceName/client/$clientType/$clientId").toString
 
-    monitor(s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {
+    monitor(
+      s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {
       httpGet.GET[HttpResponse](relationshipUrl)
     } map { response =>
       true

@@ -41,6 +41,7 @@ lazy val root = (project in file("."))
     name := "agent-access-control",
     organization := "uk.gov.hmrc",
     scalaVersion := "2.11.11",
+    majorVersion := 0,
     PlayKeys.playDefaultPort := 9431,
     resolvers := Seq(
       Resolver.bintrayRepo("hmrc", "releases"),
@@ -65,7 +66,7 @@ lazy val root = (project in file("."))
     testGrouping in IntegrationTest := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
     scalafmtOnCompile in IntegrationTest := true
   )
-  .enablePlugins(PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin)
+  .enablePlugins(PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
 
 inConfig(IntegrationTest)(scalafmtCoreSettings)
 
