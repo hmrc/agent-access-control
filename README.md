@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/hmrc/agent-access-control.svg?branch=master)](https://travis-ci.org/hmrc/agent-access-control) [ ![Download](https://api.bintray.com/packages/hmrc/releases/agent-access-control/images/download.svg) ](https://bintray.com/hmrc/releases/agent-access-control/_latestVersion)
 
 Delegated auth rules for [play-authorisation](https://github.com/hmrc/play-authorisation) library to allow access
-to agents to their clients' data. Currently it supports Self-Assessment tax regime (IR-SA).
+to agents to their clients's data. Currently it supports Self-Assessment tax regime (IR-SA).
 
 ### Example usage for SA
 
