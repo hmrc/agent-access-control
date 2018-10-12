@@ -31,15 +31,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton
-class MappingConnector @Inject()(@Named("agent-mapping-baseUrl") baseUrl: URL,
-                                 httpGet: HttpGet,
-                                 metrics: Metrics)
+class MappingConnector @Inject()(@Named("agent-mapping-baseUrl") baseUrl: URL, httpGet: HttpGet, metrics: Metrics)
     extends HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   def getAgentMappings(key: String, arn: Arn)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[AgentReferenceMappings] =
+    implicit hc: HeaderCarrier,
+    ec: ExecutionContext): Future[AgentReferenceMappings] =
     monitor(s"ConsumedAPI-AgentMapping-Check-$key-GET") {
       httpGet.GET[AgentReferenceMappings](genMappingUrl(key, arn).toString)
     }.recover {
