@@ -83,7 +83,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
 
       authResponseFor(agentCode, clientId, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-|mtd-it-auth|agent|:|client|:-GET")
+      timerShouldExistsAndBeenUpdated("API-__mtd-it-auth__agent__:__client__:-GET")
     }
   }
 
@@ -158,7 +158,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
 
       authResponseFor(agentCode, clientId, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-|mtd-it-auth|agent|:|client|:-POST")
+      timerShouldExistsAndBeenUpdated("API-__mtd-it-auth__agent__:__client__:-POST")
     }
   }
 
