@@ -295,7 +295,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-      timerShouldExistsAndBeenUpdated("API-|sa-auth|agent|:|client|:-GET")
+      timerShouldExistsAndBeenUpdated("API-__sa-auth__agent__:__client__:-GET")
     }
 
     "send an AccessControlDecision audit event" in {
@@ -580,7 +580,7 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-      timerShouldExistsAndBeenUpdated("API-|sa-auth|agent|:|client|:-POST")
+      timerShouldExistsAndBeenUpdated("API-__sa-auth__agent__:__client__:-POST")
     }
 
     "send an AccessControlDecision audit event" in {

@@ -83,7 +83,7 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
       authResponseFor(agentCode, vrn, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-|mtd-vat-auth|agent|:|client|:-GET")
+      timerShouldExistsAndBeenUpdated("API-__mtd-vat-auth__agent__:__client__:-GET")
     }
   }
 
@@ -158,7 +158,7 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
       authResponseFor(agentCode, vrn, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-|mtd-vat-auth|agent|:|client|:-POST")
+      timerShouldExistsAndBeenUpdated("API-__mtd-vat-auth__agent__:__client__:-POST")
     }
   }
 

@@ -299,7 +299,7 @@ class SaAuthorisationWhenFeaturesOffISpec extends WireMockWithOneServerPerTestIS
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-      timerShouldExistsAndBeenUpdated("API-|sa-auth|agent|:|client|:-GET")
+      timerShouldExistsAndBeenUpdated("API-__sa-auth__agent__:__client__:-GET")
     }
 
     "send an AccessControlDecision audit event" in {

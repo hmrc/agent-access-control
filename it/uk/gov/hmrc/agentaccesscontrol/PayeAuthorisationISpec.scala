@@ -67,7 +67,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metr
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, empRef, method).status shouldBe 200
-      timerShouldExistsAndBeenUpdated("API-|epaye-auth|agent|:|client|:-GET")
+      timerShouldExistsAndBeenUpdated("API-__epaye-auth__agent__:__client__:-GET")
     }
 
     "send an AccessControlDecision audit event" in {
@@ -142,7 +142,7 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metr
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, empRef, method).status shouldBe 200
-      timerShouldExistsAndBeenUpdated("API-|epaye-auth|agent|:|client|:-POST")
+      timerShouldExistsAndBeenUpdated("API-__epaye-auth__agent__:__client__:-POST")
     }
 
     "send an AccessControlDecision audit event" in {
