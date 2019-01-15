@@ -23,9 +23,8 @@ import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpResponse, NotFoundException}
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class AfiRelationshipConnector @Inject()(
   @Named("agent-fi-relationship-baseUrl") url: URL,
@@ -35,7 +34,9 @@ class AfiRelationshipConnector @Inject()(
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def hasRelationship(arn: String, clientId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  def hasRelationship(arn: String, clientId: String)(
+    implicit hc: HeaderCarrier,
+    ec: ExecutionContext): Future[Boolean] = {
 
     val afiRelationshipUrl =
       new URL(url, s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId").toString

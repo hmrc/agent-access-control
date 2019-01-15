@@ -2,19 +2,22 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
 import java.net.URL
 
+import akka.actor.ActorSystem
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
+import play.api.Configuration
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.module.HttpVerbs
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
-import uk.gov.hmrc.domain.TaxIdentifier
+import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
 
 class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
 
   val arn = Arn("B1111B")
   implicit val hc = HeaderCarrier()
+  val httpVerbs = app.injector.instanceOf[HttpVerbs]
 
   "relationshipExists for HMRC-MTD-ID" should {
     behave like aCheckEndpoint(MtdItId("C1111C"), "MtdItId")
@@ -80,11 +83,15 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
     }
   }
 
-  abstract class Context extends MockAuditingContext {
+  private abstract class Context extends MockAuditingContext {
 
-    val httpGetMock = new HttpVerbs(mockAuditConnector, "")
-    def auditConnector = new RelationshipsConnector(new URL(wiremockBaseUrl), httpGetMock, FakeMetrics)
-    def connector = app.injector.instanceOf[RelationshipsConnector]
+    val httpVerbsNew = new HttpVerbs(mockAuditConnector, "", app.injector.instanceOf[Configuration], app.injector.instanceOf[ActorSystem])
+    val auditConnector =
+      new RelationshipsConnector(new URL(wiremockBaseUrl), httpVerbsNew, FakeMetrics)
+    val connector = new RelationshipsConnector(
+      new URL(wiremockBaseUrl),
+      httpVerbs,
+      app.injector.instanceOf[Metrics])
 
     def anOutboundCallShouldBeAudited(arn: Arn, identifier: TaxIdentifier) = {
       val event = capturedEvent()

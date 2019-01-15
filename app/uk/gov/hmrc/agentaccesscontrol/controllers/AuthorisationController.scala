@@ -16,18 +16,16 @@
 
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
-import javax.inject.{Inject, Singleton}
-
+import javax.inject.{Inject, Provider, Singleton}
 import play.api.Configuration
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import play.api.mvc.Action
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, MtdItAuthorisationService, MtdVatAuthorisationService}
 import uk.gov.hmrc.agentmtdidentifiers.model.{MtdItId, Vrn}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 @Singleton
 class AuthorisationController @Inject()(
@@ -35,9 +33,11 @@ class AuthorisationController @Inject()(
   authorisationService: AuthorisationService,
   mtdItAuthorisationService: MtdItAuthorisationService,
   mtdVatAuthorisationService: MtdVatAuthorisationService,
-  configuration: Configuration)
-    extends BaseController
-    with Audit {
+  configuration: Configuration,
+  ecp: Provider[ExecutionContextExecutor])
+    extends BaseController with Audit {
+
+  implicit val ec: ExecutionContext = ecp.get
 
   def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr) = Action.async { implicit request =>
     authorisationService.isAuthorisedForSa(agentCode, saUtr).map {

@@ -38,6 +38,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val empRef = EmpRef("123", "01234567")
 
   implicit val hc = HeaderCarrier()
+  implicit val ec = concurrent.ExecutionContext.Implicits.global
   implicit val fakeRequest = FakeRequest("GET", s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientSaUtr")
 
   "isAuthorisedForSa" should {
@@ -53,7 +54,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         "sa",
         clientSaUtr,
         Seq("credId" -> "ggId", "accessGranted" -> false, "affinityGroup" -> "Agent", "agentUserRole" -> "admin")
-      )(hc, fakeRequest)
+      )(hc, fakeRequest, ec)
     }
 
     "return false if SA agent reference is found and CesaAuthorisationService returns false and Enrolment Store Proxy Authorisation returns true" in new Context {
@@ -77,7 +78,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "affinityGroup"        -> "Agent",
           "agentUserRole"        -> "admin"
         )
-      )(hc, fakeRequest)
+      )(hc, fakeRequest, ec)
     }
 
     "return true if SA agent reference is found and DesAuthorisationService returns true and Enrolment Store Proxy Authorisation returns true" in new Context {
@@ -101,7 +102,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "affinityGroup"        -> "Agent",
           "agentUserRole"        -> "admin"
         )
-      )(hc, fakeRequest)
+      )(hc, fakeRequest, ec)
     }
 
     "not hard code audited values" in new Context {
@@ -135,7 +136,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "affinityGroup"        -> "Organisation",
           "agentUserRole"        -> "assistant"
         )
-      )(hc, fakeRequest)
+      )(hc, fakeRequest, ec)
     }
 
     "still work if the fields only used for auditing are removed from the auth record" in new Context {
@@ -157,7 +158,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "cesaResult"           -> true,
           "enrolmentStoreResult" -> true,
           "saAgentReference"     -> saAgentRef)
-      )(hc, fakeRequest)
+      )(hc, fakeRequest, ec)
     }
 
     "return false without calling DES if Enrolment Store Proxy Authorisation returns false (to reduce the load on DES)" in new Context {
@@ -181,7 +182,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "affinityGroup"        -> "Agent",
           "agentUserRole"        -> "admin"
         )
-      )(hc, fakeRequest)
+      )(hc, fakeRequest, concurrent.ExecutionContext.Implicits.global)
     }
 
     "return false if user is not logged in" in new Context {
@@ -219,7 +220,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> true,
           "affinityGroup"        -> "Agent",
           "agentUserRole"        -> "admin")
-      )(hc, fakeRequest)
+      )(hc, fakeRequest, ec)
     }
 
     "return false when only Enrolment Store Proxy indicates a relationship exists" in new Context {
@@ -242,7 +243,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> true,
           "affinityGroup"        -> "Agent",
           "agentUserRole"        -> "admin")
-      )(hc, fakeRequest)
+      )(hc, fakeRequest, ec)
     }
 
     "return false without calling DES if Enrolment Store Proxy Authorisation returns false (to reduce the load on DES)" in new Context {
@@ -265,7 +266,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> false,
           "affinityGroup"        -> "Agent",
           "agentUserRole"        -> "admin")
-      )(hc, fakeRequest)
+      )(hc, fakeRequest, ec)
     }
 
     "return false when user is not logged in" in new Context {

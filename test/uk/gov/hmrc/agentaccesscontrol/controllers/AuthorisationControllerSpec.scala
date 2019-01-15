@@ -16,8 +16,9 @@
 
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
+import javax.inject.Provider
 import org.mockito.Mockito._
-import org.mockito.ArgumentMatchers.{eq => eqs, any}
+import org.mockito.ArgumentMatchers.{any, eq => eqs}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import play.api.Configuration
@@ -31,7 +32,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.{MtdItId, Vrn}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import uk.gov.hmrc.http.HeaderCarrier
 
 class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with MockitoSugar {
@@ -40,13 +41,17 @@ class AuthorisationControllerSpec extends UnitSpec with BeforeAndAfterEach with 
   val authorisationService = mock[AuthorisationService]
   val mtdItAuthorisationService = mock[MtdItAuthorisationService]
   val mtdVatAuthorisationService = mock[MtdVatAuthorisationService]
+  val ecp: Provider[ExecutionContextExecutor] = new Provider[ExecutionContextExecutor] {
+    override def get(): ExecutionContextExecutor = concurrent.ExecutionContext.Implicits.global
+  }
   def controller(enabled: Boolean = true) =
     new AuthorisationController(
       auditService,
       authorisationService,
       mtdItAuthorisationService,
       mtdVatAuthorisationService,
-      Configuration("features.allowPayeAccess" -> enabled))
+      Configuration("features.allowPayeAccess" -> enabled),
+      ecp)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

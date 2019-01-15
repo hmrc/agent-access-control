@@ -25,9 +25,9 @@ import play.api.libs.json.JsValue
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpGet, HttpResponse}
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
 class EnrolmentStoreProxyConnector @Inject()(
@@ -53,7 +53,9 @@ class EnrolmentStoreProxyConnector @Inject()(
     getES0(enrolmentKey, "delegated")
   }
 
-  private def getES0(enrolmentKey: String, usersType: String)(implicit hc: HeaderCarrier): Future[Set[AgentUserId]] =
+  private def getES0(enrolmentKey: String, usersType: String)(
+    implicit hc: HeaderCarrier,
+    ec: ExecutionContext): Future[Set[AgentUserId]] =
     monitor("ConsumedAPI-EnrolmentStoreProxy-ES0-GET") {
       httpGet.GET[HttpResponse](pathES0(enrolmentKey, usersType))
     }.map(response =>

@@ -28,6 +28,8 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
   val esProxyConnector = mock[EnrolmentStoreProxyConnector]
