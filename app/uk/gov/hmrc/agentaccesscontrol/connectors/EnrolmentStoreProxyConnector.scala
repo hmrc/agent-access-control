@@ -27,7 +27,6 @@ import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpGet, HttpResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
 class EnrolmentStoreProxyConnector @Inject()(
@@ -40,14 +39,16 @@ class EnrolmentStoreProxyConnector @Inject()(
   private def pathES0(enrolmentKey: String, usersType: String): String =
     new URL(baseUrl, s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=$usersType").toString
 
-  def getIRSAAGENTPrincipalUserIdsFor(saAgentReference: SaAgentReference)(
-    implicit hc: HeaderCarrier): Future[Set[AgentUserId]] =
+  def getIRSAAGENTPrincipalUserIdsFor(
+    saAgentReference: SaAgentReference)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
     getES0(s"IR-SA-AGENT~IRAgentReference~${saAgentReference.value}", "principal")
 
-  def getIRSADelegatedUserIdsFor(utr: SaUtr)(implicit hc: HeaderCarrier): Future[Set[AgentUserId]] =
+  def getIRSADelegatedUserIdsFor(
+    utr: SaUtr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
     getES0(s"IR-SA~UTR~$utr", "delegated")
 
-  def getIRPAYEDelegatedUserIdsFor(empRef: EmpRef)(implicit hc: HeaderCarrier): Future[Set[AgentUserId]] = {
+  def getIRPAYEDelegatedUserIdsFor(
+    empRef: EmpRef)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] = {
     val enrolmentKey =
       s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
     getES0(enrolmentKey, "delegated")

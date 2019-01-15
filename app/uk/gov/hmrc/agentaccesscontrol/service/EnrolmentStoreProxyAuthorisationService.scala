@@ -45,10 +45,12 @@ class EnrolmentStoreProxyAuthorisationService @Inject()(val enrolmentStoreProxyC
         notAuthorised(s"ES0 did not return assigned agent credential: $ggCredentialId for client $empRef")
     }
 
-  def getDelegatedAgentUserIdsFor(saUtr: SaUtr)(implicit hc: HeaderCarrier): Future[Set[AgentUserId]] =
+  def getDelegatedAgentUserIdsFor(
+    saUtr: SaUtr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
     enrolmentStoreProxyConnector.getIRSADelegatedUserIdsFor(saUtr)
 
-  def getAgentUserIdsFor(saAgentReference: SaAgentReference)(implicit hc: HeaderCarrier): Future[Set[AgentUserId]] =
+  def getAgentUserIdsFor(
+    saAgentReference: SaAgentReference)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
     enrolmentStoreProxyConnector.getIRSAAGENTPrincipalUserIdsFor(saAgentReference)
 
   def getAgentUserIdsFor(saAgentReferences: Seq[SaAgentReference])(

@@ -28,8 +28,6 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
   val esProxyConnector = mock[EnrolmentStoreProxyConnector]
@@ -39,17 +37,18 @@ class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec with MockitoS
   val saUtr = SaUtr("S123456789")
   val empRef = EmpRef("123", "43567890")
   implicit val hc = new HeaderCarrier()
+  implicit val ec = concurrent.ExecutionContext.Implicits.global
 
   "isAuthorisedForSaInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
-      when(esProxyConnector.getIRSADelegatedUserIdsFor(saUtr)(hc)),
+      when(esProxyConnector.getIRSADelegatedUserIdsFor(saUtr)(hc, ec)),
       (agentCode: AgentCode, credId: String) => service.isAuthorisedForSaInEnrolmentStoreProxy(credId, saUtr)
     )
   }
 
   "isAuthorisedForPayeInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
-      when(esProxyConnector.getIRPAYEDelegatedUserIdsFor(empRef)(hc)),
+      when(esProxyConnector.getIRPAYEDelegatedUserIdsFor(empRef)(hc, ec)),
       (agentCode: AgentCode, credId: String) => service.isAuthorisedForPayeInEnrolmentStoreProxy(credId, empRef)
     )
   }

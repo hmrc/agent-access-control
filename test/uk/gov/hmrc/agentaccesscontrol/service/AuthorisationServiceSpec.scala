@@ -182,7 +182,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "affinityGroup"        -> "Agent",
           "agentUserRole"        -> "admin"
         )
-      )(hc, fakeRequest, concurrent.ExecutionContext.Implicits.global)
+      )(hc, fakeRequest, ec)
     }
 
     "return false if user is not logged in" in new Context {
