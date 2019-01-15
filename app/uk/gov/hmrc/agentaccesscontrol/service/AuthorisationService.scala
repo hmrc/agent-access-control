@@ -247,7 +247,10 @@ class AuthorisationService @Inject()(
     regime: String,
     taxIdentifier: TaxIdentifier,
     result: Boolean,
-    extraDetails: (String, Any)*)(implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] = {
+    extraDetails: (String, Any)*)(
+    implicit hc: HeaderCarrier,
+    request: Request[Any],
+    ec: ExecutionContext): Future[Unit] = {
 
     val optionalDetails = Seq(
       agentAuthDetails.saAgentReference.map("saAgentReference" -> _),

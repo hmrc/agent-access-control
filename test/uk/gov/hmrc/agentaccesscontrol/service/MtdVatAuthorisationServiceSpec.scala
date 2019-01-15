@@ -105,7 +105,10 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
             agentCode,
             "mtd-vat",
             vrn,
-            Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn.value))(hc, fakeRequest)
+            Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn.value))(
+            hc,
+            fakeRequest,
+            concurrent.ExecutionContext.Implicits.global)
       }
 
       "decision is made to deny access" in {
@@ -121,7 +124,10 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
             agentCode,
             "mtd-vat",
             vrn,
-            Seq("credId" -> "ggId", "accessGranted" -> false, "arn" -> arn.value))(hc, fakeRequest)
+            Seq("credId" -> "ggId", "accessGranted" -> false, "arn" -> arn.value))(
+            hc,
+            fakeRequest,
+            concurrent.ExecutionContext.Implicits.global)
       }
 
       "no HMRC-AS-AGENT enrolment exists" in {
@@ -136,7 +142,10 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
             agentCode,
             "mtd-vat",
             vrn,
-            Seq("credId" -> "ggId", "accessGranted" -> false))(hc, fakeRequest)
+            Seq("credId" -> "ggId", "accessGranted" -> false))(
+            hc,
+            fakeRequest,
+            concurrent.ExecutionContext.Implicits.global)
       }
     }
   }

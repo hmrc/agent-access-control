@@ -18,11 +18,13 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
 import java.net.URL
 
+import akka.actor.ActorSystem
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers.{any, eq => eqs}
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
+import play.api.Configuration
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.agentaccesscontrol.module.HttpVerbs
@@ -40,7 +42,7 @@ class DesAgentClientApiConnectorISpec
 
   implicit val headerCarrier = HeaderCarrier()
   implicit val ec = ExecutionContext.global
-  val httpGet = app.injector.instanceOf[HttpGet]
+  val httpVerbs = app.injector.instanceOf[HttpVerbs]
 
   "getSaAgentClientRelationship" should {
     "request DES API with the correct auth tokens" in new Context {
@@ -53,7 +55,7 @@ class DesAgentClientApiConnectorISpec
         new URL(wiremockBaseUrl),
         "auth_token_33",
         "env_33",
-        httpGet,
+        httpVerbs,
         app.injector.instanceOf[Metrics])
 
       val response = await(connectorWithDifferentHeaders.getSaAgentClientRelationship(saAgentReference, saUtr))
@@ -128,7 +130,7 @@ class DesAgentClientApiConnectorISpec
       timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
     }
 
-    "audit oubound DES call" in new Context {
+    "audit outbound DES call" in new Context {
       givenClientIsLoggedIn()
         .andIsRelatedToSaClientInDes(saUtr)
         .andAuthorisedByBoth648AndI648()
@@ -154,7 +156,7 @@ class DesAgentClientApiConnectorISpec
         new URL(wiremockBaseUrl),
         "auth_token_33",
         "env_33",
-        httpGet,
+        httpVerbs,
         app.injector.instanceOf[Metrics])
 
       val response = await(connectorWithDifferentHeaders.getPayeAgentClientRelationship(agentCode, empRef))
@@ -218,14 +220,14 @@ class DesAgentClientApiConnectorISpec
 
   private abstract class Context extends MockAuditingContext {
 
-    val httpGetMock = new HttpVerbs(mockAuditConnector, "")
+    val httpVerbsNew = new HttpVerbs(mockAuditConnector, "", app.injector.instanceOf[Configuration], app.injector.instanceOf[ActorSystem])
     val auditConnector =
-      new DesAgentClientApiConnector(new URL(wiremockBaseUrl), "secret", "test", httpGetMock, FakeMetrics)
+      new DesAgentClientApiConnector(new URL(wiremockBaseUrl), "secret", "test", httpVerbsNew, FakeMetrics)
     val connector = new DesAgentClientApiConnector(
       new URL(wiremockBaseUrl),
       "secret",
       "test",
-      httpGet,
+      httpVerbs,
       app.injector.instanceOf[Metrics])
     val saAgentReference = SaAgentReference("AGENTR")
     val saUtr = SaUtr("SAUTR456")

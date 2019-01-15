@@ -16,21 +16,21 @@ lazy val scoverageSettings = {
 
 lazy val compileDeps = Seq(
   ws,
-  "uk.gov.hmrc" %% "bootstrap-play-25" % "1.6.0",
-  "uk.gov.hmrc" %% "auth-client" % "2.6.0",
-  "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.10.0",
+  "uk.gov.hmrc" %% "bootstrap-play-25" % "4.6.0",
+  "uk.gov.hmrc" %% "auth-client" % "2.17.0-play-25",
+  "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.13.0",
   "uk.gov.hmrc" %% "play-whitelist-filter" % "2.0.0",
   "de.threedimensions" %% "metrics-play" % "2.5.13",
-  "uk.gov.hmrc" %% "domain" % "5.1.0",
-  "com.github.blemale" %% "scaffeine" % "2.4.0",
-  "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "2.4.0",
+  "uk.gov.hmrc" %% "domain" % "5.3.0",
+  "com.github.blemale" %% "scaffeine" % "2.5.0",
+  "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "3.4.0",
   ws
 )
 
 def testDeps(scope: String) = Seq(
-  "uk.gov.hmrc" %% "hmrctest" % "3.0.0" % scope,
+  "uk.gov.hmrc" %% "hmrctest" % "3.3.0" % scope,
   "org.scalatest" %% "scalatest" % "3.0.5" % scope,
-  "org.mockito" % "mockito-core" % "2.15.0" % scope,
+  "org.mockito" % "mockito-core" % "2.23.4" % scope,
   "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.1" % scope,
   "com.github.tomakehurst" % "wiremock" % "2.15.0" % scope,
   "org.pegdown" % "pegdown" % "1.6.0" % scope

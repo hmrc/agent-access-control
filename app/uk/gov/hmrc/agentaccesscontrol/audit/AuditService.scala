@@ -24,8 +24,7 @@ import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
 
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -40,7 +39,10 @@ class AuditService @Inject()(val auditConnector: AuditConnector) {
     agentCode: AgentCode,
     regime: String,
     regimeId: TaxIdentifier,
-    details: Seq[(String, Any)] = Seq.empty)(implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] =
+    details: Seq[(String, Any)] = Seq.empty)(
+    implicit hc: HeaderCarrier,
+    request: Request[Any],
+    ec: ExecutionContext): Future[Unit] =
     send(createEvent(event, transactionName, agentCode, regime, regimeId.value, details: _*))
 
   private def createEvent(
@@ -58,7 +60,7 @@ class AuditService @Inject()(val auditConnector: AuditConnector) {
         ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
     )
 
-  private def send(events: DataEvent*)(implicit hc: HeaderCarrier): Future[Unit] =
+  private def send(events: DataEvent*)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] =
     Future {
       events.foreach { event =>
         Try(auditConnector.sendEvent(event))

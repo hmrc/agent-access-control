@@ -50,7 +50,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         "sa",
         SaUtr("TESTSAUTR"),
         Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
-      )(hc, FakeRequest("GET", "/path"))
+      )(hc, FakeRequest("GET", "/path"), concurrent.ExecutionContext.Implicits.global)
 
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[DataEvent])
@@ -64,10 +64,6 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         sentEvent.detail("regimeId") shouldBe "TESTSAUTR"
         sentEvent.detail("extra1") shouldBe "first extra detail"
         sentEvent.detail("extra2") shouldBe "second extra detail"
-
-        sentEvent.tags.contains("Authorization") shouldBe false
-        sentEvent.detail("Authorization") shouldBe "dummy bearer token"
-
         sentEvent.tags("transactionName") shouldBe "transaction name"
         sentEvent.tags("path") shouldBe "/path"
         sentEvent.tags("X-Session-ID") shouldBe "dummy session id"

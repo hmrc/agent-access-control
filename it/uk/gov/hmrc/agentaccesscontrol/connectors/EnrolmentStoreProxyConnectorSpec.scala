@@ -9,6 +9,8 @@ import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
 
 import scala.concurrent.Future
 
+import concurrent.ExecutionContext.Implicits.global
+
 class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
 
   implicit val hc = HeaderCarrier()

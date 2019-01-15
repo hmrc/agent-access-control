@@ -61,7 +61,10 @@ class MtdVatAuthorisationService @Inject()(
     agentAuthDetails: AuthDetails,
     vrn: Vrn,
     result: Boolean,
-    extraDetails: (String, Any)*)(implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] =
+    extraDetails: (String, Any)*)(
+    implicit hc: HeaderCarrier,
+    request: Request[Any],
+    ec: ExecutionContext): Future[Unit] =
     auditService.auditEvent(
       AgentAccessControlEvent.AgentAccessControlDecision,
       "agent access decision",
