@@ -22,14 +22,16 @@ class EmpRefBinderSpec extends UnitSpec {
 
   "bind" should {
     "parse an empref" in {
-      val result = PathBinders.EmpRefBinder.bind("foo", "123/02345677").right.get
+      val result =
+        PathBinders.EmpRefBinder.bind("foo", "123/02345677").right.get
 
       result.taxOfficeNumber shouldBe "123"
       result.taxOfficeReference shouldBe "02345677"
     }
 
     "not parse an invalid string" in {
-      val result = PathBinders.EmpRefBinder.bind("foo", "not_an_empref").left.get
+      val result =
+        PathBinders.EmpRefBinder.bind("foo", "not_an_empref").left.get
 
       result shouldBe "Cannot parse parameter 'foo' with value 'not_an_empref' as EmpRef"
     }

@@ -21,7 +21,9 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 
 case class EnrolmentIdentifier(key: String, value: String)
-case class AuthEnrolment(key: String, identifiers: Seq[EnrolmentIdentifier], state: String) {
+case class AuthEnrolment(key: String,
+                         identifiers: Seq[EnrolmentIdentifier],
+                         state: String) {
   def identifier(key: String): Option[String] =
     identifiers.find(_.key == key).map(_.value)
 }

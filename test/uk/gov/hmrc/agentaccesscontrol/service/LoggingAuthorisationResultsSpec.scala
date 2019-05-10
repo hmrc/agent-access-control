@@ -18,7 +18,9 @@ package uk.gov.hmrc.agentaccesscontrol.service
 
 import uk.gov.hmrc.play.test.UnitSpec
 
-class LoggingAuthorisationResultsSpec extends UnitSpec with LoggingAuthorisationResults {
+class LoggingAuthorisationResultsSpec
+    extends UnitSpec
+    with LoggingAuthorisationResults {
   "notAuthorised" should {
     "return false" in {
       notAuthorised("msg") shouldBe false
