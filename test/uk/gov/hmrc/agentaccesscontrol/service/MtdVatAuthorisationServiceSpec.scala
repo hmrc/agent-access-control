@@ -48,19 +48,25 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.http.HeaderCarrier
 
-class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
+class MtdVatAuthorisationServiceSpec
+    extends UnitSpec
+    with ResettingMockitoSugar {
 
   val authConnector = mock[AuthConnector]
   val relationshipsConnector = resettingMock[RelationshipsConnector]
   val auditService = resettingMock[AuditService]
 
-  val service = new MtdVatAuthorisationService(authConnector, relationshipsConnector, auditService)
+  val service = new MtdVatAuthorisationService(authConnector,
+                                               relationshipsConnector,
+                                               auditService)
 
   val agentCode = AgentCode("agentCode")
   val arn = Arn("arn")
   val vrn = Vrn("vrn")
   implicit val hc = HeaderCarrier()
-  implicit val fakeRequest = FakeRequest("GET", "/agent-access-control/mtd-vat-auth/agent/arn/client/vrn")
+  implicit val fakeRequest = FakeRequest(
+    "GET",
+    "/agent-access-control/mtd-vat-auth/agent/arn/client/vrn")
 
   "authoriseForMtdVat" should {
     "allow access for agent with a client relationship" in {
@@ -79,7 +85,8 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
 
       result shouldBe false
       verify(relationshipsConnector, never)
-        .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier])
+        .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext],
+                                                    any[HeaderCarrier])
     }
 
     "deny access for a mtd agent without a client relationship" in {
@@ -99,13 +106,14 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
         await(service.authoriseForMtdVat(agentCode, vrn))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "mtd-vat",
-            vrn,
-            Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn.value))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "mtd-vat",
+                      vrn,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> true,
+                          "arn" -> arn.value))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
@@ -118,13 +126,14 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
         await(service.authoriseForMtdVat(agentCode, vrn))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "mtd-vat",
-            vrn,
-            Seq("credId" -> "ggId", "accessGranted" -> false, "arn" -> arn.value))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "mtd-vat",
+                      vrn,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> false,
+                          "arn" -> arn.value))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
@@ -136,13 +145,12 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
         await(service.authoriseForMtdVat(agentCode, vrn))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "mtd-vat",
-            vrn,
-            Seq("credId" -> "ggId", "accessGranted" -> false))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "mtd-vat",
+                      vrn,
+                      Seq("credId" -> "ggId", "accessGranted" -> false))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
@@ -151,13 +159,27 @@ class MtdVatAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar
   }
 
   def whenRelationshipsConnectorIsCalled =
-    when(relationshipsConnector.relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier]))
+    when(
+      relationshipsConnector.relationshipExists(any[Arn], any[MtdItId])(
+        any[ExecutionContext],
+        any[HeaderCarrier]))
 
   def asAgentIsLoggedIn() =
     when(authConnector.currentAuthDetails()).thenReturn(
-      Some(AuthDetails(None, Some(arn), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
+      Some(
+        AuthDetails(None,
+                    Some(arn),
+                    "ggId",
+                    affinityGroup = Some("Agent"),
+                    agentUserRole = Some("admin"))))
 
   def agentWithoutHmrcAsAgentEnrolmentIsLoggedIn() =
     when(authConnector.currentAuthDetails())
-      .thenReturn(Some(AuthDetails(None, None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
+      .thenReturn(
+        Some(
+          AuthDetails(None,
+                      None,
+                      "ggId",
+                      affinityGroup = Some("Agent"),
+                      agentUserRole = Some("admin"))))
 }

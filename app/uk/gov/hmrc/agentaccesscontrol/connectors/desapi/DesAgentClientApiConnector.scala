@@ -33,11 +33,11 @@ import uk.gov.hmrc.http.logging.Authorization
 
 @Singleton
 class DesAgentClientApiConnector @Inject()(
-  @Named("des-baseUrl") desBaseUrl: URL,
-  @Named("des.authorization-token") authorizationToken: String,
-  @Named("des.environment") environment: String,
-  httpGet: HttpGet,
-  metrics: Metrics)
+    @Named("des-baseUrl") desBaseUrl: URL,
+    @Named("des.authorization-token") authorizationToken: String,
+    @Named("des.environment") environment: String,
+    httpGet: HttpGet,
+    metrics: Metrics)
     extends HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
@@ -48,9 +48,10 @@ class DesAgentClientApiConnector @Inject()(
   private implicit val payeFoundResponseReads: Reads[PayeFoundResponse] =
     (__ \ "Auth_64-8").read[Boolean].map(PayeFoundResponse.apply)
 
-  def getSaAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(
-    implicit hc: HeaderCarrier,
-    ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse] = {
+  def getSaAgentClientRelationship(saAgentReference: SaAgentReference,
+                                   saUtr: SaUtr)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse] = {
     val url = saUrlFor(saAgentReference, saUtr)
     getWithDesHeaders("GetSaAgentClientRelationship", url) map { r =>
       foundResponseReads.reads(Json.parse(r.body)).get
@@ -60,8 +61,8 @@ class DesAgentClientApiConnector @Inject()(
   }
 
   def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(
-    implicit hc: HeaderCarrier,
-    ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse] = {
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse] = {
     val url = payeUrlFor(agentCode, empRef)
     getWithDesHeaders("GetPayeAgentClientRelationship", url) map { r =>
       payeFoundResponseReads.reads(Json.parse(r.body)).get
@@ -79,13 +80,15 @@ class DesAgentClientApiConnector @Inject()(
       s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}")
 
   private def getWithDesHeaders[A: HttpReads](apiName: String, url: URL)(
-    implicit hc: HeaderCarrier,
-    ec: ExecutionContext): Future[A] = {
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[A] = {
     val desHeaderCarrier = hc.copy(
       authorization = Some(Authorization(s"Bearer $authorizationToken")),
       extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
     monitor(s"ConsumedAPI-DES-$apiName-GET") {
-      httpGet.GET[A](url.toString)(implicitly[HttpReads[A]], desHeaderCarrier, ec)
+      httpGet.GET[A](url.toString)(implicitly[HttpReads[A]],
+                                   desHeaderCarrier,
+                                   ec)
     }
   }
 }

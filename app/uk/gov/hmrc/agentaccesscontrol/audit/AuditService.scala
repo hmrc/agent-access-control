@@ -33,34 +33,43 @@ class AuditService @Inject()(val auditConnector: AuditConnector) {
 
   import AgentAccessControlEvent.AgentAccessControlEvent
 
-  def auditEvent(
-    event: AgentAccessControlEvent,
-    transactionName: String,
-    agentCode: AgentCode,
-    regime: String,
-    regimeId: TaxIdentifier,
-    details: Seq[(String, Any)] = Seq.empty)(
-    implicit hc: HeaderCarrier,
-    request: Request[Any],
-    ec: ExecutionContext): Future[Unit] =
-    send(createEvent(event, transactionName, agentCode, regime, regimeId.value, details: _*))
+  def auditEvent(event: AgentAccessControlEvent,
+                 transactionName: String,
+                 agentCode: AgentCode,
+                 regime: String,
+                 regimeId: TaxIdentifier,
+                 details: Seq[(String, Any)] = Seq.empty)(
+      implicit hc: HeaderCarrier,
+      request: Request[Any],
+      ec: ExecutionContext): Future[Unit] =
+    send(
+      createEvent(event,
+                  transactionName,
+                  agentCode,
+                  regime,
+                  regimeId.value,
+                  details: _*))
 
-  private def createEvent(
-    event: AgentAccessControlEvent,
-    transactionName: String,
-    agentCode: AgentCode,
-    regime: String,
-    regimeId: String,
-    details: (String, Any)*)(implicit hc: HeaderCarrier, request: Request[Any]): DataEvent =
+  private def createEvent(event: AgentAccessControlEvent,
+                          transactionName: String,
+                          agentCode: AgentCode,
+                          regime: String,
+                          regimeId: String,
+                          details: (String, Any)*)(
+      implicit hc: HeaderCarrier,
+      request: Request[Any]): DataEvent =
     DataEvent(
       auditSource = "agent-access-control",
       auditType = event.toString,
       tags = hc.toAuditTags(transactionName, request.path),
-      detail = hc.toAuditDetails("agentCode" -> agentCode.value, "regime" -> regime, "regimeId" -> regimeId)
+      detail = hc.toAuditDetails("agentCode" -> agentCode.value,
+                                 "regime" -> regime,
+                                 "regimeId" -> regimeId)
         ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
     )
 
-  private def send(events: DataEvent*)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] =
+  private def send(events: DataEvent*)(implicit hc: HeaderCarrier,
+                                       ec: ExecutionContext): Future[Unit] =
     Future {
       events.foreach { event =>
         Try(auditConnector.sendEvent(event))
