@@ -43,7 +43,8 @@ class MtdVatAuthorisationService @Inject()(
       hc: HeaderCarrier,
       request: Request[_]): Future[Boolean] =
     authConnector.currentAuthDetails() flatMap {
-      case Some(agentAuthDetails @ AuthDetails(_, Some(arn), _, _, _)) =>
+      case Some(
+          agentAuthDetails @ AuthDetails(_, Some(arn), _, _, userRoleOpt)) =>
         hasRelationship(arn, vrn) map { result =>
           auditDecision(agentCode,
                         agentAuthDetails,
@@ -52,10 +53,12 @@ class MtdVatAuthorisationService @Inject()(
                         "arn" -> arn.value)
           if (result)
             authorised(
-              s"Access allowed for agentCode=$agentCode arn=${arn.value} client=${vrn.value}")
+              s"Access allowed for agentCode=$agentCode arn=${arn.value} client=${vrn.value} userRole: ${userRoleOpt
+                .getOrElse("None found")}")
           else
             notAuthorised(
-              s"Access not allowed for agentCode=$agentCode arn=${arn.value} client=${vrn.value}")
+              s"Access not allowed for agentCode=$agentCode arn=${arn.value} client=${vrn.value} userRole: ${userRoleOpt
+                .getOrElse("None found")}")
         }
       case Some(agentAuthDetails) =>
         auditDecision(agentCode, agentAuthDetails, vrn, result = false)
