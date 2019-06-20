@@ -219,7 +219,7 @@ class AuthorisationControllerSpec
       status(response) shouldBe Status.OK
     }
 
-    "return 404 if the AuthorisationService does not allow access" in {
+    "return 401 if the AuthorisationService does not allow access" in {
 
       whenAfiAuthorisationServiceIsCalled thenReturn (Future successful false)
 
@@ -227,7 +227,7 @@ class AuthorisationControllerSpec
         controller().isAuthorisedForAfi(AgentCode(""), Nino("AA123456A"))(
           fakeRequest)
 
-      status(response) shouldBe Status.NOT_FOUND
+      status(response) shouldBe Status.UNAUTHORIZED
     }
 
     "propagate exception if the AuthorisationService fails" in {

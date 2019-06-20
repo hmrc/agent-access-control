@@ -19,7 +19,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
   implicit val hc = HeaderCarrier()
   val httpVerbs = app.injector.instanceOf[HttpVerbs]
 
-  "relationshipExists for HMRC-MTD-ID" should {
+  "relationshipExists for HMRC-MTD-IT" should {
     behave like aCheckEndpoint(MtdItId("C1111C"), "MtdItId")
   }
 

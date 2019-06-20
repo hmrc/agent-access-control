@@ -27,6 +27,7 @@ import org.scalatestplus.play.{OneAppPerSuite, OneServerPerTest}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
+import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpVerbs}
@@ -93,9 +94,13 @@ trait StubUtils {
       with AuthStubs[AgentAdmin]
       with DesStub[AgentAdmin]
       with EnrolmentStoreProxyStubs[AgentAdmin]
-      with MappingStubs[AgentAdmin]
+      with MappingStubs[AgentAdmin] {
+    DataStreamStub.givenAuditConnector()
+  }
 
-  class MtdAgency(override val arn: Arn) extends RelationshipsStub[MtdAgency] with MappingStubs[MtdAgency]
+  class MtdAgency(override val arn: Arn) extends RelationshipsStub[MtdAgency] with MappingStubs[MtdAgency] {
+    DataStreamStub.givenAuditConnector()
+  }
 
   trait AfiStub[A] {
     me: A =>

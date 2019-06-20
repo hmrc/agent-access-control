@@ -48,7 +48,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
 
     }
 
-    "respond with 404" when {
+    "respond with 401" when {
       "the client has not authorised the agent" in {
         given()
           .agentAdmin(agentCode)
@@ -56,7 +56,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
           .andHasHmrcAsAgentEnrolment(arn)
           .andHasNoRelationship(arn, clientId)
 
-        authResponseFor(agentCode, clientId, method).status shouldBe 404
+        authResponseFor(agentCode, clientId, method).status shouldBe 401
 
         DataStreamStub.verifyAuditRequestSent(
           AgentAccessControlDecision,
@@ -84,7 +84,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
 
     }
 
-    "respond with 404" when {
+    "respond with 401" when {
       "the client has not authorised the agent" in {
         given()
           .agentAdmin(agentCode)
@@ -92,7 +92,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
           .andHasHmrcAsAgentEnrolment(arn)
           .andHasNoRelationship(arn, clientId)
 
-        authResponseFor(agentCode, clientId, method).status shouldBe 404
+        authResponseFor(agentCode, clientId, method).status shouldBe 401
 
         DataStreamStub.verifyAuditRequestSent(
           AgentAccessControlDecision,

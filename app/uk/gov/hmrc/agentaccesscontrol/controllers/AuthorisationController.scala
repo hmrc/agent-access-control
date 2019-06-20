@@ -87,7 +87,7 @@ class AuthorisationController @Inject()(
     implicit request =>
       authorisationService.isAuthorisedForAfi(agentCode, nino) map {
         isAuthorised =>
-          if (isAuthorised) Ok else NotFound
+          if (isAuthorised) Ok else Unauthorized
       }
   }
 }
