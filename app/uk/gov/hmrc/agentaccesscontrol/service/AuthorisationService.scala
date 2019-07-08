@@ -39,8 +39,7 @@ class AuthorisationService @Inject()(
     espAuthorisationService: EnrolmentStoreProxyAuthorisationService,
     auditService: AuditService,
     mappingConnector: MappingConnector,
-    afiRelationshipConnector: AfiRelationshipConnector,
-    @Named("features.allowAuthoriseMtdAgentForIRSA") authoriseMtdAgentForIRSAEnabled: Boolean)
+    afiRelationshipConnector: AfiRelationshipConnector)
     extends LoggingAuthorisationResults {
 
   private val accessGranted = true
@@ -58,9 +57,7 @@ class AuthorisationService @Inject()(
                                     agentAuthDetails,
                                     saAgentReference)
       case Some(agentAuthDetails @ AuthDetails(_, Some(arn), _, _, _)) =>
-        if (authoriseMtdAgentForIRSAEnabled) {
-          authoriseMtdAgentForIRSA(agentCode, saUtr, agentAuthDetails, arn)
-        } else Future.successful(false)
+        authoriseMtdAgentForIRSA(agentCode, saUtr, agentAuthDetails, arn)
       case Some(agentAuthDetails @ AuthDetails(None, _, _, _, _)) =>
         auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result = false)
         Future successful notAuthorised(

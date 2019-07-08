@@ -338,9 +338,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       mockESPAuthorisationService,
       mockAuditService,
       mockMappingConnector,
-      mockAfiRelationshipConnector,
-      authoriseMtdAgentForIRSAEnabled = true
-    )
+      mockAfiRelationshipConnector)
 
     def agentIsNotLoggedIn() =
       when(mockAuthConnector.currentAuthDetails()).thenReturn(None)

@@ -64,8 +64,6 @@ class MicroserviceModule(val environment: Environment,
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
 
-    bindBooleanProperty("features.allowAuthoriseMtdAgentForIRSA")
-
     bindBaseUrl("auth")
   }
 
