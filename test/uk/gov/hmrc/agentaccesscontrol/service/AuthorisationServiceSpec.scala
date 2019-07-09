@@ -20,7 +20,6 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.mockito.MockitoSugar
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService

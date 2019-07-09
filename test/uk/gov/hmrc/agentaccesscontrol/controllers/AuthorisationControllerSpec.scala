@@ -17,8 +17,8 @@
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
 import javax.inject.Provider
-import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers.{any, eq => eqs}
+import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import play.api.Configuration
@@ -26,28 +26,24 @@ import play.api.libs.json.Json
 import play.api.mvc.{AnyContent, Request}
 import play.api.test.FakeRequest
 import play.mvc.Http.Status
-import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
-  MtdItAuthorisationService,
-  MtdVatAuthorisationService
+  ESAuthorisationService
 }
 import uk.gov.hmrc.agentmtdidentifiers.model.{MtdItId, Vrn}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
-import uk.gov.hmrc.http.HeaderCarrier
 
 class AuthorisationControllerSpec
     extends UnitSpec
     with BeforeAndAfterEach
     with MockitoSugar {
 
-  val auditService = mock[AuditService]
   val authorisationService = mock[AuthorisationService]
-  val mtdItAuthorisationService = mock[MtdItAuthorisationService]
-  val mtdVatAuthorisationService = mock[MtdVatAuthorisationService]
+  val esAuthorisationService = mock[ESAuthorisationService]
   val ecp: Provider[ExecutionContextExecutor] =
     new Provider[ExecutionContextExecutor] {
       override def get(): ExecutionContextExecutor =
@@ -55,16 +51,14 @@ class AuthorisationControllerSpec
     }
   def controller(enabled: Boolean = true) =
     new AuthorisationController(
-      auditService,
       authorisationService,
-      mtdItAuthorisationService,
-      mtdVatAuthorisationService,
+      esAuthorisationService,
       Configuration("features.allowPayeAccess" -> enabled),
       ecp)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    reset(auditService, authorisationService)
+    reset(authorisationService)
   }
 
   private def anSaEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
@@ -315,16 +309,14 @@ class AuthorisationControllerSpec
 
   def whenMtdItAuthorisationServiceIsCalled =
     when(
-      mtdItAuthorisationService
-        .authoriseForMtdIt(any[AgentCode], any[MtdItId])(any[ExecutionContext],
-                                                         any[HeaderCarrier],
+      esAuthorisationService
+        .authoriseForMtdIt(any[AgentCode], any[MtdItId])(any[HeaderCarrier],
                                                          any[Request[_]]))
 
   def whenMtdVatAuthorisationServiceIsCalled =
     when(
-      mtdVatAuthorisationService
-        .authoriseForMtdVat(any[AgentCode], any[Vrn])(any[ExecutionContext],
-                                                      any[HeaderCarrier],
+      esAuthorisationService
+        .authoriseForMtdVat(any[AgentCode], any[Vrn])(any[HeaderCarrier],
                                                       any[Request[_]]))
 
   def whenPayeAuthorisationServiceIsCalled =
