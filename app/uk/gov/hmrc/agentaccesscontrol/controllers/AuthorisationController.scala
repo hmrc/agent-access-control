@@ -18,14 +18,12 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 
 import javax.inject.{Inject, Provider, Singleton}
 import play.api.Configuration
-import play.api.mvc.Action
-import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
+import play.api.mvc.{Action, AnyContent}
 import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
-  MtdItAuthorisationService,
-  MtdVatAuthorisationService
+  ESAuthorisationService
 }
-import uk.gov.hmrc.agentmtdidentifiers.model.{MtdItId, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model.{MtdItId, Utr, Vrn}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -33,14 +31,11 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 @Singleton
 class AuthorisationController @Inject()(
-    override val auditService: AuditService,
     authorisationService: AuthorisationService,
-    mtdItAuthorisationService: MtdItAuthorisationService,
-    mtdVatAuthorisationService: MtdVatAuthorisationService,
+    esAuthorisationService: ESAuthorisationService,
     configuration: Configuration,
     ecp: Provider[ExecutionContextExecutor])
-    extends BaseController
-    with Audit {
+    extends BaseController {
 
   implicit val ec: ExecutionContext = ecp.get
 
@@ -48,23 +43,23 @@ class AuthorisationController @Inject()(
     implicit request =>
       authorisationService.isAuthorisedForSa(agentCode, saUtr).map {
         case authorised if authorised => Ok
-        case notAuthorised            => Unauthorized
+        case _                        => Unauthorized
       }
   }
 
   def isAuthorisedForMtdIt(agentCode: AgentCode, mtdItId: MtdItId) =
     Action.async { implicit request =>
-      mtdItAuthorisationService.authoriseForMtdIt(agentCode, mtdItId) map {
+      esAuthorisationService.authoriseForMtdIt(agentCode, mtdItId) map {
         case authorised if authorised => Ok
-        case notAuthorised            => Unauthorized
+        case _                        => Unauthorized
       }
     }
 
   def isAuthorisedForMtdVat(agentCode: AgentCode, vrn: Vrn) = Action.async {
     implicit request =>
-      mtdVatAuthorisationService.authoriseForMtdVat(agentCode, vrn) map {
+      esAuthorisationService.authoriseForMtdVat(agentCode, vrn) map {
         case authorised if authorised => Ok
-        case notAuthorised            => Unauthorized
+        case _                        => Unauthorized
       }
   }
 
@@ -90,8 +85,12 @@ class AuthorisationController @Inject()(
           if (isAuthorised) Ok else Unauthorized
       }
   }
-}
 
-trait Audit {
-  val auditService: AuditService
+  def isAuthorisedForTrust(agentCode: AgentCode, utr: Utr): Action[AnyContent] =
+    Action.async { implicit request =>
+      esAuthorisationService.authoriseForTrust(agentCode, utr).map {
+        case authorised if authorised => Ok
+        case _                        => Unauthorized
+      }
+    }
 }

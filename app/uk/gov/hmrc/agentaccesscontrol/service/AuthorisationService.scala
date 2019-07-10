@@ -56,12 +56,15 @@ class AuthorisationService @Inject()(
                                     saUtr,
                                     agentAuthDetails,
                                     saAgentReference)
+
       case Some(agentAuthDetails @ AuthDetails(_, Some(arn), _, _, _)) =>
         authoriseMtdAgentForIRSA(agentCode, saUtr, agentAuthDetails, arn)
+
       case Some(agentAuthDetails @ AuthDetails(None, _, _, _, _)) =>
         auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result = false)
         Future successful notAuthorised(
           s"No 6 digit agent reference found for agent $agentCode")
+
       case None =>
         Future successful notAuthorised("No user is logged in")
     }
