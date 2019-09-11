@@ -36,12 +36,27 @@ def testDeps(scope: String) = Seq(
   "org.pegdown" % "pegdown" % "1.6.0" % scope
 )
 
+def tmpMacWorkaround(): Seq[ModuleID] =
+  if (sys.props.get("os.name").fold(false)(_.toLowerCase.contains("mac")))
+    Seq("org.reactivemongo" % "reactivemongo-shaded-native" % "0.16.1-osx-x86-64" % "runtime,test,it")
+  else Seq()
+
 lazy val root = (project in file("."))
   .settings(
     name := "agent-access-control",
     organization := "uk.gov.hmrc",
     scalaVersion := "2.11.11",
     majorVersion := 0,
+    scalacOptions ++= Seq(
+      "-Xfatal-warnings",
+      "-Xlint:-missing-interpolator,_",
+      "-Yno-adapted-args",
+      "-Ywarn-value-discard",
+      "-Ywarn-dead-code",
+      "-deprecation",
+      "-feature",
+      "-unchecked",
+      "-language:implicitConversions"),
     PlayKeys.playDefaultPort := 9431,
     resolvers := Seq(
       Resolver.bintrayRepo("hmrc", "releases"),
@@ -49,7 +64,7 @@ lazy val root = (project in file("."))
       Resolver.typesafeRepo("releases"),
       Resolver.jcenterRepo
     ),
-    libraryDependencies ++= compileDeps ++ testDeps("test") ++ testDeps("it"),
+    libraryDependencies ++= tmpMacWorkaround() ++ compileDeps ++ testDeps("test") ++ testDeps("it"),
     publishingSettings,
     scoverageSettings,
     unmanagedResourceDirectories in Compile += baseDirectory.value / "resources",
@@ -63,15 +78,8 @@ lazy val root = (project in file("."))
     Defaults.itSettings,
     unmanagedSourceDirectories in IntegrationTest += baseDirectory(_ / "it").value,
     parallelExecution in IntegrationTest := false,
-    testGrouping in IntegrationTest := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
     scalafmtOnCompile in IntegrationTest := true
   )
   .enablePlugins(PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
 
 inConfig(IntegrationTest)(scalafmtCoreSettings)
-
-def oneForkedJvmPerTest(tests: Seq[TestDefinition]) = {
-  tests.map { test =>
-    new Group(test.name, Seq(test), SubProcess(ForkOptions(runJVMOptions = Seq(s"-Dtest.name=${test.name}"))))
-  }
-}

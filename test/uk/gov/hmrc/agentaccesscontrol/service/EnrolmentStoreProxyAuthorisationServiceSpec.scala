@@ -20,7 +20,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.connectors.EnrolmentStoreProxyConnector
 import uk.gov.hmrc.domain.{AgentCode, AgentUserId, EmpRef, SaUtr}
 import uk.gov.hmrc.http.HeaderCarrier

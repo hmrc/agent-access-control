@@ -20,7 +20,7 @@ class ConfigPayeDisabledSpec extends WireMockWithOneServerPerTestISpec {
     }
   }
 
-  def givenLoggedInAgentIsPayeAuthorised(): Unit =
+  def givenLoggedInAgentIsPayeAuthorised(): AgentAdmin =
     given()
       .agentAdmin(agentCode)
       .isLoggedIn()

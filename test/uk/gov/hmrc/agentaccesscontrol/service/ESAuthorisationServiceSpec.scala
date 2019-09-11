@@ -253,7 +253,7 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       result shouldBe false
       verify(relationshipsConnector, never)
         .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext],
-          any[HeaderCarrier])
+                                                    any[HeaderCarrier])
     }
 
     "deny access for a mtd agent without a client relationship" in {
@@ -274,13 +274,13 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
 
         verify(auditService)
           .auditEvent(AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "TRS",
-            utr,
-            Seq("credId" -> "ggId",
-              "accessGranted" -> true,
-              "arn" -> arn.value))(
+                      "agent access decision",
+                      agentCode,
+                      "TRS",
+                      utr,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> true,
+                          "arn" -> arn.value))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
@@ -294,13 +294,13 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
 
         verify(auditService)
           .auditEvent(AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "TRS",
-            utr,
-            Seq("credId" -> "ggId",
-              "accessGranted" -> false,
-              "arn" -> arn.value))(
+                      "agent access decision",
+                      agentCode,
+                      "TRS",
+                      utr,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> false,
+                          "arn" -> arn.value))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
@@ -313,11 +313,11 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
 
         verify(auditService)
           .auditEvent(AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "TRS",
-            utr,
-            Seq("credId" -> "ggId", "accessGranted" -> false))(
+                      "agent access decision",
+                      agentCode,
+                      "TRS",
+                      utr,
+                      Seq("credId" -> "ggId", "accessGranted" -> false))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
