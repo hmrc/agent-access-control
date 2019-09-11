@@ -22,7 +22,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 import org.scalatest.TestData
 import org.scalatest.concurrent.Eventually
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.{OneAppPerSuite, OneServerPerTest}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder

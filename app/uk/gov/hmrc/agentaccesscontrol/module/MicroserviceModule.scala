@@ -65,6 +65,8 @@ class MicroserviceModule(val environment: Environment,
     bindConfigProperty("des.environment")
 
     bindBaseUrl("auth")
+
+    ()
   }
 
   private def bindBaseUrl(serviceName: String) =

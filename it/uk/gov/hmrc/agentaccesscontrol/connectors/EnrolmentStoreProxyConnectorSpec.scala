@@ -2,7 +2,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaUtr, TaxIdentifier}
 import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
@@ -13,9 +13,9 @@ import concurrent.ExecutionContext.Implicits.global
 
 class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
 
-  implicit val hc = HeaderCarrier()
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  val connector = app.injector.instanceOf[EnrolmentStoreProxyConnector]
+  val connector: EnrolmentStoreProxyConnector = app.injector.instanceOf[EnrolmentStoreProxyConnector]
 
   "EnrolmentStoreProxy" when {
 

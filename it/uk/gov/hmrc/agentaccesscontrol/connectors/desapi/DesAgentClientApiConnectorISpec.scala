@@ -23,7 +23,8 @@ import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers.{any, eq => eqs}
 import org.mockito.Mockito.when
-import org.scalatest.mockito.MockitoSugar
+import org.scalatest.Assertion
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.model._
@@ -33,16 +34,16 @@ import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpGet}
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 class DesAgentClientApiConnectorISpec
     extends WireMockWithOneAppPerSuiteISpec
     with MockitoSugar
     with MetricTestSupportAppPerSuite {
 
-  implicit val headerCarrier = HeaderCarrier()
-  implicit val ec = ExecutionContext.global
-  val httpVerbs = app.injector.instanceOf[HttpVerbs]
+  implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
+  implicit val ec: ExecutionContextExecutor = ExecutionContext.global
+  val httpVerbs: HttpVerbs = app.injector.instanceOf[HttpVerbs]
 
   "getSaAgentClientRelationship" should {
     "request DES API with the correct auth tokens" in new Context {
@@ -240,7 +241,7 @@ class DesAgentClientApiConnectorISpec
         .isLoggedIn()
         .andHasSaAgentReferenceWithEnrolment(saAgentReference)
 
-    def outboundSaCallToDesShouldBeAudited(auth64_8: Boolean, authI64_8: Boolean): Unit = {
+    def outboundSaCallToDesShouldBeAudited(auth64_8: Boolean, authI64_8: Boolean): Assertion = {
       val event: MergedDataEvent = capturedEvent()
 
       event.auditType shouldBe "OutboundCall"
@@ -252,7 +253,7 @@ class DesAgentClientApiConnectorISpec
       (responseJson \ "Auth_i64-8").as[Boolean] shouldBe authI64_8
     }
 
-    def outboundPayeCallToDesShouldBeAudited(auth64_8: Boolean): Unit = {
+    def outboundPayeCallToDesShouldBeAudited(auth64_8: Boolean): Assertion = {
       val event: MergedDataEvent = capturedEvent()
 
       event.auditType shouldBe "OutboundCall"
