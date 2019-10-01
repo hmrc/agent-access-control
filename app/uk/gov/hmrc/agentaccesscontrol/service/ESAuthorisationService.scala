@@ -23,7 +23,8 @@ import uk.gov.hmrc.agentaccesscontrol.audit.{
   AuditService
 }
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
+import uk.gov.hmrc.agentaccesscontrol.connectors.AuthDetails
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -36,29 +37,31 @@ class ESAuthorisationService @Inject()(
     auditService: AuditService)(implicit ec: ExecutionContext)
     extends LoggingAuthorisationResults {
 
-  def authoriseForMtdVat(agentCode: AgentCode, taxIdentifier: TaxIdentifier)(
+//  def authoriseForMtdVat(agentCode: AgentCode, taxIdentifier: TaxIdentifier)(
+//      implicit hc: HeaderCarrier,
+//      request: Request[_]): Future[Boolean] =
+//    authoriseFor(agentCode, taxIdentifier, "mtd-vat")
+//
+  def authoriseForMtdIt(agentCode: AgentCode,
+                        taxIdentifier: TaxIdentifier,
+                        authDetails: AuthDetails)(
       implicit hc: HeaderCarrier,
       request: Request[_]): Future[Boolean] =
-    authoriseFor(agentCode, taxIdentifier, "mtd-vat")
+    authoriseFor(agentCode, taxIdentifier, "mtd-it", authDetails)
 
-  def authoriseForMtdIt(agentCode: AgentCode, taxIdentifier: TaxIdentifier)(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] =
-    authoriseFor(agentCode, taxIdentifier, "mtd-it")
-
-  def authoriseForTrust(agentCode: AgentCode, taxIdentifier: TaxIdentifier)(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] =
-    authoriseFor(agentCode, taxIdentifier, "TRS")
+//  def authoriseForTrust(agentCode: AgentCode, taxIdentifier: TaxIdentifier)(
+//      implicit hc: HeaderCarrier,
+//      request: Request[_]): Future[Boolean] =
+//    authoriseFor(agentCode, taxIdentifier, "TRS")
 
   private def authoriseFor(agentCode: AgentCode,
                            taxIdentifier: TaxIdentifier,
-                           regime: String)(
+                           regime: String,
+                           authDetails: AuthDetails)(
       implicit hc: HeaderCarrier,
       request: Request[_]): Future[Boolean] =
-    authConnector.currentAuthDetails().flatMap {
-      case Some(
-          agentAuthDetails @ AuthDetails(_, Some(arn), _, _, userRoleOpt)) =>
+    authDetails match {
+      case agentAuthDetails @ AuthDetails(_, Some(arn), _, _, userRoleOpt) =>
         relationshipsConnector.relationshipExists(arn, taxIdentifier).map {
           result =>
             auditDecision(agentCode,
@@ -77,16 +80,14 @@ class ESAuthorisationService @Inject()(
                   .getOrElse("None found")}")
         }
 
-      case Some(agentAuthDetails) =>
+      case _ =>
         auditDecision(agentCode,
-                      agentAuthDetails,
+                      authDetails,
                       taxIdentifier,
                       result = false,
                       regime)
         Future.successful(notAuthorised(
           s"No ARN found in HMRC-AS-AGENT enrolment for agentCode $agentCode"))
-
-      case None => Future.successful(notAuthorised("No user is logged in"))
     }
 
   private def auditDecision(agentCode: AgentCode,

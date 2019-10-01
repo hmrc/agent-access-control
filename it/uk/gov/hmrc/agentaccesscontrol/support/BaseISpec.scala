@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
@@ -76,11 +77,8 @@ trait StubUtils {
   me: StartAndStopWireMock =>
 
   class PreconditionBuilder {
-    def agentAdmin(agentCode: String, agentCredId: String = "0000001232456789"): AgentAdmin =
-      new AgentAdmin(agentCode, agentCredId, oid = "556737e15500005500eaf68e")
-
-    def agentAdmin(agentCode: AgentCode): AgentAdmin =
-      agentAdmin(agentCode.value)
+    def agentAdmin(agentCode: AgentCode, providerId: String, saAgentReference: Option[SaAgentReference], arn: Option[Arn]): AgentUser =
+      new AgentUser(agentCode.value, providerId, saAgentReference, arn)
 
     def mtdAgency(arn: Arn): MtdAgency =
       new MtdAgency(arn)
@@ -89,12 +87,16 @@ trait StubUtils {
   def given() =
     new PreconditionBuilder()
 
-  class AgentAdmin(override val agentCode: String, override val agentCredId: String, override val oid: String)
-      extends AfiStub[AgentAdmin]
-      with AuthStubs[AgentAdmin]
-      with DesStub[AgentAdmin]
-      with EnrolmentStoreProxyStubs[AgentAdmin]
-      with MappingStubs[AgentAdmin] {
+  class AgentUser(
+                   override val agentCode: String,
+                   override val providerId: String,
+                   override val saAgentReference: Option[SaAgentReference],
+                   override val arn: Option[Arn])
+      extends AfiStub[AgentUser]
+      with AuthStubs[AgentUser]
+      with DesStub[AgentUser]
+      with EnrolmentStoreProxyStubs[AgentUser]
+      with MappingStubs[AgentUser] {
     DataStreamStub.givenAuditConnector()
   }
 
@@ -218,7 +220,8 @@ trait StubUtils {
   trait MappingStubs[A] {
     me: A =>
 
-    def givenSaMappingSingular(key: String, arn: Arn): A = {
+
+    def givenSaMappingSingular(key: String, arn: Arn, identifier: String): A = {
       stubFor(
         get(urlMatching(s"/agent-mapping/mappings/key/$key/arn/${arn.value}"))
           .willReturn(aResponse().withBody(s"""
@@ -226,7 +229,7 @@ trait StubUtils {
                                               |  "mappings":[
                                               |    {
                                               |      "arn":"${arn.value}",
-                                              |      "identifier":"ABC456"
+                                              |      "identifier":"$identifier"
                                               |    }
                                               |  ]
                                               |}
@@ -234,7 +237,7 @@ trait StubUtils {
       this
     }
 
-    def givenSaMappingMultiple(key: String, arn: Arn): A = {
+    def givenSaMappingMultiple(key: String, arn: Arn, identifier: String): A = {
       stubFor(
         get(urlMatching(s"/agent-mapping/mappings/key/$key/arn/${arn.value}"))
           .willReturn(aResponse().withBody(s"""
@@ -242,7 +245,7 @@ trait StubUtils {
                                               |  "mappings":[
                                               |    {
                                               |      "arn":"${arn.value}",
-                                              |      "identifier":"ABC456"
+                                              |      "identifier":"$identifier"
                                               |    },
                                               |    {
                                               |      "arn":"${arn.value}",
@@ -283,7 +286,7 @@ trait StubUtils {
   trait EnrolmentStoreProxyStubs[A] {
     me: A =>
 
-    def agentCredId: String
+    def providerId: String
 
     private val pathRegex: String = "/enrolment-store-proxy/enrolment-store/enrolments/[^/]+/users\\?type=delegated"
 
@@ -334,7 +337,7 @@ trait StubUtils {
                          |{
                          |    "principalUserIds": [],
                          |    "delegatedUserIds": [
-                         |       ${(otherDelegatedUserIds :+ agentCredId).map(a => "\"" + a + "\"").mkString(",")}
+                         |       ${(otherDelegatedUserIds :+ providerId).map(a => "\"" + a + "\"").mkString(",")}
                          |    ]
                          |}
                          |""".stripMargin)))
@@ -348,7 +351,7 @@ trait StubUtils {
             .withBody(s"""
                          |{
                          |    "principalUserIds": [
-                         |       ${(otherPrincipalUserIds :+ agentCredId).map(a => "\"" + a + "\"").mkString(",")}
+                         |       ${(otherPrincipalUserIds :+ providerId).map(a => "\"" + a + "\"").mkString(",")}
                          |     ]
                          |}
                          |""".stripMargin)))
@@ -396,94 +399,107 @@ trait StubUtils {
   trait AuthStubs[A] {
     me: A =>
 
-    def oid: String
-
     def agentCode: String
 
-    def agentCredId: String
+    def providerId: String
 
-    protected var saAgentReference: Option[SaAgentReference] = None
+    def saAgentReference: Option[SaAgentReference]
 
-    def andGettingEnrolmentsFailsWith500(): A = {
-      stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(500)))
+    def arn: Option[Arn]
+
+    def authIsDown(): A = {
+      stubFor(
+        post(urlEqualTo("/auth/authorise"))
+          .willReturn(aResponse()
+            .withStatus(500)))
+    this
+    }
+
+    def userIsNotAuthenticated(): A  = {
+      stubFor(
+        post(urlEqualTo("/auth/authorise"))
+          .willReturn(
+            aResponse()
+              .withStatus(401)
+              .withHeader("WWW-Authenticate", "MDTP detail=\"SessionRecordNotFound\"")))
       this
     }
 
-    def andIsNotEnrolledForSA() = andHasNoIrSaAgentEnrolment()
-
-    def andHasNoSaAgentReference(): A = {
-      saAgentReference = None
-      andHasNoIrSaAgentEnrolment()
-    }
-
-    def andHasNoIrSaAgentEnrolment(): A = andHasNoIrSaAgentOrHmrcAsAgentEnrolment()
-
-    def andHasNoHmrcAsAgentEnrolment(): A = andHasNoIrSaAgentOrHmrcAsAgentEnrolment()
-
-    private def andHasNoIrSaAgentOrHmrcAsAgentEnrolment(): A = {
-      stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(s"""
-                                                                                                                   |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
-                                                                                                                   | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"}]
-         """.stripMargin)))
+    def userHasInsufficientEnrolments(): A = {
+      stubFor(
+        post(urlEqualTo("/auth/authorise"))
+          .willReturn(
+            aResponse()
+              .withStatus(401)
+              .withHeader("WWW-Authenticate", "MDTP detail=\"InsufficientEnrolments\"")))
       this
     }
 
-    def andHasSaAgentReference(saAgentReference: SaAgentReference): A =
-      andHasSaAgentReference(saAgentReference.value)
-
-    def andHasSaAgentReference(ref: String): A = {
-      saAgentReference = Some(SaAgentReference(ref))
+    def userLoggedInViaUnsupportedAuthProvider(): A = {
+      stubFor(
+        post(urlEqualTo("/auth/authorise"))
+          .willReturn(
+            aResponse()
+              .withStatus(401)
+              .withHeader("WWW-Authenticate", "MDTP detail=\"UnsupportedAuthProvider\"")))
       this
     }
 
-    def andHasSaAgentReferenceWithEnrolment(
-      saAgentReference: SaAgentReference,
-      enrolmentState: String = "Activated"): A = {
-      andHasSaAgentReference(saAgentReference)
-      stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(s"""
-                                                                                                                   |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
-                                                                                                                   | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
-                                                                                                                   | {"key":"IR-SA-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the IR Agent Reference"}, {"key":"IRAgentReference","value":"${saAgentReference.value}"}],"state":"$enrolmentState"}]
-         """.stripMargin)))
+    def userIsNotAnAgent(): A  = {
+      stubFor(
+        post(urlEqualTo("/auth/authorise"))
+          .willReturn(
+            aResponse()
+              .withStatus(401)
+              .withHeader("WWW-Authenticate", "MDTP detail=\"UnsupportedAffinityGroup\"")))
       this
     }
 
-    def andHasSaAgentReferenceAndArnWithEnrolments(
-      saAgentReference: SaAgentReference,
-      arn: uk.gov.hmrc.agentmtdidentifiers.model.Arn): A = {
-      andHasSaAgentReference(saAgentReference)
-      stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(s"""
-                                                                                                                   |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
-                                                                                                                   | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
-                                                                                                                   | {"key":"IR-SA-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the IR Agent Reference"}, {"key":"IRAgentReference","value":"${saAgentReference.value}"}],"state":"Activated"},
-                                                                                                                   | {"key":"HMRC-AS-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the ARN"}, {"key":"AgentReferenceNumber","value":"${arn.value}"}],"state":"Activated"}]
-         """.stripMargin)))
+
+    def isAuthenticated(): A = {
+      val (enrolKey, identifierKey, identifierValue: String): (String, String, String) =
+        if(arn.isDefined) ("HMRC-AS-AGENT", "AgentReferenceNumber", arn.get.value) else ("IR-SA-AGENT","IRAgentReference", saAgentReference.fold("")(_.value))
+
+      givenAuthorisedFor(
+        s"""
+           |{
+           |  "authorise": [
+           |    { "authProviders": ["GovernmentGateway"] },
+           |    { "affinityGroup" : "Agent"}
+           |  ],
+           |  "retrieve":["agentCode", "allEnrolments", "credentialRole", "optionalCredentials"]
+           |}
+           """.stripMargin,
+        s"""
+           |{
+           |"agentCode" : "$agentCode",
+           |"allEnrolments": [
+           |  { "key": "$enrolKey", "identifiers": [
+           |    {"key": "$identifierKey", "value": "$identifierValue"}
+           |  ]}
+           |],
+           |"credentialRole": "user",
+           |"optionalCredentials": {"providerId": "$providerId", "providerType": "GovernmentGateway"}
+           |}
+          """.stripMargin
+      )
       this
     }
 
-    def andHasArnWithEnrolment(arn: uk.gov.hmrc.agentmtdidentifiers.model.Arn): A = {
-      stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(s"""
-                                                                                                                   | [{"key":"HMRC-AS-AGENT","identifiers":[{"key":"AgentReferenceNumber","value":"${arn.value}"}],"state":"Activated"}]
-         """.stripMargin)))
+    def givenAuthorisedFor(payload: String, responseBody: String): A = {
+      stubFor(
+        post(urlEqualTo("/auth/authorise"))
+          .withRequestBody(equalToJson(payload, true, true))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(responseBody)))
       this
     }
 
-    def andHasHmrcAsAgentEnrolment(arn: uk.gov.hmrc.agentmtdidentifiers.model.Arn): A = {
-      stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments")).willReturn(aResponse().withStatus(200).withBody(s"""
-                                                                                                                   |[{"key":"IR-PAYE-AGENT","identifiers":[{"key":"IrAgentReference","value":"HZ1234"}],"state":"Activated"},
-                                                                                                                   | {"key":"HMRC-AGENT-AGENT","identifiers":[{"key":"AgentRefNumber","value":"JARN1234567"}],"state":"Activated"},
-                                                                                                                   | {"key":"HMRC-AS-AGENT","identifiers":[{"key":"AnotherIdentifier", "value": "not the ARN"}, {"key":"AgentReferenceNumber","value":"${arn.value}"}],"state":"Activated"}]
-         """.stripMargin)))
-      this
-    }
 
-    def andHasSaAgentReferenceWithPendingEnrolment(saAgentReference: SaAgentReference): A =
-      andHasSaAgentReferenceWithEnrolment(saAgentReference, enrolmentState = "Pending")
 
-    def isNotLoggedIn(): A = {
-      stubFor(get(urlPathEqualTo(s"/auth/authority")).willReturn(aResponse().withStatus(401)))
-      this
-    }
 
     private val defaultOnlyUsedByAuditingAuthorityJson =
       s"""
@@ -496,18 +512,6 @@ trait StubUtils {
          |  "affinityGroup": "Agent"
        """.stripMargin
 
-    def isLoggedIn(onlyUsedByAuditingAuthorityJson: String = defaultOnlyUsedByAuditingAuthorityJson): A = {
-      stubFor(get(urlPathEqualTo(s"/auth/authority")).willReturn(aResponse().withStatus(200).withBody(s"""
-                                                                                                         |{
-                                                                                                         |  "enrolments":"/auth/oid/$oid/enrolments",
-                                                                                                         |  "credentials":{
-                                                                                                         |    "gatewayId":"$agentCredId"
-                                                                                                         |  }
-                                                                                                         |  $onlyUsedByAuditingAuthorityJson
-                                                                                                         |}
-       """.stripMargin)))
-      this
-    }
   }
 
   trait RelationshipsStub[A] {

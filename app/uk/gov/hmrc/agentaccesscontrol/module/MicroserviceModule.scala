@@ -25,6 +25,8 @@ import com.google.inject.name.{Named, Names}
 import com.typesafe.config.Config
 import org.slf4j.MDC
 import play.api.{Configuration, Environment, Logger}
+import uk.gov.hmrc.agentaccesscontrol.connectors.{AgentAccessAuthConnector}
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -55,6 +57,7 @@ class MicroserviceModule(val environment: Environment,
     bind(classOf[HttpGet]).to(classOf[HttpVerbs])
     bind(classOf[HttpPost]).to(classOf[HttpVerbs])
     bind(classOf[HttpPut]).to(classOf[HttpVerbs])
+    bind(classOf[AuthConnector]).to(classOf[AgentAccessAuthConnector])
 
     bindBaseUrl("agent-client-relationships")
     bindBaseUrl("des")

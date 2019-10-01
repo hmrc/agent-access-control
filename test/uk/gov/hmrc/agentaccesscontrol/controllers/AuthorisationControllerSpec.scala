@@ -21,17 +21,22 @@ import org.mockito.ArgumentMatchers.{any, eq => eqs}
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.Configuration
+import play.api.{Configuration, Environment}
 import play.api.libs.json.Json
 import play.api.mvc.{AnyContent, Request}
 import play.api.test.FakeRequest
 import play.mvc.Http.Status
+import uk.gov.hmrc.agentaccesscontrol.connectors.{
+  AgentAccessAuthConnector,
+  AuthDetails
+}
 import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
 }
 import uk.gov.hmrc.agentmtdidentifiers.model.{MtdItId, Vrn}
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
+import uk.gov.hmrc.auth.core.{Admin, CredentialRole, User}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -44,16 +49,21 @@ class AuthorisationControllerSpec
 
   val authorisationService = mock[AuthorisationService]
   val esAuthorisationService = mock[ESAuthorisationService]
+  val authConnector = mock[AgentAccessAuthConnector]
   val ecp: Provider[ExecutionContextExecutor] =
     new Provider[ExecutionContextExecutor] {
       override def get(): ExecutionContextExecutor =
         concurrent.ExecutionContext.Implicits.global
     }
+  val environment = mock[Environment]
+
   def controller(enabled: Boolean = true) =
     new AuthorisationController(
       authorisationService,
+      authConnector,
       esAuthorisationService,
       Configuration("features.allowPayeAccess" -> enabled),
+      environment,
       ecp)
 
   override protected def beforeEach(): Unit = {
@@ -61,268 +71,282 @@ class AuthorisationControllerSpec
     reset(authorisationService)
   }
 
-  private def anSaEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
-
-    "return 401 if the AuthorisationService doesn't permit access" in {
-
-      whenAuthorisationServiceIsCalled thenReturn (Future successful false)
-
-      val response =
-        controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
-
-      status(response) shouldBe Status.UNAUTHORIZED
-    }
-
-    "return 200 if the AuthorisationService allows access" in {
-
-      whenAuthorisationServiceIsCalled thenReturn (Future successful true)
-
-      val response =
-        controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
-
-      status(response) shouldBe Status.OK
-    }
-
-    "pass request to AuthorisationService" in {
-
-      whenAuthorisationServiceIsCalled thenReturn (Future successful true)
-
-      val response =
-        controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
-
-      verify(authorisationService)
-        .isAuthorisedForSa(any[AgentCode], any[SaUtr])(any[ExecutionContext],
-                                                       any[HeaderCarrier],
-                                                       eqs(fakeRequest))
-
-      status(response) shouldBe Status.OK
-    }
-
-    "propagate exception if the AuthorisationService fails" in {
-
-      whenAuthorisationServiceIsCalled thenReturn (Future failed new IllegalStateException(
-        "some error"))
-
-      an[IllegalStateException] shouldBe thrownBy(
-        status(controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(
-          fakeRequest)))
-    }
-
-  }
-
-  private def anMdtitEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
-    "return 401 if the MtdAuthorisationService doesn't permit access" in {
-
-      whenMtdItAuthorisationServiceIsCalled thenReturn (Future successful false)
-
-      val response =
-        controller().isAuthorisedForMtdIt(AgentCode(""), MtdItId("mtdItId"))(
-          fakeRequest)
-
-      status(response) shouldBe Status.UNAUTHORIZED
-    }
-
-    "return 200 if the MtdAuthorisationService allows access" in {
-
-      whenMtdItAuthorisationServiceIsCalled thenReturn (Future successful true)
-
-      val response =
-        controller().isAuthorisedForMtdIt(AgentCode(""), MtdItId("mtdItId"))(
-          fakeRequest)
-
-      status(response) shouldBe Status.OK
-    }
-
-    "propagate exception if the MtdAuthorisationService fails" in {
-
-      whenMtdItAuthorisationServiceIsCalled thenReturn (Future failed new IllegalStateException(
-        "some error"))
-
-      an[IllegalStateException] shouldBe thrownBy(
-        status(
-          controller().isAuthorisedForMtdIt(AgentCode(""), MtdItId("mtdItId"))(
-            fakeRequest)))
-    }
-  }
-
-  private def anMtdVatEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
-    "return 401 if the MtdVatAuthorisationService doesn't permit access" in {
-
-      whenMtdVatAuthorisationServiceIsCalled thenReturn (Future successful false)
-
-      val response = controller().isAuthorisedForMtdVat(AgentCode(""),
-                                                        Vrn("vrn"))(fakeRequest)
-
-      status(response) shouldBe Status.UNAUTHORIZED
-    }
-
-    "return 200 if the MtdVatAuthorisationService allows access" in {
-
-      whenMtdVatAuthorisationServiceIsCalled thenReturn (Future successful true)
-
-      val response = controller().isAuthorisedForMtdVat(AgentCode(""),
-                                                        Vrn("vrn"))(fakeRequest)
-
-      status(response) shouldBe Status.OK
-    }
-
-    "propagate exception if the MtdVatAuthorisationService fails" in {
-
-      whenMtdVatAuthorisationServiceIsCalled thenReturn (Future failed new IllegalStateException(
-        "some error"))
-
-      an[IllegalStateException] shouldBe thrownBy(
-        status(controller().isAuthorisedForMtdVat(AgentCode(""), Vrn("vrn"))(
-          fakeRequest)))
-    }
-  }
-
-  private def aPayeEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
-    "return 200 when Paye is enabled" in {
-      whenPayeAuthorisationServiceIsCalled thenReturn (Future successful true)
-
-      val response =
-        controller().isAuthorisedForPaye(AgentCode(""),
-                                         EmpRef("123", "123456"))(fakeRequest)
-
-      status(response) shouldBe 200
-    }
-
-    "return 403 when Paye is disabled" in {
-      whenPayeAuthorisationServiceIsCalled thenReturn (Future successful true)
-
-      val response =
-        controller(enabled = false).isAuthorisedForPaye(
-          AgentCode(""),
-          EmpRef("123", "123456"))(fakeRequest)
-
-      status(response) shouldBe 403
-    }
-  }
-
-  private def anAfiEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
-
-    "return 200 if the AuthorisationService allows access" in {
-
-      whenAfiAuthorisationServiceIsCalled thenReturn (Future successful true)
-
-      val response =
-        controller().isAuthorisedForAfi(AgentCode(""), Nino("AA123456A"))(
-          fakeRequest)
-
-      status(response) shouldBe Status.OK
-    }
-
-    "return 401 if the AuthorisationService does not allow access" in {
-
-      whenAfiAuthorisationServiceIsCalled thenReturn (Future successful false)
-
-      val response =
-        controller().isAuthorisedForAfi(AgentCode(""), Nino("AA123456A"))(
-          fakeRequest)
-
-      status(response) shouldBe Status.UNAUTHORIZED
-    }
-
-    "propagate exception if the AuthorisationService fails" in {
-
-      whenAfiAuthorisationServiceIsCalled thenReturn (Future failed new IllegalStateException(
-        "some error"))
-
-      an[IllegalStateException] shouldBe thrownBy(
-        status(controller().isAuthorisedForAfi(AgentCode(""),
-                                               Nino("AA123456A"))(fakeRequest)))
-    }
-
-  }
-
-  "GET isAuthorisedForSa" should {
-    behave like anSaEndpoint(
-      FakeRequest("GET", "/agent-access-control/sa-auth/agent//client/utr"))
-  }
-
-  "POST isAuthorisedForSa" should {
-    behave like anSaEndpoint(
-      FakeRequest("POST", "/agent-access-control/sa-auth/agent//client/utr")
-        .withJsonBody(Json.parse("{}")))
-  }
-
-  "GET isAuthorisedForMtdIt" should {
-    behave like anMdtitEndpoint(
-      FakeRequest("GET", "/agent-access-control/mtd-it-auth/agent//client/utr"))
-  }
-
-  "POST isAuthorisedForMtdIt" should {
-    behave like anMdtitEndpoint(
-      FakeRequest("POST", "/agent-access-control/mtd-it-auth/agent//client/utr")
-        .withJsonBody(Json.parse("{}")))
-  }
-
-  "GET isAuthorisedForMtdVat" should {
-    behave like anMtdVatEndpoint(
-      FakeRequest("GET",
-                  "/agent-access-control/mtd-vat-auth/agent//client/utr"))
-  }
-
-  "POST isAuthorisedForMtdVat" should {
-    behave like anMtdVatEndpoint(
-      FakeRequest("POST",
-                  "/agent-access-control/mtd-vat-auth/agent//client/utr")
-        .withJsonBody(Json.parse("{}")))
-  }
-
-  "GET isAuthorisedForPaye" should {
-    behave like aPayeEndpoint(
-      FakeRequest("GET", "/agent-access-control/epaye-auth/agent//client/utr"))
-  }
-
-  "POST isAuthorisedForPaye" should {
-    behave like aPayeEndpoint(
-      FakeRequest("POST", "/agent-access-control/epaye-auth/agent//client/utr")
-        .withJsonBody(Json.parse("{}")))
-  }
-
-  "GET isAuthorisedForAfi" should {
-    behave like anAfiEndpoint(
-      FakeRequest("GET", "/agent-access-control/afi-auth/agent//client/utr"))
-  }
-
-  "POST isAuthorisedForAfi" should {
-    behave like anAfiEndpoint(
-      FakeRequest("POST", "/agent-access-control/afi-auth/agent//client/utr")
-        .withJsonBody(Json.parse("{}")))
-  }
-
-  def whenAfiAuthorisationServiceIsCalled =
+  val saAgentReference = SaAgentReference("enrol-123")
+  val credentialRole = Admin
+
+  val authDetails = AuthDetails(saAgentReference = Some(saAgentReference),
+                                arn = None,
+                                ggCredentialId = "12345-credId",
+                                affinityGroup = Some("Agent"),
+                                agentUserRole = Some(credentialRole))
+
+//  private def anSaEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+//
+//    "return 401 if the AuthorisationService doesn't permit access" in {
+//
+//
+//      whenAuthorisationServiceIsCalled(authDetails) thenReturn (Future successful false)
+//
+//      val response =
+//        controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
+//
+//      status(response) shouldBe Status.UNAUTHORIZED
+//    }
+//  }
+
+//    "return 200 if the AuthorisationService allows access" in {
+//
+//      whenAuthorisationServiceIsCalled thenReturn (Future successful true)
+//
+//      val response =
+//        controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
+//
+//      status(response) shouldBe Status.OK
+//    }
+//
+//    "pass request to AuthorisationService" in {
+//
+//      whenAuthorisationServiceIsCalled thenReturn (Future successful true)
+//
+//      val response =
+//        controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(fakeRequest)
+//
+//      verify(authorisationService)
+//        .isAuthorisedForSa(any[AgentCode], any[SaUtr])(any[ExecutionContext],
+//                                                       any[HeaderCarrier],
+//                                                       eqs(fakeRequest))
+//
+//      status(response) shouldBe Status.OK
+//    }
+//
+//    "propagate exception if the AuthorisationService fails" in {
+//
+//      whenAuthorisationServiceIsCalled thenReturn (Future failed new IllegalStateException(
+//        "some error"))
+//
+//      an[IllegalStateException] shouldBe thrownBy(
+//        status(controller().isAuthorisedForSa(AgentCode(""), SaUtr("utr"))(
+//          fakeRequest)))
+//    }
+//
+//  }
+//
+//  def whenAuthReturnsForSa()
+
+//  private def anMdtitEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+//    "return 401 if the MtdAuthorisationService doesn't permit access" in {
+//
+//      whenMtdItAuthorisationServiceIsCalled thenReturn (Future successful false)
+//
+//      val response =
+//        controller().isAuthorisedForMtdIt(AgentCode(""), MtdItId("mtdItId"))(
+//          fakeRequest)
+//
+//      status(response) shouldBe Status.UNAUTHORIZED
+//    }
+
+//    "return 200 if the MtdAuthorisationService allows access" in {
+//
+//      whenMtdItAuthorisationServiceIsCalled thenReturn (Future successful true)
+//
+//      val response =
+//        controller().isAuthorisedForMtdIt(AgentCode(""), MtdItId("mtdItId"))(
+//          fakeRequest)
+//
+//      status(response) shouldBe Status.OK
+//    }
+//
+//    "propagate exception if the MtdAuthorisationService fails" in {
+//
+//      whenMtdItAuthorisationServiceIsCalled thenReturn (Future failed new IllegalStateException(
+//        "some error"))
+//
+//      an[IllegalStateException] shouldBe thrownBy(
+//        status(
+//          controller().isAuthorisedForMtdIt(AgentCode(""), MtdItId("mtdItId"))(
+//            fakeRequest)))
+//    }
+//  }
+//
+//  private def anMtdVatEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+//    "return 401 if the MtdVatAuthorisationService doesn't permit access" in {
+//
+//      whenMtdVatAuthorisationServiceIsCalled thenReturn (Future successful false)
+//
+//      val response = controller().isAuthorisedForMtdVat(AgentCode(""),
+//                                                        Vrn("vrn"))(fakeRequest)
+//
+//      status(response) shouldBe Status.UNAUTHORIZED
+//    }
+//
+//    "return 200 if the MtdVatAuthorisationService allows access" in {
+//
+//      whenMtdVatAuthorisationServiceIsCalled thenReturn (Future successful true)
+//
+//      val response = controller().isAuthorisedForMtdVat(AgentCode(""),
+//                                                        Vrn("vrn"))(fakeRequest)
+//
+//      status(response) shouldBe Status.OK
+//    }
+//
+//    "propagate exception if the MtdVatAuthorisationService fails" in {
+//
+//      whenMtdVatAuthorisationServiceIsCalled thenReturn (Future failed new IllegalStateException(
+//        "some error"))
+//
+//      an[IllegalStateException] shouldBe thrownBy(
+//        status(controller().isAuthorisedForMtdVat(AgentCode(""), Vrn("vrn"))(
+//          fakeRequest)))
+//    }
+//  }
+//
+//  private def aPayeEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+//    "return 200 when Paye is enabled" in {
+//      whenPayeAuthorisationServiceIsCalled thenReturn (Future successful true)
+//
+//      val response =
+//        controller().isAuthorisedForPaye(AgentCode(""),
+//                                         EmpRef("123", "123456"))(fakeRequest)
+//
+//      status(response) shouldBe 200
+//    }
+//
+//    "return 403 when Paye is disabled" in {
+//      whenPayeAuthorisationServiceIsCalled thenReturn (Future successful true)
+//
+//      val response =
+//        controller(enabled = false).isAuthorisedForPaye(
+//          AgentCode(""),
+//          EmpRef("123", "123456"))(fakeRequest)
+//
+//      status(response) shouldBe 403
+//    }
+//  }
+//
+//  private def anAfiEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+//
+//    "return 200 if the AuthorisationService allows access" in {
+//
+//      whenAfiAuthorisationServiceIsCalled thenReturn (Future successful true)
+//
+//      val response =
+//        controller().isAuthorisedForAfi(AgentCode(""), Nino("AA123456A"))(
+//          fakeRequest)
+//
+//      status(response) shouldBe Status.OK
+//    }
+//
+//    "return 401 if the AuthorisationService does not allow access" in {
+//
+//      whenAfiAuthorisationServiceIsCalled thenReturn (Future successful false)
+//
+//      val response =
+//        controller().isAuthorisedForAfi(AgentCode(""), Nino("AA123456A"))(
+//          fakeRequest)
+//
+//      status(response) shouldBe Status.UNAUTHORIZED
+//    }
+//
+//    "propagate exception if the AuthorisationService fails" in {
+//
+//      whenAfiAuthorisationServiceIsCalled thenReturn (Future failed new IllegalStateException(
+//        "some error"))
+//
+//      an[IllegalStateException] shouldBe thrownBy(
+//        status(controller().isAuthorisedForAfi(AgentCode(""),
+//                                               Nino("AA123456A"))(fakeRequest)))
+//    }
+//
+//  }
+
+//  "GET isAuthorisedForSa" should {
+//    behave like anSaEndpoint(
+//      FakeRequest("GET", "/agent-access-control/sa-auth/agent//client/utr"))
+//  }
+//
+//  "POST isAuthorisedForSa" should {
+//    behave like anSaEndpoint(
+//      FakeRequest("POST", "/agent-access-control/sa-auth/agent//client/utr")
+//        .withJsonBody(Json.parse("{}")))
+//  }
+
+//  "GET isAuthorisedForMtdIt" should {
+//    behave like anMdtitEndpoint(
+//      FakeRequest("GET", "/agent-access-control/mtd-it-auth/agent//client/utr"))
+//  }
+//
+//  "POST isAuthorisedForMtdIt" should {
+//    behave like anMdtitEndpoint(
+//      FakeRequest("POST", "/agent-access-control/mtd-it-auth/agent//client/utr")
+//        .withJsonBody(Json.parse("{}")))
+//  }
+//
+//  "GET isAuthorisedForMtdVat" should {
+//    behave like anMtdVatEndpoint(
+//      FakeRequest("GET",
+//                  "/agent-access-control/mtd-vat-auth/agent//client/utr"))
+//  }
+//
+//  "POST isAuthorisedForMtdVat" should {
+//    behave like anMtdVatEndpoint(
+//      FakeRequest("POST",
+//                  "/agent-access-control/mtd-vat-auth/agent//client/utr")
+//        .withJsonBody(Json.parse("{}")))
+//  }
+//
+//  "GET isAuthorisedForPaye" should {
+//    behave like aPayeEndpoint(
+//      FakeRequest("GET", "/agent-access-control/epaye-auth/agent//client/utr"))
+//  }
+//
+//  "POST isAuthorisedForPaye" should {
+//    behave like aPayeEndpoint(
+//      FakeRequest("POST", "/agent-access-control/epaye-auth/agent//client/utr")
+//        .withJsonBody(Json.parse("{}")))
+//  }
+//
+//  "GET isAuthorisedForAfi" should {
+//    behave like anAfiEndpoint(
+//      FakeRequest("GET", "/agent-access-control/afi-auth/agent//client/utr"))
+//  }
+//
+//  "POST isAuthorisedForAfi" should {
+//    behave like anAfiEndpoint(
+//      FakeRequest("POST", "/agent-access-control/afi-auth/agent//client/utr")
+//        .withJsonBody(Json.parse("{}")))
+//  }
+//
+//  def whenAfiAuthorisationServiceIsCalled =
+//    when(
+//      authorisationService
+//        .isAuthorisedForAfi(any[AgentCode], any[Nino])(any[ExecutionContext],
+//                                                       any[HeaderCarrier],
+//                                                       any[Request[Any]]))
+
+  def whenAuthorisationServiceIsCalled(authDetails: AuthDetails) =
     when(
       authorisationService
-        .isAuthorisedForAfi(any[AgentCode], any[Nino])(any[ExecutionContext],
-                                                       any[HeaderCarrier],
-                                                       any[Request[Any]]))
+        .isAuthorisedForSa(any[AgentCode], any[SaUtr], eqs(authDetails))(
+          any[ExecutionContext],
+          any[HeaderCarrier],
+          any[Request[Any]]))
 
-  def whenAuthorisationServiceIsCalled =
-    when(
-      authorisationService
-        .isAuthorisedForSa(any[AgentCode], any[SaUtr])(any[ExecutionContext],
-                                                       any[HeaderCarrier],
-                                                       any[Request[Any]]))
-
-  def whenMtdItAuthorisationServiceIsCalled =
-    when(
-      esAuthorisationService
-        .authoriseForMtdIt(any[AgentCode], any[MtdItId])(any[HeaderCarrier],
-                                                         any[Request[_]]))
-
-  def whenMtdVatAuthorisationServiceIsCalled =
-    when(
-      esAuthorisationService
-        .authoriseForMtdVat(any[AgentCode], any[Vrn])(any[HeaderCarrier],
-                                                      any[Request[_]]))
-
-  def whenPayeAuthorisationServiceIsCalled =
-    when(
-      authorisationService
-        .isAuthorisedForPaye(any[AgentCode], any[EmpRef])(any[ExecutionContext],
-                                                          any[HeaderCarrier],
-                                                          any[Request[_]]))
+//  def whenMtdItAuthorisationServiceIsCalled =
+//    when(
+//      esAuthorisationService
+//        .authoriseForMtdIt(any[AgentCode], any[MtdItId])(any[HeaderCarrier],
+//                                                         any[Request[_]]))
+//
+//  def whenMtdVatAuthorisationServiceIsCalled =
+//    when(
+//      esAuthorisationService
+//        .authoriseForMtdVat(any[AgentCode], any[Vrn])(any[HeaderCarrier],
+//                                                      any[Request[_]]))
+//
+//  def whenPayeAuthorisationServiceIsCalled =
+//    when(
+//      authorisationService
+//        .isAuthorisedForPaye(any[AgentCode], any[EmpRef])(any[ExecutionContext],
+//                                                          any[HeaderCarrier],
+//                                                          any[Request[_]]))
 }
