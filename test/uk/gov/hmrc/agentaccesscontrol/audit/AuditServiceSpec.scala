@@ -38,10 +38,10 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
       val mockConnector = mock[AuditConnector]
       val service = new AuditService(mockConnector)
 
-      val hc = HeaderCarrier(authorization =
-                               Some(Authorization("dummy bearer token")),
-                             sessionId = Some(SessionId("dummy session id")),
-                             requestId = Some(RequestId("dummy request id")))
+      val hc = HeaderCarrier(
+        authorization = Some(Authorization("dummy bearer token")),
+        sessionId = Some(SessionId("dummy session id")),
+        requestId = Some(RequestId("dummy request id")))
 
       service.auditEvent(
         AgentAccessControlDecision,
@@ -50,14 +50,11 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         "sa",
         SaUtr("TESTSAUTR"),
         Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
-      )(hc,
-        FakeRequest("GET", "/path"),
-        concurrent.ExecutionContext.Implicits.global)
+      )(hc, FakeRequest("GET", "/path"), concurrent.ExecutionContext.Implicits.global)
 
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[DataEvent])
-        verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier],
-                                                          any[ExecutionContext])
+        verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
         captor.getValue shouldBe an[DataEvent]
         val sentEvent = captor.getValue
 

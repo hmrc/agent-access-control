@@ -31,8 +31,7 @@ trait ArnToIdentifierMapping {
   def identifier: String
 }
 
-case class AgentReferenceMapping(arn: String, identifier: String)
-    extends ArnToIdentifierMapping
+case class AgentReferenceMapping(arn: String, identifier: String) extends ArnToIdentifierMapping
 
 object AgentReferenceMapping {
   implicit val formats: Format[AgentReferenceMapping] =
