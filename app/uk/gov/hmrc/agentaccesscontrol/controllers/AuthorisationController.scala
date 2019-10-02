@@ -19,10 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 import javax.inject.{Inject, Provider, Singleton}
 import play.api.Configuration
 import play.api.mvc.{Action, AnyContent}
-import uk.gov.hmrc.agentaccesscontrol.service.{
-  AuthorisationService,
-  ESAuthorisationService
-}
+import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, ESAuthorisationService}
 import uk.gov.hmrc.agentmtdidentifiers.model.{MtdItId, Utr, Vrn}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
@@ -31,20 +28,19 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 @Singleton
 class AuthorisationController @Inject()(
-    authorisationService: AuthorisationService,
-    esAuthorisationService: ESAuthorisationService,
-    configuration: Configuration,
-    ecp: Provider[ExecutionContextExecutor])
+  authorisationService: AuthorisationService,
+  esAuthorisationService: ESAuthorisationService,
+  configuration: Configuration,
+  ecp: Provider[ExecutionContextExecutor])
     extends BaseController {
 
   implicit val ec: ExecutionContext = ecp.get
 
-  def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr) = Action.async {
-    implicit request =>
-      authorisationService.isAuthorisedForSa(agentCode, saUtr).map {
-        case authorised if authorised => Ok
-        case _                        => Unauthorized
-      }
+  def isAuthorisedForSa(agentCode: AgentCode, saUtr: SaUtr) = Action.async { implicit request =>
+    authorisationService.isAuthorisedForSa(agentCode, saUtr).map {
+      case authorised if authorised => Ok
+      case _                        => Unauthorized
+    }
   }
 
   def isAuthorisedForMtdIt(agentCode: AgentCode, mtdItId: MtdItId) =
@@ -55,35 +51,31 @@ class AuthorisationController @Inject()(
       }
     }
 
-  def isAuthorisedForMtdVat(agentCode: AgentCode, vrn: Vrn) = Action.async {
-    implicit request =>
-      esAuthorisationService.authoriseForMtdVat(agentCode, vrn) map {
-        case authorised if authorised => Ok
-        case _                        => Unauthorized
-      }
+  def isAuthorisedForMtdVat(agentCode: AgentCode, vrn: Vrn) = Action.async { implicit request =>
+    esAuthorisationService.authoriseForMtdVat(agentCode, vrn) map {
+      case authorised if authorised => Ok
+      case _                        => Unauthorized
+    }
   }
 
-  def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef) = Action.async {
-    implicit request =>
-      val payeEnabled: Boolean =
-        configuration.getBoolean("features.allowPayeAccess").getOrElse(false)
+  def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef) = Action.async { implicit request =>
+    val payeEnabled: Boolean =
+      configuration.getBoolean("features.allowPayeAccess").getOrElse(false)
 
-      if (payeEnabled) {
-        authorisationService.isAuthorisedForPaye(agentCode, empRef) map {
-          case true => Ok
-          case _    => Unauthorized
-        }
-      } else {
-        Future(Forbidden)
+    if (payeEnabled) {
+      authorisationService.isAuthorisedForPaye(agentCode, empRef) map {
+        case true => Ok
+        case _    => Unauthorized
       }
+    } else {
+      Future(Forbidden)
+    }
   }
 
-  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino) = Action.async {
-    implicit request =>
-      authorisationService.isAuthorisedForAfi(agentCode, nino) map {
-        isAuthorised =>
-          if (isAuthorised) Ok else Unauthorized
-      }
+  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino) = Action.async { implicit request =>
+    authorisationService.isAuthorisedForAfi(agentCode, nino) map { isAuthorised =>
+      if (isAuthorised) Ok else Unauthorized
+    }
   }
 
   def isAuthorisedForTrust(agentCode: AgentCode, utr: Utr): Action[AnyContent] =

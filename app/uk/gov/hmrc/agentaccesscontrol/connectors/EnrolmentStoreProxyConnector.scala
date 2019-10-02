@@ -24,50 +24,39 @@ import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaAgentReference, SaUtr}
-import uk.gov.hmrc.http.{
-  BadRequestException,
-  HeaderCarrier,
-  HttpGet,
-  HttpResponse
-}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpGet, HttpResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class EnrolmentStoreProxyConnector @Inject()(
-    @Named("enrolment-store-proxy-baseUrl") baseUrl: URL,
-    httpGet: HttpGet,
-    metrics: Metrics)
+  @Named("enrolment-store-proxy-baseUrl") baseUrl: URL,
+  httpGet: HttpGet,
+  metrics: Metrics)
     extends HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   private def pathES0(enrolmentKey: String, usersType: String): String =
-    new URL(
-      baseUrl,
-      s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=$usersType").toString
+    new URL(baseUrl, s"/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=$usersType").toString
 
-  def getIRSAAGENTPrincipalUserIdsFor(saAgentReference: SaAgentReference)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Set[AgentUserId]] =
-    getES0(s"IR-SA-AGENT~IRAgentReference~${saAgentReference.value}",
-           "principal")
+  def getIRSAAGENTPrincipalUserIdsFor(
+    saAgentReference: SaAgentReference)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
+    getES0(s"IR-SA-AGENT~IRAgentReference~${saAgentReference.value}", "principal")
 
-  def getIRSADelegatedUserIdsFor(utr: SaUtr)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Set[AgentUserId]] =
+  def getIRSADelegatedUserIdsFor(
+    utr: SaUtr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
     getES0(s"IR-SA~UTR~$utr", "delegated")
 
-  def getIRPAYEDelegatedUserIdsFor(empRef: EmpRef)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Set[AgentUserId]] = {
+  def getIRPAYEDelegatedUserIdsFor(
+    empRef: EmpRef)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] = {
     val enrolmentKey =
       s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
     getES0(enrolmentKey, "delegated")
   }
 
   private def getES0(enrolmentKey: String, usersType: String)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Set[AgentUserId]] =
+    implicit hc: HeaderCarrier,
+    ec: ExecutionContext): Future[Set[AgentUserId]] =
     monitor("ConsumedAPI-EnrolmentStoreProxy-ES0-GET") {
       httpGet.GET[HttpResponse](pathES0(enrolmentKey, usersType))
     }.map(response =>

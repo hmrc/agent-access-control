@@ -41,8 +41,7 @@ class AuthConnectorSpec extends UnitSpec with ResettingMockitoSugar {
   val authorityUrl = "http://localhost/auth/authority"
   private val expectedEnrolmentsUrl = "http://localhost/auth/relativeEnrolments"
   val authorityJsonWithRelativeUrl =
-    Json.obj("enrolments" -> "relativeEnrolments",
-             "credentials" → Json.obj("gatewayId" → "1"))
+    Json.obj("enrolments" -> "relativeEnrolments", "credentials" → Json.obj("gatewayId" → "1"))
 
   /**
     * URLs in the authority should be relative to the URL the authority is fetched from, which is http://localhost/auth/authority
@@ -51,25 +50,18 @@ class AuthConnectorSpec extends UnitSpec with ResettingMockitoSugar {
     */
   "enrolmentsAbsoluteUrl" should {
     "resolve the enrolments URL relative to the authority URL" in {
-      authConnector.enrolmentsAbsoluteUrl("relativeEnrolments") shouldBe new URL(
-        expectedEnrolmentsUrl)
+      authConnector.enrolmentsAbsoluteUrl("relativeEnrolments") shouldBe new URL(expectedEnrolmentsUrl)
     }
   }
 
   "currentAuthDetails" should {
     "resolve the enrolments URL relative to the authority URL" in {
 
-      when(
-        httpGet.GET[JsValue](eqs(authorityUrl))(any[HttpReads[JsValue]],
-                                                any[HeaderCarrier],
-                                                any[ExecutionContext]))
+      when(httpGet.GET[JsValue](eqs(authorityUrl))(any[HttpReads[JsValue]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future successful authorityJsonWithRelativeUrl)
 
       val asAgentEnrolment =
-        AuthEnrolment(
-          "HMRC-AS-AGENT",
-          Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")),
-          "Activated")
+        AuthEnrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")), "Activated")
 
       when(
         httpGet.GET[Set[AuthEnrolment]](eqs(expectedEnrolmentsUrl))(

@@ -26,37 +26,31 @@ import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
-class DesAuthorisationService @Inject()(
-    desAgentClientApiConnector: DesAgentClientApiConnector)
+class DesAuthorisationService @Inject()(desAgentClientApiConnector: DesAgentClientApiConnector)
     extends LoggingAuthorisationResults {
 
-  def isAuthorisedInCesa(agentCode: AgentCode,
-                         saAgentReference: SaAgentReference,
-                         saUtr: SaUtr)(implicit ec: ExecutionContext,
-                                       hc: HeaderCarrier): Future[Boolean] =
+  def isAuthorisedInCesa(agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)(
+    implicit ec: ExecutionContext,
+    hc: HeaderCarrier): Future[Boolean] =
     desAgentClientApiConnector
       .getSaAgentClientRelationship(saAgentReference, saUtr)
       .map(handleCesaResponse(agentCode, saUtr, _))
 
   def isAuthorisedInEbs(agentCode: AgentCode, empRef: EmpRef)(
-      implicit ec: ExecutionContext,
-      hc: HeaderCarrier): Future[Boolean] =
+    implicit ec: ExecutionContext,
+    hc: HeaderCarrier): Future[Boolean] =
     desAgentClientApiConnector
       .getPayeAgentClientRelationship(agentCode, empRef)
       .map(handleEBSResponse(agentCode, empRef, _))
 
-  private def handleCesaResponse(agentCode: AgentCode,
-                                 saUtr: SaUtr,
-                                 response: SaDesAgentClientFlagsApiResponse)(
-      implicit headerCarrier: HeaderCarrier): Boolean =
+  private def handleCesaResponse(agentCode: AgentCode, saUtr: SaUtr, response: SaDesAgentClientFlagsApiResponse)(
+    implicit headerCarrier: HeaderCarrier): Boolean =
     response match {
       case SaNotFoundResponse => {
-        notAuthorised(
-          s"DES API returned not found for agent $agentCode and client $saUtr")
+        notAuthorised(s"DES API returned not found for agent $agentCode and client $saUtr")
       }
       case SaFoundResponse(true, true) => {
-        authorised(
-          s"DES API returned true for both flags for agent $agentCode and client $saUtr")
+        authorised(s"DES API returned true for both flags for agent $agentCode and client $saUtr")
       }
       case SaFoundResponse(auth64_8, authI64_8) => {
         notAuthorised(
@@ -64,20 +58,15 @@ class DesAuthorisationService @Inject()(
       }
     }
 
-  private def handleEBSResponse(agentCode: AgentCode,
-                                empRef: EmpRef,
-                                response: PayeDesAgentClientFlagsApiResponse)(
-      implicit headerCarrier: HeaderCarrier): Boolean =
+  private def handleEBSResponse(agentCode: AgentCode, empRef: EmpRef, response: PayeDesAgentClientFlagsApiResponse)(
+    implicit headerCarrier: HeaderCarrier): Boolean =
     response match {
       case PayeNotFoundResponse =>
-        notAuthorised(
-          s"DES API returned not found for agent $agentCode and client $empRef")
+        notAuthorised(s"DES API returned not found for agent $agentCode and client $empRef")
       case PayeFoundResponse(true) =>
-        authorised(
-          s"DES API returned true for auth64-8 for agent $agentCode and client $empRef")
+        authorised(s"DES API returned true for auth64-8 for agent $agentCode and client $empRef")
       case PayeFoundResponse(false) =>
-        notAuthorised(
-          s"DES API returned false for auth64-8 flag agent $agentCode and client $empRef")
+        notAuthorised(s"DES API returned false for auth64-8 flag agent $agentCode and client $empRef")
     }
 
 }

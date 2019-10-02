@@ -43,36 +43,31 @@ class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return true if the DES API returns 64-8=true and i64-8=true" in new Context {
-      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = true,
-                                                            authI64_8 = true))
+      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = true, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe true
     }
 
     "return false if the DES API returns 64-8=true and i64-8=false" in new Context {
-      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = true,
-                                                            authI64_8 = false))
+      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = true, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return false if the DES API returns 64-8=false and i64-8=true" in new Context {
-      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = false,
-                                                            authI64_8 = true))
+      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = false, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return false if the DES API returns 64-8=false and i64-8=false" in new Context {
-      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = false,
-                                                            authI64_8 = false))
+      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = false, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "propagate any errors that happened" in new Context {
-      whenDesSaEndpointIsCalled thenReturn (Future failed new BadRequestException(
-        "bad request"))
+      whenDesSaEndpointIsCalled thenReturn (Future failed new BadRequestException("bad request"))
 
       intercept[BadRequestException] {
         await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
@@ -88,22 +83,19 @@ class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return true if the 64-8=true" in new Context {
-      whenDesPayeEndpointIsCalled thenReturn (Future successful PayeFoundResponse(
-        auth64_8 = true))
+      whenDesPayeEndpointIsCalled thenReturn (Future successful PayeFoundResponse(auth64_8 = true))
 
       await(service.isAuthorisedInEbs(agentCode, empRef)) shouldBe true
     }
 
     "return false if the 64-8=false" in new Context {
-      whenDesPayeEndpointIsCalled thenReturn (Future successful PayeFoundResponse(
-        auth64_8 = false))
+      whenDesPayeEndpointIsCalled thenReturn (Future successful PayeFoundResponse(auth64_8 = false))
 
       await(service.isAuthorisedInEbs(agentCode, empRef)) shouldBe false
     }
 
     "propagate any errors that happened" in new Context {
-      whenDesPayeEndpointIsCalled thenReturn (Future failed new BadRequestException(
-        "bad request"))
+      whenDesPayeEndpointIsCalled thenReturn (Future failed new BadRequestException("bad request"))
 
       intercept[BadRequestException] {
         await(service.isAuthorisedInEbs(agentCode, empRef))
@@ -122,8 +114,6 @@ class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           .getSaAgentClientRelationship(saAgentRef, clientSaUtr))
 
     protected def whenDesPayeEndpointIsCalled =
-      when(
-        mockDesAgentClientApiConnector.getPayeAgentClientRelationship(agentCode,
-                                                                      empRef))
+      when(mockDesAgentClientApiConnector.getPayeAgentClientRelationship(agentCode, empRef))
   }
 }
