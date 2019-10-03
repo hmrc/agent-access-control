@@ -32,16 +32,17 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ESAuthorisationService @Inject()(
-    authConnector: AuthConnector,
     relationshipsConnector: RelationshipsConnector,
     auditService: AuditService)(implicit ec: ExecutionContext)
     extends LoggingAuthorisationResults {
 
-//  def authoriseForMtdVat(agentCode: AgentCode, taxIdentifier: TaxIdentifier)(
-//      implicit hc: HeaderCarrier,
-//      request: Request[_]): Future[Boolean] =
-//    authoriseFor(agentCode, taxIdentifier, "mtd-vat")
-//
+  def authoriseForMtdVat(agentCode: AgentCode,
+                         taxIdentifier: TaxIdentifier,
+                         authDetails: AuthDetails)(
+      implicit hc: HeaderCarrier,
+      request: Request[_]): Future[Boolean] =
+    authoriseFor(agentCode, taxIdentifier, "mtd-vat", authDetails)
+
   def authoriseForMtdIt(agentCode: AgentCode,
                         taxIdentifier: TaxIdentifier,
                         authDetails: AuthDetails)(
@@ -49,10 +50,12 @@ class ESAuthorisationService @Inject()(
       request: Request[_]): Future[Boolean] =
     authoriseFor(agentCode, taxIdentifier, "mtd-it", authDetails)
 
-//  def authoriseForTrust(agentCode: AgentCode, taxIdentifier: TaxIdentifier)(
-//      implicit hc: HeaderCarrier,
-//      request: Request[_]): Future[Boolean] =
-//    authoriseFor(agentCode, taxIdentifier, "TRS")
+  def authoriseForTrust(agentCode: AgentCode,
+                        taxIdentifier: TaxIdentifier,
+                        authDetails: AuthDetails)(
+      implicit hc: HeaderCarrier,
+      request: Request[_]): Future[Boolean] =
+    authoriseFor(agentCode, taxIdentifier, "TRS", authDetails)
 
   private def authoriseFor(agentCode: AgentCode,
                            taxIdentifier: TaxIdentifier,

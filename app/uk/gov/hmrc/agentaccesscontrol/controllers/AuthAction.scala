@@ -19,13 +19,9 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 import play.api.mvc.{Request, Result, Results}
 import play.api.{Environment, Logger}
 import uk.gov.hmrc.agentaccesscontrol.connectors.AuthDetails
-import uk.gov.hmrc.agentaccesscontrol.model.{MTD_IT, SA, TaxRegime}
-import uk.gov.hmrc.agentaccesscontrol.service.{
-  AuthorisationService,
-  ESAuthorisationService
-}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId}
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
+import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{
   agentCode,
   allEnrolments,
@@ -33,26 +29,17 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{
   credentials
 }
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
-import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
-import uk.gov.hmrc.play.bootstrap.config.AuthRedirects
+import uk.gov.hmrc.domain.{AgentCode, SaAgentReference}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait AuthAction extends AuthorisedFunctions with AuthRedirects with Results {
+trait AuthAction extends AuthorisedFunctions with Results {
 
   def env: Environment
 
-  def authorisationService: AuthorisationService
-
-  def esAuthorisationService: ESAuthorisationService
-
-  def withAgentAuthorisedFor[A](
-      regime: TaxRegime,
-      ac: AgentCode,
-      saUtrOpt: Option[SaUtr] = None,
-      mtdItOpt: Option[MtdItId] = None)(body: => Future[Result])(
+  def withAgentAuthorised[A](ac: AgentCode)(
+      body: AuthDetails => Future[Result])(
       implicit request: Request[A],
       hc: HeaderCarrier,
       ec: ExecutionContext): Future[Result] = {
@@ -61,49 +48,29 @@ trait AuthAction extends AuthorisedFunctions with AuthRedirects with Results {
         case agentCodeOpt ~ enrols ~ credRole ~ Some(
               Credentials(providerId, _)) => {
           agentCodeOpt match {
-            case Some(ac) => {
-              val authDetails = fromAuth(enrols, providerId, credRole)
-              val authResult: Future[Boolean] = {
-                regime match {
-                  case SA => {
-                    saUtrOpt.fold(Future(false)) { saUtr =>
-                      authorisationService
-                        .isAuthorisedForSa(AgentCode(ac), saUtr, authDetails)
-                    }
-                  }
-                  case MTD_IT => {
-                    mtdItOpt.fold(Future(false)) { mtdId =>
-                      esAuthorisationService.authoriseForMtdIt(AgentCode(ac),
-                                                               mtdId,
-                                                               authDetails)
-                    }
-                  }
-                  case _ => Future(false)
-                }
-              }
-              authResult.flatMap {
-                case true  => body
-                case false => Future(Unauthorized)
-              }
+            case Some(agentCode) if agentCode == ac.value =>
+              body(
+                AuthDetails(saAgentReference = getSaAgentReference(enrols),
+                            getArn(enrols),
+                            ggCredentialId = providerId,
+                            affinityGroup = Some("Agent"),
+                            agentUserRole = credRole))
+            case Some(_) => {
+              Logger.warn(
+                s"agent code from auth did not match the agent code in url")
+              Future(Forbidden)
             }
-            case None => Future(Forbidden)
+            case None => {
+              Logger.info(
+                s"no agent code found in auth details for agent code $ac")
+              Future(Forbidden)
+            }
           }
         }
-        case _ => Future(Forbidden)
       }
       .recover {
         handleException
       }
-  }
-
-  private def fromAuth(enrolments: Enrolments,
-                       providerId: String,
-                       credRole: Option[CredentialRole]): AuthDetails = {
-    AuthDetails(saAgentReference = getSaAgentReference(enrolments),
-                getArn(enrolments),
-                ggCredentialId = providerId,
-                affinityGroup = Some("Agent"),
-                agentUserRole = credRole)
   }
 
   private def handleException(

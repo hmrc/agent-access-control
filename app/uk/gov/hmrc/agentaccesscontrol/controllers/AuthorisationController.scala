@@ -17,26 +17,25 @@
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
 import javax.inject.{Inject, Provider, Singleton}
-import play.api.{Configuration, Environment}
 import play.api.mvc.{Action, AnyContent, Request}
-import uk.gov.hmrc.agentaccesscontrol.model.{MTD_IT, SA}
+import play.api.{Configuration, Environment, Logger}
 import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
 }
-import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.agentmtdidentifiers.model.{MtdItId, Utr, Vrn}
 import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 @Singleton
 class AuthorisationController @Inject()(
-    override val authorisationService: AuthorisationService,
+    val authorisationService: AuthorisationService,
     override val authConnector: AuthConnector,
-    override val esAuthorisationService: ESAuthorisationService,
-    override val config: Configuration,
+    val esAuthorisationService: ESAuthorisationService,
+    val config: Configuration,
     override val env: Environment,
     ecp: Provider[ExecutionContextExecutor])
     extends BaseController
@@ -47,54 +46,94 @@ class AuthorisationController @Inject()(
   def isAuthorisedForSa(agentCode: AgentCode,
                         saUtr: SaUtr): Action[AnyContent] =
     Action.async { implicit request: Request[_] =>
-      withAgentAuthorisedFor(regime = SA,
-                             ac = agentCode,
-                             saUtrOpt = Some(saUtr)) { Future successful Ok }
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          authorisationService
+            .isAuthorisedForSa(agentCode, saUtr, authDetails)
+            .map {
+              case true  => Ok
+              case false => Unauthorized
+            }
+        }
+      }
     }
 
-  def isAuthorisedForMtdIt(agentCode: AgentCode, mtdItId: MtdItId) =
+  def isAuthorisedForMtdIt(agentCode: AgentCode,
+                           mtdItId: MtdItId): Action[AnyContent] =
     Action.async { implicit request: Request[_] =>
-      withAgentAuthorisedFor(regime = MTD_IT,
-                             ac = agentCode,
-                             mtdItOpt = Some(mtdItId)) { Future successful Ok }
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          esAuthorisationService
+            .authoriseForMtdIt(agentCode, mtdItId, authDetails)
+            .map {
+              case true  => Ok
+              case false => Unauthorized
+            }
+        }
+      }
     }
 
-//  def isAuthorisedForMtdVat(agentCode: AgentCode, vrn: Vrn) = Action.async {
-//    implicit request =>
-//      esAuthorisationService.authoriseForMtdVat(agentCode, vrn) map {
-//        case authorised if authorised => Ok
-//        case _                        => Unauthorized
-//      }
-//  }
+  def isAuthorisedForMtdVat(agentCode: AgentCode,
+                            vrn: Vrn): Action[AnyContent] =
+    Action.async { implicit request: Request[_] =>
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          esAuthorisationService
+            .authoriseForMtdVat(agentCode, vrn, authDetails)
+            .map {
+              case true  => Ok
+              case false => Unauthorized
+            }
+        }
+      }
+    }
 
-//  def isAuthorisedForPaye(agentCode: AgentCode, empRef: EmpRef) = Action.async {
-//    implicit request =>
-//      val payeEnabled: Boolean =
-//        configuration.getBoolean("features.allowPayeAccess").getOrElse(false)
-//
-//      if (payeEnabled) {
-//        authorisationService.isAuthorisedForPaye(agentCode, empRef) map {
-//          case true => Ok
-//          case _    => Unauthorized
-//        }
-//      } else {
-//        Future(Forbidden)
-//      }
-//  }
+  def isAuthorisedForPaye(agentCode: AgentCode,
+                          empRef: EmpRef): Action[AnyContent] =
+    Action.async { implicit request: Request[_] =>
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          val payeEnabled: Boolean =
+            config.getBoolean("features.allowPayeAccess").getOrElse(false)
 
-//  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino) = Action.async {
-//    implicit request =>
-//      authorisationService.isAuthorisedForAfi(agentCode, nino) map {
-//        isAuthorised =>
-//          if (isAuthorised) Ok else Unauthorized
-//      }
-//  }
+          if (payeEnabled) {
+            authorisationService.isAuthorisedForPaye(agentCode,
+                                                     empRef,
+                                                     authDetails) map {
+              case true => Ok
+              case _    => Unauthorized
+            }
+          } else {
+            Logger.warn(s"paye not enabled in configuration")
+            Future successful Forbidden
+          }
+        }
+      }
+    }
 
-//  def isAuthorisedForTrust(agentCode: AgentCode, utr: Utr): Action[AnyContent] =
-//    Action.async { implicit request =>
-//      esAuthorisationService.authoriseForTrust(agentCode, utr).map {
-//        case authorised if authorised => Ok
-//        case _                        => Unauthorized
-//      }
-//    }
+  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino): Action[AnyContent] =
+    Action.async { implicit request: Request[_] =>
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          authorisationService.isAuthorisedForAfi(agentCode, nino, authDetails) map {
+            isAuthorised =>
+              if (isAuthorised) Ok else Unauthorized
+          }
+        }
+      }
+    }
+
+  def isAuthorisedForTrust(agentCode: AgentCode, utr: Utr): Action[AnyContent] =
+    Action.async { implicit request: Request[_] =>
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          esAuthorisationService
+            .authoriseForTrust(agentCode, utr, authDetails)
+            .map {
+              case authorised if authorised => Ok
+              case _                        => Unauthorized
+            }
+        }
+      }
+    }
 }

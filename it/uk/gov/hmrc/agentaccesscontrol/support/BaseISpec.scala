@@ -77,8 +77,8 @@ trait StubUtils {
   me: StartAndStopWireMock =>
 
   class PreconditionBuilder {
-    def agentAdmin(agentCode: AgentCode, providerId: String, saAgentReference: Option[SaAgentReference], arn: Option[Arn]): AgentUser =
-      new AgentUser(agentCode.value, providerId, saAgentReference, arn)
+    def agentAdmin(agentCode: AgentCode, providerId: String, saAgentReference: Option[SaAgentReference], arn: Option[Arn]): AgentAdmin =
+      new AgentAdmin(agentCode.value, providerId, saAgentReference, arn)
 
     def mtdAgency(arn: Arn): MtdAgency =
       new MtdAgency(arn)
@@ -87,16 +87,16 @@ trait StubUtils {
   def given() =
     new PreconditionBuilder()
 
-  class AgentUser(
+  class AgentAdmin(
                    override val agentCode: String,
                    override val providerId: String,
                    override val saAgentReference: Option[SaAgentReference],
                    override val arn: Option[Arn])
-      extends AfiStub[AgentUser]
-      with AuthStubs[AgentUser]
-      with DesStub[AgentUser]
-      with EnrolmentStoreProxyStubs[AgentUser]
-      with MappingStubs[AgentUser] {
+      extends AfiStub[AgentAdmin]
+      with AuthStubs[AgentAdmin]
+      with DesStub[AgentAdmin]
+      with EnrolmentStoreProxyStubs[AgentAdmin]
+      with MappingStubs[AgentAdmin] {
     DataStreamStub.givenAuditConnector()
   }
 
