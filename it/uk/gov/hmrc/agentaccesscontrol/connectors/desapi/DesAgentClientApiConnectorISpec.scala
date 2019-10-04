@@ -234,12 +234,13 @@ class DesAgentClientApiConnectorISpec
     val saUtr = SaUtr("SAUTR456")
     val empRef = EmpRef("123", "4567890")
     val agentCode = AgentCode("A1234567890A")
+    val providerId = "12345-credId"
 
     def givenClientIsLoggedIn() =
       given()
-        .agentAdmin(agentCode.value)
-        .isLoggedIn()
-        .andHasSaAgentReferenceWithEnrolment(saAgentReference)
+        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
+        .isAuthenticated()
+
 
     def outboundSaCallToDesShouldBeAudited(auth64_8: Boolean, authI64_8: Boolean): Assertion = {
       val event: MergedDataEvent = capturedEvent()

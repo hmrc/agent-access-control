@@ -9,6 +9,7 @@ class ConfigPayeDisabledSpec extends WireMockWithOneServerPerTestISpec {
 
   val agentCode = AgentCode("A11112222A")
   val empRef = EmpRef("123", "123456")
+  val providerId = "12345-credId"
 
   override protected def additionalConfiguration: Map[String, String] = Map("features.allowPayeAccess" -> "false")
 
@@ -22,9 +23,8 @@ class ConfigPayeDisabledSpec extends WireMockWithOneServerPerTestISpec {
 
   def givenLoggedInAgentIsPayeAuthorised(): AgentAdmin =
     given()
-      .agentAdmin(agentCode)
-      .isLoggedIn()
-      .andHasNoIrSaAgentEnrolment()
+      .agentAdmin(agentCode, providerId, None, None)
+      .isAuthenticated()
       .andIsAssignedToClient(empRef)
       .andIsRelatedToPayeClientInDes(empRef)
       .andIsAuthorisedBy648()

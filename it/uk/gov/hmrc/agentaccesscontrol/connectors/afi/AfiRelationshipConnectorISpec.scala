@@ -15,13 +15,15 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
   val arn = Arn("B1111B")
   val clientId = Nino("AE123456C")
   val agentCode = AgentCode("ABCDEF123456")
+  val providerId = "12345-credId"
+
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "hasRelationship" should {
     "return true when relationship exists" in new Context {
       given()
-        .agentAdmin(agentCode)
-        .isLoggedIn()
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
         .andHasRelationship(arn, clientId)
 
       await(connector.hasRelationship(arn.value, clientId.value)) shouldBe true
@@ -29,8 +31,8 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
 
     "return false when relationship does not exist" in new Context {
       given()
-        .agentAdmin(agentCode)
-        .isLoggedIn()
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
         .andHasNoRelationship(arn, clientId)
 
       await(connector.hasRelationship(arn.value, clientId.value)) shouldBe false
@@ -38,8 +40,8 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
 
     "throw exception when unexpected status code encountered" in new Context {
       given()
-        .agentAdmin(agentCode)
-        .isLoggedIn()
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
         .statusReturnedForRelationship(arn, clientId, 300)
 
       intercept[Exception] {

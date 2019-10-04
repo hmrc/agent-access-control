@@ -28,15 +28,15 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
   val agentCode = AgentCode("ABCDEF123456")
   val clientId = Nino("AE123456C")
   val arn = Arn("TARN0000001")
+  val providerId = "12345-credId"
 
   "GET /agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
     val method = "GET"
     "respond with 200" when {
       "the client has authorised the agent" in {
         given()
-          .agentAdmin(agentCode)
-          .isLoggedIn()
-          .andHasHmrcAsAgentEnrolment(arn)
+          .agentAdmin(agentCode, providerId, None, Some(arn))
+          .isAuthenticated()
           .andHasRelationship(arn, clientId)
 
         authResponseFor(agentCode, clientId, method).status shouldBe 200
@@ -51,9 +51,8 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
     "respond with 401" when {
       "the client has not authorised the agent" in {
         given()
-          .agentAdmin(agentCode)
-          .isLoggedIn()
-          .andHasHmrcAsAgentEnrolment(arn)
+          .agentAdmin(agentCode, providerId, None, Some(arn))
+          .isAuthenticated()
           .andHasNoRelationship(arn, clientId)
 
         authResponseFor(agentCode, clientId, method).status shouldBe 401
@@ -70,9 +69,8 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
     "respond with 200" when {
       "the client has authorised the agent" in {
         given()
-          .agentAdmin(agentCode)
-          .isLoggedIn()
-          .andHasHmrcAsAgentEnrolment(arn)
+          .agentAdmin(agentCode, providerId, None, Some(arn))
+          .isAuthenticated()
           .andHasRelationship(arn, clientId)
 
         authResponseFor(agentCode, clientId, method).status shouldBe 200
@@ -87,9 +85,8 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
     "respond with 401" when {
       "the client has not authorised the agent" in {
         given()
-          .agentAdmin(agentCode)
-          .isLoggedIn()
-          .andHasHmrcAsAgentEnrolment(arn)
+          .agentAdmin(agentCode, providerId, None, Some(arn))
+          .isAuthenticated()
           .andHasNoRelationship(arn, clientId)
 
         authResponseFor(agentCode, clientId, method).status shouldBe 401

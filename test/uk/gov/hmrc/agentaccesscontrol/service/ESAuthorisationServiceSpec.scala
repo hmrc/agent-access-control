@@ -21,11 +21,12 @@ import org.mockito.Mockito._
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
+import uk.gov.hmrc.agentaccesscontrol.connectors.AuthDetails
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.{AuthConnector, AuthDetails}
 import uk.gov.hmrc.agentaccesscontrol.support.ResettingMockitoSugar
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Utr, Vrn}
-import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.auth.core.Admin
+import uk.gov.hmrc.domain.{AgentCode, SaAgentReference}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -34,100 +35,107 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
 
-  val authConnector = mock[AuthConnector]
   val relationshipsConnector = resettingMock[RelationshipsConnector]
   val auditService = resettingMock[AuditService]
 
-  val service = new ESAuthorisationService(authConnector, relationshipsConnector, auditService)
+  val service = new ESAuthorisationService(relationshipsConnector, auditService)
 
   val agentCode = AgentCode("agentCode")
   val arn = Arn("arn")
+  val saAgentRef = SaAgentReference("ABC456")
   val clientId = MtdItId("clientId")
+  val mtdAuthDetails =
+    AuthDetails(None, Some(arn), "ggId", Some("Agent"), Some(Admin))
+  val nonMtdAuthDetails =
+    AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(Admin))
   implicit val hc = HeaderCarrier()
   implicit val fakeRequest =
     FakeRequest("GET", "/agent-access-control/mtd-it-auth/agent/arn/client/utr")
 
   "authoriseForMtdIt" should {
     "allow access for agent with a client relationship" in {
-      asAgentIsLoggedIn()
+
       whenRelationshipsConnectorIsCalled thenReturn true
 
-      val result = await(service.authoriseForMtdIt(agentCode, clientId))
+      val result =
+        await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
 
       result shouldBe true
     }
 
     "deny access for a non-mtd agent" in {
-      agentWithoutHmrcAsAgentEnrolmentIsLoggedIn()
 
-      val result = await(service.authoriseForMtdIt(agentCode, clientId))
+      val result =
+        await(service.authoriseForMtdIt(agentCode, clientId, nonMtdAuthDetails))
 
       result shouldBe false
       verify(relationshipsConnector, never)
-        .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier])
+        .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext],
+                                                    any[HeaderCarrier])
     }
 
     "deny access for a mtd agent without a client relationship" in {
-      asAgentIsLoggedIn()
+
       whenRelationshipsConnectorIsCalled thenReturn false
 
-      val result = await(service.authoriseForMtdIt(agentCode, clientId))
+      val result =
+        await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
 
       result shouldBe false
     }
 
     "audit appropriate values" when {
       "decision is made to allow access" in {
-        asAgentIsLoggedIn()
+
         whenRelationshipsConnectorIsCalled thenReturn true
 
-        await(service.authoriseForMtdIt(agentCode, clientId))
+        await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "mtd-it",
-            clientId,
-            Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn.value))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "mtd-it",
+                      clientId,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> true,
+                          "arn" -> arn.value))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
       }
 
       "decision is made to deny access" in {
-        asAgentIsLoggedIn()
+
         whenRelationshipsConnectorIsCalled thenReturn false
 
-        await(service.authoriseForMtdIt(agentCode, clientId))
+        await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "mtd-it",
-            clientId,
-            Seq("credId" -> "ggId", "accessGranted" -> false, "arn" -> arn.value))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "mtd-it",
+                      clientId,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> false,
+                          "arn" -> arn.value))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
       }
 
       "no HMRC-AS-AGENT enrolment exists" in {
-        agentWithoutHmrcAsAgentEnrolmentIsLoggedIn()
 
-        await(service.authoriseForMtdIt(agentCode, clientId))
+        await(service.authoriseForMtdIt(agentCode, clientId, nonMtdAuthDetails))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "mtd-it",
-            clientId,
-            Seq("credId" -> "ggId", "accessGranted" -> false))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "mtd-it",
+                      clientId,
+                      Seq("credId" -> "ggId", "accessGranted" -> false))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
@@ -140,85 +148,88 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     val vrn = Vrn("vrn")
 
     "allow access for agent with a client relationship" in {
-      asAgentIsLoggedIn()
+
       whenRelationshipsConnectorIsCalled thenReturn true
 
-      val result = await(service.authoriseForMtdVat(agentCode, vrn))
+      val result =
+        await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
 
       result shouldBe true
     }
 
     "deny access for a non-mtd agent" in {
-      agentWithoutHmrcAsAgentEnrolmentIsLoggedIn()
 
-      val result = await(service.authoriseForMtdVat(agentCode, vrn))
+      val result =
+        await(service.authoriseForMtdVat(agentCode, vrn, nonMtdAuthDetails))
 
       result shouldBe false
       verify(relationshipsConnector, never)
-        .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier])
+        .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext],
+                                                    any[HeaderCarrier])
     }
 
     "deny access for a mtd agent without a client relationship" in {
-      asAgentIsLoggedIn()
+
       whenRelationshipsConnectorIsCalled thenReturn false
 
-      val result = await(service.authoriseForMtdVat(agentCode, vrn))
+      val result =
+        await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
 
       result shouldBe false
     }
 
     "audit appropriate values" when {
       "decision is made to allow access" in {
-        asAgentIsLoggedIn()
+
         whenRelationshipsConnectorIsCalled thenReturn true
 
-        await(service.authoriseForMtdVat(agentCode, vrn))
+        await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "mtd-vat",
-            vrn,
-            Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn.value))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "mtd-vat",
+                      vrn,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> true,
+                          "arn" -> arn.value))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
       }
 
       "decision is made to deny access" in {
-        asAgentIsLoggedIn()
+
         whenRelationshipsConnectorIsCalled thenReturn false
 
-        await(service.authoriseForMtdVat(agentCode, vrn))
+        await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "mtd-vat",
-            vrn,
-            Seq("credId" -> "ggId", "accessGranted" -> false, "arn" -> arn.value))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "mtd-vat",
+                      vrn,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> false,
+                          "arn" -> arn.value))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
       }
 
       "no HMRC-AS-AGENT enrolment exists" in {
-        agentWithoutHmrcAsAgentEnrolmentIsLoggedIn()
 
-        await(service.authoriseForMtdVat(agentCode, vrn))
+        await(service.authoriseForMtdVat(agentCode, vrn, nonMtdAuthDetails))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "mtd-vat",
-            vrn,
-            Seq("credId" -> "ggId", "accessGranted" -> false))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "mtd-vat",
+                      vrn,
+                      Seq("credId" -> "ggId", "accessGranted" -> false))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
@@ -231,85 +242,87 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     val utr = Utr("utr")
 
     "allow access for agent with a client relationship" in {
-      asAgentIsLoggedIn()
+
       whenRelationshipsConnectorIsCalled thenReturn true
 
-      val result = await(service.authoriseForTrust(agentCode, utr))
+      val result =
+        await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
 
       result shouldBe true
     }
 
     "deny access for a non-mtd agent" in {
-      agentWithoutHmrcAsAgentEnrolmentIsLoggedIn()
 
-      val result = await(service.authoriseForTrust(agentCode, utr))
+      val result =
+        await(service.authoriseForTrust(agentCode, utr, nonMtdAuthDetails))
 
       result shouldBe false
       verify(relationshipsConnector, never)
-        .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier])
+        .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext],
+                                                    any[HeaderCarrier])
     }
 
     "deny access for a mtd agent without a client relationship" in {
-      asAgentIsLoggedIn()
+
       whenRelationshipsConnectorIsCalled thenReturn false
 
-      val result = await(service.authoriseForTrust(agentCode, utr))
+      val result =
+        await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
 
       result shouldBe false
     }
 
     "audit appropriate values" when {
       "decision is made to allow access" in {
-        asAgentIsLoggedIn()
         whenRelationshipsConnectorIsCalled thenReturn true
 
-        await(service.authoriseForTrust(agentCode, utr))
+        await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "TRS",
-            utr,
-            Seq("credId" -> "ggId", "accessGranted" -> true, "arn" -> arn.value))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "TRS",
+                      utr,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> true,
+                          "arn" -> arn.value))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
       }
 
       "decision is made to deny access" in {
-        asAgentIsLoggedIn()
+
         whenRelationshipsConnectorIsCalled thenReturn false
 
-        await(service.authoriseForTrust(agentCode, utr))
+        await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "TRS",
-            utr,
-            Seq("credId" -> "ggId", "accessGranted" -> false, "arn" -> arn.value))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "TRS",
+                      utr,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> false,
+                          "arn" -> arn.value))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
       }
 
       "no HMRC-AS-AGENT enrolment exists" in {
-        agentWithoutHmrcAsAgentEnrolmentIsLoggedIn()
 
-        await(service.authoriseForTrust(agentCode, utr))
+        await(service.authoriseForTrust(agentCode, utr, nonMtdAuthDetails))
 
         verify(auditService)
-          .auditEvent(
-            AgentAccessControlDecision,
-            "agent access decision",
-            agentCode,
-            "TRS",
-            utr,
-            Seq("credId" -> "ggId", "accessGranted" -> false))(
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "TRS",
+                      utr,
+                      Seq("credId" -> "ggId", "accessGranted" -> false))(
             hc,
             fakeRequest,
             concurrent.ExecutionContext.Implicits.global)
@@ -318,13 +331,9 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
   }
 
   def whenRelationshipsConnectorIsCalled =
-    when(relationshipsConnector.relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext], any[HeaderCarrier]))
+    when(
+      relationshipsConnector.relationshipExists(any[Arn], any[MtdItId])(
+        any[ExecutionContext],
+        any[HeaderCarrier]))
 
-  def asAgentIsLoggedIn() =
-    when(authConnector.currentAuthDetails()).thenReturn(
-      Some(AuthDetails(None, Some(arn), "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
-
-  def agentWithoutHmrcAsAgentEnrolmentIsLoggedIn() =
-    when(authConnector.currentAuthDetails())
-      .thenReturn(Some(AuthDetails(None, None, "ggId", affinityGroup = Some("Agent"), agentUserRole = Some("admin"))))
 }

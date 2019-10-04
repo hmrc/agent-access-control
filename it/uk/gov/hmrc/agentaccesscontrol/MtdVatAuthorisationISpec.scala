@@ -11,14 +11,15 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
   val agentCode = AgentCode("A11112222A")
   val arn = Arn("01234567890")
   val vrn = Vrn("12345677890")
+  val providerId = "12345-credId"
 
   "GET /agent-access-control/mtd-vat-auth/agent/:agentCode/client/:vrn" should {
     val method = "GET"
     "grant access when the agency and client are subscribed to the appropriate services and have a relationship" in {
       given()
-        .agentAdmin(agentCode)
-        .isLoggedIn()
-        .andHasHmrcAsAgentEnrolment(arn)
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)
@@ -31,9 +32,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
     "not grant access" when {
       "the agency is not subscribed to the appropriate service" in {
         given()
-          .agentAdmin(agentCode)
-          .isLoggedIn()
-          .andHasNoHmrcAsAgentEnrolment()
+          .agentAdmin(agentCode, providerId, None, None)
+          .isAuthenticated()
 
         val status = authResponseFor(agentCode, vrn, method).status
 
@@ -42,9 +42,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
       "there is no relationship between the agency and client" in {
         given()
-          .agentAdmin(agentCode)
-          .isLoggedIn()
-          .andHasHmrcAsAgentEnrolment(arn)
+          .agentAdmin(agentCode, providerId, None, Some(arn))
+          .isAuthenticated()
         given()
           .mtdAgency(arn)
           .hasNoRelationshipWith(vrn)
@@ -57,9 +56,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
     "send an AccessControlDecision audit event" in {
       given()
-        .agentAdmin(agentCode)
-        .isLoggedIn()
-        .andHasHmrcAsAgentEnrolment(arn)
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)
@@ -73,9 +71,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
     "record metrics for access control request" in {
       given()
-        .agentAdmin(agentCode)
-        .isLoggedIn()
-        .andHasHmrcAsAgentEnrolment(arn)
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)
@@ -91,9 +88,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
     val method = "POST"
     "grant access when the agency and client are subscribed to the appropriate services and have a relationship" in {
       given()
-        .agentAdmin(agentCode)
-        .isLoggedIn()
-        .andHasHmrcAsAgentEnrolment(arn)
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)
@@ -106,10 +102,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
     "not grant access" when {
       "the agency is not subscribed to the appropriate service" in {
         given()
-          .agentAdmin(agentCode)
-          .isLoggedIn()
-          .andHasNoHmrcAsAgentEnrolment()
-
+          .agentAdmin(agentCode, providerId, None, Some(arn))
+          .isAuthenticated()
         val status = authResponseFor(agentCode, vrn, method).status
 
         status shouldBe 401
@@ -117,9 +111,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
       "there is no relationship between the agency and client" in {
         given()
-          .agentAdmin(agentCode)
-          .isLoggedIn()
-          .andHasHmrcAsAgentEnrolment(arn)
+          .agentAdmin(agentCode, providerId, None, Some(arn))
+          .isAuthenticated()
         given()
           .mtdAgency(arn)
           .hasNoRelationshipWith(vrn)
@@ -132,9 +125,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
     "send an AccessControlDecision audit event" in {
       given()
-        .agentAdmin(agentCode)
-        .isLoggedIn()
-        .andHasHmrcAsAgentEnrolment(arn)
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)
@@ -148,9 +140,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
 
     "record metrics for access control request" in {
       given()
-        .agentAdmin(agentCode)
-        .isLoggedIn()
-        .andHasHmrcAsAgentEnrolment(arn)
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)

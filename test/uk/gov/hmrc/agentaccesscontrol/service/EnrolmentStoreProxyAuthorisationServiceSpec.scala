@@ -28,7 +28,10 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
+class EnrolmentStoreProxyAuthorisationServiceSpec
+    extends UnitSpec
+    with MockitoSugar
+    with BeforeAndAfterEach {
 
   val esProxyConnector = mock[EnrolmentStoreProxyConnector]
   val service = new EnrolmentStoreProxyAuthorisationService(esProxyConnector)
@@ -42,22 +45,26 @@ class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec with MockitoS
   "isAuthorisedForSaInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
       when(esProxyConnector.getIRSADelegatedUserIdsFor(saUtr)(hc, ec)),
-      (agentCode: AgentCode, credId: String) => service.isAuthorisedForSaInEnrolmentStoreProxy(credId, saUtr)
+      (agentCode: AgentCode, credId: String) =>
+        service.isAuthorisedForSaInEnrolmentStoreProxy(credId, saUtr)
     )
   }
 
   "isAuthorisedForPayeInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(
       when(esProxyConnector.getIRPAYEDelegatedUserIdsFor(empRef)(hc, ec)),
-      (agentCode: AgentCode, credId: String) => service.isAuthorisedForPayeInEnrolmentStoreProxy(credId, empRef)
+      (agentCode: AgentCode, credId: String) =>
+        service.isAuthorisedForPayeInEnrolmentStoreProxy(credId, empRef)
     )
   }
 
   private def aGovernmentGatewayAssignmentCheck(
-    whenEnrolmentStoreProxyIsCalled: => OngoingStubbing[Future[Set[AgentUserId]]],
-    assignmentCheck: (AgentCode, String) => Future[Boolean]) {
+      whenEnrolmentStoreProxyIsCalled: => OngoingStubbing[
+        Future[Set[AgentUserId]]],
+      assignmentCheck: (AgentCode, String) => Future[Boolean]) {
     "return true if the client is assigned to the agent credential" in {
-      whenEnrolmentStoreProxyIsCalled thenReturn (Future successful Set(AgentUserId("000111333")))
+      whenEnrolmentStoreProxyIsCalled thenReturn (Future successful Set(
+        AgentUserId("000111333")))
 
       val result = await(assignmentCheck(agentCode1, "000111333"))
 
@@ -74,7 +81,8 @@ class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec with MockitoS
     }
 
     "return false if the client is not assigned to the agent credential" in {
-      whenEnrolmentStoreProxyIsCalled thenReturn (Future successful Set(AgentUserId("000111444")))
+      whenEnrolmentStoreProxyIsCalled thenReturn (Future successful Set(
+        AgentUserId("000111444")))
 
       val result = await(assignmentCheck(agentCode1, "000111333"))
 
@@ -84,7 +92,8 @@ class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec with MockitoS
     "throw exception if enrolment store proxy fails" in {
       whenEnrolmentStoreProxyIsCalled thenThrow new RuntimeException()
 
-      an[RuntimeException] should be thrownBy await(assignmentCheck(agentCode1, "NonMatchingCred"))
+      an[RuntimeException] should be thrownBy await(
+        assignmentCheck(agentCode1, "NonMatchingCred"))
     }
   }
 
