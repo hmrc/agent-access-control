@@ -132,39 +132,36 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       )(hc, fakeRequest, ec)
     }
 
-//    "not hard code audited values" in new Context {
-//      val differentSaAgentRef = SaAgentReference("XYZ123")
-//
-//      whenESPIsCheckedForSaRelationship thenReturn true
-//      whenCesaIsCheckedForSaRelationship thenReturn true
-//
-//      val authDetails = AuthDetails(Some(saAgentRef),
-//                                    None,
-//                                    "ggId",
-//                                    Some("Agent"),
-//                                    Some(Admin))
-//
-//      await(
-//        authorisationService.isAuthorisedForSa(agentCode,
-//                                               clientSaUtr,
-//                                               authDetails)) shouldBe true
-////      verify(mockAuditService).auditEvent(
-////        AgentAccessControlDecision,
-////        "agent access decision",
-////        agentCode,
-////        "sa",
-////        clientSaUtr,
-////        Seq(
-////          "credId" -> "ggId",
-////          "accessGranted" -> true,
-////          "cesaResult" -> true,
-////          "enrolmentStoreResult" -> true,
-////          "saAgentReference" -> differentSaAgentRef,
-////          "affinityGroup" -> "Agent",
-////          "agentUserRole" -> Admin
-////        )
-////      )(hc, fakeRequest, ec)
-//    }
+    "not hard code audited values" in new Context {
+      val differentSaAgentRef = SaAgentReference("XYZ123")
+
+      whenESPIsCheckedForSaRelationship thenReturn true
+      whenCesaIsCheckedForSaRelationship thenReturn true
+
+      val authDetails =
+        AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(Admin))
+
+      await(
+        authorisationService.isAuthorisedForSa(agentCode,
+                                               clientSaUtr,
+                                               authDetails)) shouldBe true
+      verify(mockAuditService).auditEvent(
+        AgentAccessControlDecision,
+        "agent access decision",
+        agentCode,
+        "sa",
+        clientSaUtr,
+        Seq(
+          "credId" -> "ggId",
+          "accessGranted" -> true,
+          "cesaResult" -> true,
+          "enrolmentStoreResult" -> true,
+          "saAgentReference" -> saAgentRef,
+          "affinityGroup" -> "Agent",
+          "agentUserRole" -> Admin
+        )
+      )(hc, fakeRequest, ec)
+    }
 
     "still work if the fields only used for auditing are removed from the auth record" in new Context {
 
