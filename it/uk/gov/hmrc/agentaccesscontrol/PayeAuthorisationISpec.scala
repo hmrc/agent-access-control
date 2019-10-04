@@ -53,20 +53,6 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metr
       status shouldBe 502
     }
 
-//    "record metrics for inbound http call" in {
-//      val metricsRegistry = app.injector.instanceOf[AgentAccessAuthConnector].kenshooRegistry
-//      given()
-//        .agentAdmin(agentCode)
-//        .isLoggedIn()
-//        .andHasNoIrSaAgentEnrolment()
-//        .andIsAssignedToClient(empRef)
-//        .andIsRelatedToPayeClientInDes(empRef)
-//        .andIsAuthorisedBy648()
-//      givenCleanMetricRegistry()
-//
-//      authResponseFor(agentCode, empRef, method).status shouldBe 200
-//      timerShouldExistsAndBeenUpdated("API-__epaye-auth__agent__:__client__:-GET")
-//    }
 
     "send an AccessControlDecision audit event" in {
       given()
