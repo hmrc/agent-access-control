@@ -24,7 +24,7 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.AuthDetails
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
 import uk.gov.hmrc.agentaccesscontrol.support.ResettingMockitoSugar
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Utr, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, CgtRef, MtdItId, Utr, Vrn}
 import uk.gov.hmrc.auth.core.Admin
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -322,6 +322,99 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
                       agentCode,
                       "TRS",
                       utr,
+                      Seq("credId" -> "ggId", "accessGranted" -> false))(
+            hc,
+            fakeRequest,
+            concurrent.ExecutionContext.Implicits.global)
+      }
+    }
+  }
+
+  "authoriseForCgt" should {
+
+    val cgtRef = CgtRef("XMCGTP123456789")
+
+    "allow access for agent with a client relationship" in {
+
+      whenRelationshipsConnectorIsCalled thenReturn true
+
+      val result =
+        await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
+
+      result shouldBe true
+    }
+
+    "deny access for a non-mtd agent" in {
+
+      val result =
+        await(service.authoriseForCgt(agentCode, cgtRef, nonMtdAuthDetails))
+
+      result shouldBe false
+      verify(relationshipsConnector, never)
+        .relationshipExists(any[Arn], any[MtdItId])(any[ExecutionContext],
+                                                    any[HeaderCarrier])
+    }
+
+    "deny access for a mtd agent without a client relationship" in {
+
+      whenRelationshipsConnectorIsCalled thenReturn false
+
+      val result =
+        await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
+
+      result shouldBe false
+    }
+
+    "audit appropriate values" when {
+      "decision is made to allow access" in {
+        whenRelationshipsConnectorIsCalled thenReturn true
+
+        await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
+
+        verify(auditService)
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "CGT",
+                      cgtRef,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> true,
+                          "arn" -> arn.value))(
+            hc,
+            fakeRequest,
+            concurrent.ExecutionContext.Implicits.global)
+      }
+
+      "decision is made to deny access" in {
+
+        whenRelationshipsConnectorIsCalled thenReturn false
+
+        await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
+
+        verify(auditService)
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "CGT",
+                      cgtRef,
+                      Seq("credId" -> "ggId",
+                          "accessGranted" -> false,
+                          "arn" -> arn.value))(
+            hc,
+            fakeRequest,
+            concurrent.ExecutionContext.Implicits.global)
+      }
+
+      "no HMRC-AS-AGENT enrolment exists" in {
+
+        await(service.authoriseForCgt(agentCode, cgtRef, nonMtdAuthDetails))
+
+        verify(auditService)
+          .auditEvent(AgentAccessControlDecision,
+                      "agent access decision",
+                      agentCode,
+                      "CGT",
+                      cgtRef,
                       Seq("credId" -> "ggId", "accessGranted" -> false))(
             hc,
             fakeRequest,

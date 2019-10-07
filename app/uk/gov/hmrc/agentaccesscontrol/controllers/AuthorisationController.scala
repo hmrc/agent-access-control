@@ -23,7 +23,7 @@ import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
 }
-import uk.gov.hmrc.agentmtdidentifiers.model.{MtdItId, Utr, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model.{CgtRef, MtdItId, Utr, Vrn}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
@@ -129,6 +129,21 @@ class AuthorisationController @Inject()(
         {
           esAuthorisationService
             .authoriseForTrust(agentCode, utr, authDetails)
+            .map {
+              case authorised if authorised => Ok
+              case _                        => Unauthorized
+            }
+        }
+      }
+    }
+
+  def isAuthorisedForCgt(agentCode: AgentCode,
+                         cgtRef: CgtRef): Action[AnyContent] =
+    Action.async { implicit request: Request[_] =>
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          esAuthorisationService
+            .authoriseForCgt(agentCode, cgtRef, authDetails)
             .map {
               case authorised if authorised => Ok
               case _                        => Unauthorized

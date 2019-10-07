@@ -9,7 +9,7 @@ import play.api.Configuration
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.agentaccesscontrol.module.HttpVerbs
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Utr, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, CgtRef, MtdItId, Utr, Vrn}
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -29,6 +29,10 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
 
   "relationshipExists for HMRC-TERS-ORG" should {
     behave like aCheckEndpoint(Utr("101747641"), "Utr")
+  }
+
+  "relationshipExists for HMRC-CGT-PD" should {
+    behave like aCheckEndpoint(CgtRef("XMCGTP123456789"), "CgtRef")
   }
 
   private def aCheckEndpoint(identifier: TaxIdentifier, clientType: String) = {
@@ -107,6 +111,8 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
           s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
         case _ @Utr(utr) =>
           s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-TERS-ORG/client/SAUTR/$utr"
+        case _ @CgtRef(cgtRef) =>
+          s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/$cgtRef"
       }
 
       event.auditType shouldBe "OutboundCall"
