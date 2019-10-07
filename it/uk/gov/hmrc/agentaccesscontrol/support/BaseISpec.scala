@@ -29,7 +29,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Utr, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, CgtRef, MtdItId, Utr, Vrn}
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpVerbs}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -528,6 +528,7 @@ trait StubUtils {
           s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
         case _ @Vrn(vrn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
         case _ @Utr(utr) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-TERS-ORG/client/SAUTR/$utr"
+        case _ @CgtRef(cgtRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/$cgtRef"
       }
 
       stubFor(

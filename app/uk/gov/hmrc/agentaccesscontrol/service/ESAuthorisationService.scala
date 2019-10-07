@@ -57,6 +57,13 @@ class ESAuthorisationService @Inject()(
       request: Request[_]): Future[Boolean] =
     authoriseFor(agentCode, taxIdentifier, "TRS", authDetails)
 
+  def authoriseForCgt(agentCode: AgentCode,
+                      taxIdentifier: TaxIdentifier,
+                      authDetails: AuthDetails)(
+      implicit hc: HeaderCarrier,
+      request: Request[_]): Future[Boolean] =
+    authoriseFor(agentCode, taxIdentifier, "CGT", authDetails)
+
   private def authoriseFor(agentCode: AgentCode,
                            taxIdentifier: TaxIdentifier,
                            regime: String,

@@ -23,7 +23,7 @@ import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Utr, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Utr, Vrn, CgtRef}
 import uk.gov.hmrc.domain.TaxIdentifier
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,6 +55,7 @@ class RelationshipsConnector @Inject()(
       case _ @MtdItId(mtdItId) => ("HMRC-MTD-IT", "MTDITID", mtdItId)
       case _ @Vrn(vrn)         => ("HMRC-MTD-VAT", "VRN", vrn)
       case _ @Utr(utr)         => ("HMRC-TERS-ORG", "SAUTR", utr)
+      case _ @CgtRef(cgtRef)   => ("HMRC-CGT-PD", "CGTPDRef", cgtRef)
     }
 
     val relationshipUrl =

@@ -20,11 +20,10 @@ lazy val compileDeps = Seq(
   "uk.gov.hmrc" %% "auth-client" % "2.21.0-play-25",
   "uk.gov.hmrc" %% "play-whitelist-filter" % "2.0.0",
   "uk.gov.hmrc" %% "domain" % "5.6.0-play-25",
-  "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.13.0",
+  "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.17.0-play-25",
   "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "3.8.0",
   "de.threedimensions" %% "metrics-play" % "2.5.13",
-  "com.github.blemale" %% "scaffeine" % "2.6.0",
-  ws
+  "com.github.blemale" %% "scaffeine" % "2.6.0"
 )
 
 def testDeps(scope: String) = Seq(
