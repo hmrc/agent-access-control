@@ -22,7 +22,7 @@ sm --start AGENT_AUTHORISATION -r
 
 2. Create Relationship Via Curl using Agent Arn, Client Service and Identifier.
 ```markdown
-curl -v -X PUT -H 'Authorization: Bearer ' https://localhost:9434/agent-client-relationships/agent/AARN0002908/service/HMRC-MTD-VAT/client/VRN/267729808
+curl -v -X PUT -H 'Authorization: Bearer Token' http://localhost:9434/agent-client-relationships/agent/AARN0002908/service/HMRC-MTD-VAT/client/VRN/267729808
 ```
 
 3. Curl Agent Access Control To Test Relationship Exists. E.g:
