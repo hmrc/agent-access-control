@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/hmrc/agent-access-control.svg?branch=master)](https://travis-ci.org/hmrc/agent-access-control) [ ![Download](https://api.bintray.com/packages/hmrc/releases/agent-access-control/images/download.svg) ](https://bintray.com/hmrc/releases/agent-access-control/_latestVersion)
 
 Delegated auth rules for [auth-client](https://github.com/hmrc/auth-client) library to allow access
-to agents to their clients's data. Currently it supports:
+to agents to their clients's data. Currently supports:
 * Old World PAYE (IR-PAYE)
 * Old World Self-Assessment (IR-SA)
 * New World Self-Assessment (MTDITID)
@@ -11,6 +11,26 @@ to agents to their clients's data. Currently it supports:
 * New World PAYE (AFI)
 * Trusts (TERS)
 * Capital Gains (CGT)
+
+
+### Testing
+In Terminal, Run the following profile:
+```
+sm --start AGENT_AUTHORISATION -r
+```
+1. Log In as Agent
+
+2. Create Relationship Via Curl using Agent Arn, Client Service and Identifier.
+```markdown
+curl -v -X PUT -H 'Authorization: Bearer ' https://localhost:9434/agent-client-relationships/agent/AARN0002908/service/HMRC-MTD-VAT/client/VRN/267729808
+```
+
+3. Curl Agent Access Control To Test Relationship Exists. E.g:
+```markdown
+curl -v -H'Authorization: Bearer Token' http://localhost:9431/agent-access-control/mtd-vat-auth/agent/9AK6XC1JX8NE/client/267729808
+```
+
+Alternatively create the relationship via UI (Please speak to team about this).
 
 ### Endpoints
 
@@ -86,6 +106,7 @@ authorised(
      .withDelegatedAuthRule("cgt-auth")) { // your protected logic }
 ```
 
+Note: POSTs function exactly the same.
 
 ### Response
 Headers: need to contain a valid `Authorization` header.
