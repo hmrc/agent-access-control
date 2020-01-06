@@ -4,9 +4,11 @@
 
 Delegated auth rules for [auth-client](https://github.com/hmrc/auth-client) library to allow access
 to agents to their clients's data. Currently it supports:
+* Old World PAYE (IR-PAYE)
 * Old World Self-Assessment (IR-SA)
 * New World Self-Assessment (MTDITID)
-* Value Added (VAT)
+* Value Added Tax (VAT)
+* New World PAYE (AFI)
 * Trusts (TERS)
 * Capital Gains (CGT)
 
