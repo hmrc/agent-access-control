@@ -19,6 +19,7 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "VATC")
 
       given()
         .mtdAgency(arn)
@@ -34,6 +35,7 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
         given()
           .agentAdmin(agentCode, providerId, None, None)
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "VATC")
 
         val status = authResponseFor(agentCode, vrn, method).status
 
@@ -44,6 +46,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "VATC")
+
         given()
           .mtdAgency(arn)
           .hasNoRelationshipWith(vrn)
@@ -58,6 +62,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "VATC")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)
@@ -73,12 +79,31 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "VATC")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, vrn, method).status shouldBe 200
+
+      timerShouldExistsAndBeenUpdated("API-__mtd-vat-auth__agent__:__client__:-GET")
+    }
+
+    "handle suspended agents and return unauthorised" in {
+      given()
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
+        .givenAgentRecord(arn, true, "VATC")
+
+      given()
+        .mtdAgency(arn)
+        .hasARelationshipWith(vrn)
+
+      givenCleanMetricRegistry()
+
+      authResponseFor(agentCode, vrn, method).status shouldBe 401
 
       timerShouldExistsAndBeenUpdated("API-__mtd-vat-auth__agent__:__client__:-GET")
     }
@@ -90,6 +115,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "VATC")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)
@@ -104,6 +131,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "VATC")
+
         val status = authResponseFor(agentCode, vrn, method).status
 
         status shouldBe 401
@@ -113,6 +142,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "VATC")
+
         given()
           .mtdAgency(arn)
           .hasNoRelationshipWith(vrn)
@@ -127,6 +158,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "VATC")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)
@@ -142,6 +175,8 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "VATC")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(vrn)

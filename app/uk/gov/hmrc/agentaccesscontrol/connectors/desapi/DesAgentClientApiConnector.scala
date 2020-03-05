@@ -17,14 +17,16 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
 import java.net.URL
-import javax.inject.{Inject, Named, Singleton}
 
+import javax.inject.{Inject, Named, Singleton}
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.model._
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.domain._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -78,6 +80,25 @@ class DesAgentClientApiConnector @Inject()(
     new URL(
       desBaseUrl,
       s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}")
+
+  def getAgentRecord(agentId: TaxIdentifier)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[AgentRecord] = {
+    getWithDesHeaders[AgentRecord]("GetAgentRecord",
+                                   new URL(getAgentRecordUrl(agentId)))
+  }
+
+  private def getAgentRecordUrl(agentId: TaxIdentifier) =
+    agentId match {
+      case Arn(arn) =>
+        val encodedArn = UriEncoding.encodePathSegment(arn, "UTF-8")
+        s"$desBaseUrl/registration/personal-details/arn/$encodedArn"
+      case Utr(utr) =>
+        val encodedUtr = UriEncoding.encodePathSegment(utr, "UTF-8")
+        s"$desBaseUrl/registration/personal-details/utr/$encodedUtr"
+      case _ =>
+        throw new Exception(s"The client identifier $agentId is not supported.")
+    }
 
   private def getWithDesHeaders[A: HttpReads](apiName: String, url: URL)(
       implicit hc: HeaderCarrier,

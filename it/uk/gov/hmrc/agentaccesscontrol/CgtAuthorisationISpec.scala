@@ -19,6 +19,8 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "CGT")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(cgtRef)
@@ -33,6 +35,7 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
         given()
           .agentAdmin(agentCode, providerId, None, None)
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "CGT")
 
         val status = authResponseFor(agentCode, cgtRef, method).status
 
@@ -43,6 +46,8 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "CGT")
+
         given()
           .mtdAgency(arn)
           .hasNoRelationshipWith(cgtRef)
@@ -57,6 +62,8 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "CGT")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(cgtRef)
@@ -72,12 +79,30 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "CGT")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(cgtRef)
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, cgtRef, method).status shouldBe 200
+
+      timerShouldExistsAndBeenUpdated("API-__cgt-auth__agent__:__client__:-GET")
+    }
+
+    "handle suspended agents and return unauthorised" in {
+      given()
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
+        .givenAgentRecord(arn, true, "CGT")
+
+      given()
+        .mtdAgency(arn)
+        .hasARelationshipWith(cgtRef)
+      givenCleanMetricRegistry()
+
+      authResponseFor(agentCode, cgtRef, method).status shouldBe 401
 
       timerShouldExistsAndBeenUpdated("API-__cgt-auth__agent__:__client__:-GET")
     }
@@ -89,6 +114,8 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "CGT")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(cgtRef)
@@ -103,6 +130,7 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
         given()
           .agentAdmin(agentCode, providerId, None, None)
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "CGT")
 
         val status = authResponseFor(agentCode, cgtRef, method).status
 
@@ -113,6 +141,8 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "CGT")
+
         given()
           .mtdAgency(arn)
           .hasNoRelationshipWith(cgtRef)
@@ -127,6 +157,8 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "CGT")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(cgtRef)
@@ -142,6 +174,8 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "CGT")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(cgtRef)

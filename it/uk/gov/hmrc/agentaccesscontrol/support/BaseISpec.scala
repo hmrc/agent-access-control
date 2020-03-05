@@ -17,7 +17,6 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
@@ -55,7 +54,8 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
     "microservice.services.agent-mapping.host"              -> wiremockHost,
     "microservice.services.agent-mapping.port"              -> wiremockPort,
     "microservice.services.agent-fi-relationship.host"      -> wiremockHost,
-    "microservice.services.agent-fi-relationship.port"      -> wiremockPort
+    "microservice.services.agent-fi-relationship.port"      -> wiremockPort,
+    "features.enable-agent-suspension" -> true
   )
 
   protected def additionalConfiguration: Map[String, String] = Map.empty
@@ -215,6 +215,15 @@ trait StubUtils {
       }
     }
 
+    def  givenAgentRecord(taxId: TaxIdentifier, suspended: Boolean, regime: String) = {
+      stubFor(
+        get(
+          urlPathEqualTo(
+            s"/registration/personal-details/arn/${taxId.value}")
+        ).willReturn(aResponse().withStatus(200)
+          .withBody(s"""{"suspensionDetails":{"suspensionStatus":$suspended,"regimes":["$regime"]}}"""))
+      )
+    }
   }
 
   trait MappingStubs[A] {
