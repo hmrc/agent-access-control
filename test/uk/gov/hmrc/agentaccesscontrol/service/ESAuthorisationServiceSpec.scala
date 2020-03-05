@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.service
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
+import play.api.Configuration
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
@@ -40,6 +41,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
   val relationshipsConnector = resettingMock[RelationshipsConnector]
   val auditService = resettingMock[AuditService]
   val desAgentClientApiConnector = resettingMock[DesAgentClientApiConnector]
+  implicit val config = resettingMock[Configuration]
+  when(config.getBoolean(any[String])).thenReturn(Some(true))
 
   val service = new ESAuthorisationService(relationshipsConnector,
                                            desAgentClientApiConnector,

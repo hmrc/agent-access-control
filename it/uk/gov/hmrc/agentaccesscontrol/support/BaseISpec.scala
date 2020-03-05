@@ -54,7 +54,8 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
     "microservice.services.agent-mapping.host"              -> wiremockHost,
     "microservice.services.agent-mapping.port"              -> wiremockPort,
     "microservice.services.agent-fi-relationship.host"      -> wiremockHost,
-    "microservice.services.agent-fi-relationship.port"      -> wiremockPort
+    "microservice.services.agent-fi-relationship.port"      -> wiremockPort,
+    "features.enable-agent-suspension" -> true
   )
 
   protected def additionalConfiguration: Map[String, String] = Map.empty

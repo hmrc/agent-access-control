@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.service
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
+import play.api.{Configuration, Logger}
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{
   AgentAccessControlEvent,
@@ -35,8 +35,12 @@ import scala.concurrent.{ExecutionContext, Future}
 class ESAuthorisationService @Inject()(
     relationshipsConnector: RelationshipsConnector,
     desAgentClientApiConnector: DesAgentClientApiConnector,
-    auditService: AuditService)(implicit ec: ExecutionContext)
+    auditService: AuditService)(implicit ec: ExecutionContext,
+                                config: Configuration)
     extends LoggingAuthorisationResults {
+
+  private val isSuspensionEnabled =
+    config.getBoolean("features.enable-agent-suspension").getOrElse(false)
 
   def authoriseForMtdVat(agentCode: AgentCode,
                          taxIdentifier: TaxIdentifier,
@@ -139,18 +143,23 @@ class ESAuthorisationService @Inject()(
                                   proceed: => Future[Boolean])(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext) = {
-    desAgentClientApiConnector.getAgentRecord(agentId).flatMap { agentRecord =>
-      if (agentRecord.isSuspended) {
-        if (agentRecord.suspendedFor(regime)) {
-          Logger.warn(
-            s"agent with id : ${agentId.value} is suspended for regime $regime")
-          Future(false)
-        } else {
-          proceed
-        }
-      } else {
-        proceed
+    if (isSuspensionEnabled) {
+      desAgentClientApiConnector.getAgentRecord(agentId).flatMap {
+        agentRecord =>
+          if (agentRecord.isSuspended) {
+            if (agentRecord.suspendedFor(regime)) {
+              Logger.warn(
+                s"agent with id : ${agentId.value} is suspended for regime $regime")
+              Future(false)
+            } else {
+              proceed
+            }
+          } else {
+            proceed
+          }
       }
+    } else {
+      proceed
     }
   }
 }
