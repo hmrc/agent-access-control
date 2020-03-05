@@ -17,7 +17,6 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
@@ -215,6 +214,15 @@ trait StubUtils {
       }
     }
 
+    def  givenAgentRecord(taxId: TaxIdentifier, suspended: Boolean, regime: String) = {
+      stubFor(
+        get(
+          urlPathEqualTo(
+            s"/registration/personal-details/arn/${taxId.value}")
+        ).willReturn(aResponse().withStatus(200)
+          .withBody(s"""{"suspensionDetails":{"suspensionStatus":$suspended,"regimes":["$regime"]}}"""))
+      )
+    }
   }
 
   trait MappingStubs[A] {

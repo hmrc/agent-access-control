@@ -19,6 +19,8 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "ITSA")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(clientId)
@@ -33,6 +35,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "ITSA")
 
         val status = authResponseFor(agentCode, clientId, method).status
 
@@ -43,6 +46,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "ITSA")
 
         given()
           .mtdAgency(arn)
@@ -58,6 +62,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "ITSA")
 
       given()
         .mtdAgency(arn)
@@ -74,6 +79,23 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "ITSA")
+
+      given()
+        .mtdAgency(arn)
+        .hasARelationshipWith(clientId)
+      givenCleanMetricRegistry()
+
+      authResponseFor(agentCode, clientId, method).status shouldBe 200
+
+      timerShouldExistsAndBeenUpdated("API-__mtd-it-auth__agent__:__client__:-GET")
+    }
+
+    "handle suspended agents and return unauthorised" in {
+      given()
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
+        .givenAgentRecord(arn, true, "TRS")
 
       given()
         .mtdAgency(arn)
@@ -92,6 +114,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "ITSA")
 
       given()
         .mtdAgency(arn)
@@ -107,6 +130,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         given()
           .agentAdmin(agentCode, providerId, None, None)
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "ITSA")
 
         val status = authResponseFor(agentCode, clientId, method).status
 
@@ -117,6 +141,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "ITSA")
 
         given()
           .mtdAgency(arn)
@@ -132,6 +157,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "ITSA")
 
       given()
         .mtdAgency(arn)
@@ -148,6 +174,7 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "ITSA")
 
       given()
         .mtdAgency(arn)

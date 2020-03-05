@@ -19,6 +19,8 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "TRS")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(utr)
@@ -33,6 +35,7 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         given()
           .agentAdmin(agentCode, providerId, None, None)
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "TRS")
 
         val status = authResponseFor(agentCode, utr, method).status
 
@@ -43,6 +46,8 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "TRS")
+
         given()
           .mtdAgency(arn)
           .hasNoRelationshipWith(utr)
@@ -57,6 +62,8 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "TRS")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(utr)
@@ -72,12 +79,30 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "TRS")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(utr)
       givenCleanMetricRegistry()
 
       authResponseFor(agentCode, utr, method).status shouldBe 200
+
+      timerShouldExistsAndBeenUpdated("API-__trust-auth__agent__:__client__:-GET")
+    }
+
+    "handle suspended agents and return unauthorised" in {
+      given()
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
+        .givenAgentRecord(arn, true, "TRS")
+
+      given()
+        .mtdAgency(arn)
+        .hasARelationshipWith(utr)
+      givenCleanMetricRegistry()
+
+      authResponseFor(agentCode, utr, method).status shouldBe 401
 
       timerShouldExistsAndBeenUpdated("API-__trust-auth__agent__:__client__:-GET")
     }
@@ -89,6 +114,8 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "TRS")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(utr)
@@ -103,6 +130,7 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         given()
           .agentAdmin(agentCode, providerId, None, None)
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "TRS")
 
         val status = authResponseFor(agentCode, utr, method).status
 
@@ -113,6 +141,8 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
+          .givenAgentRecord(arn, false, "TRS")
+
         given()
           .mtdAgency(arn)
           .hasNoRelationshipWith(utr)
@@ -127,6 +157,8 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "TRS")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(utr)
@@ -142,6 +174,8 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
+        .givenAgentRecord(arn, false, "TRS")
+
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(utr)
