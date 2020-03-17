@@ -65,7 +65,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     "allow access for agent with a client relationship" in {
 
       whenRelationshipsConnectorIsCalled thenReturn true
-      whenDesAgentClientApiConnectorIsCalled thenReturn (Future(agentRecord))
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
@@ -75,7 +76,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
 
     "deny access for a non-mtd agent" in {
 
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForMtdIt(agentCode, clientId, nonMtdAuthDetails))
@@ -89,7 +91,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     "deny access for a mtd agent without a client relationship" in {
 
       whenRelationshipsConnectorIsCalled thenReturn false
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
@@ -101,7 +104,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       "decision is made to allow access" in {
 
         whenRelationshipsConnectorIsCalled thenReturn true
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
 
         await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
 
@@ -122,7 +126,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       "decision is made to deny access" in {
 
         whenRelationshipsConnectorIsCalled thenReturn false
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
 
         await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
 
@@ -142,7 +147,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
 
       "no HMRC-AS-AGENT enrolment exists" in {
 
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
 
         await(service.authoriseForMtdIt(agentCode, clientId, nonMtdAuthDetails))
 
@@ -164,7 +170,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       val agentRecord =
         AgentRecord(Some(SuspensionDetails(true, Some(Set("ITSA")))))
 
-      whenDesAgentClientApiConnectorIsCalled thenReturn (Future(agentRecord))
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
@@ -180,7 +187,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     "allow access for agent with a client relationship" in {
 
       whenRelationshipsConnectorIsCalled thenReturn true
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
@@ -190,7 +198,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
 
     "deny access for a non-mtd agent" in {
 
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForMtdVat(agentCode, vrn, nonMtdAuthDetails))
@@ -204,7 +213,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     "deny access for a mtd agent without a client relationship" in {
 
       whenRelationshipsConnectorIsCalled thenReturn false
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
@@ -216,7 +226,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       "decision is made to allow access" in {
 
         whenRelationshipsConnectorIsCalled thenReturn true
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
 
         await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
 
@@ -237,7 +248,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       "decision is made to deny access" in {
 
         whenRelationshipsConnectorIsCalled thenReturn false
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
 
         await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
 
@@ -256,7 +268,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       }
 
       "no HMRC-AS-AGENT enrolment exists" in {
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
         await(service.authoriseForMtdVat(agentCode, vrn, nonMtdAuthDetails))
 
         verify(auditService)
@@ -277,7 +290,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       val agentRecord =
         AgentRecord(Some(SuspensionDetails(true, Some(Set("ALL")))))
 
-      whenDesAgentClientApiConnectorIsCalled thenReturn (Future(agentRecord))
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
@@ -291,7 +305,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     val utr = Utr("utr")
 
     "allow access for agent with a client relationship" in {
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
       whenRelationshipsConnectorIsCalled thenReturn true
 
       val result =
@@ -301,7 +316,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     }
 
     "deny access for a non-mtd agent" in {
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
       val result =
         await(service.authoriseForTrust(agentCode, utr, nonMtdAuthDetails))
 
@@ -314,7 +330,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     "deny access for a mtd agent without a client relationship" in {
 
       whenRelationshipsConnectorIsCalled thenReturn false
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
@@ -325,7 +342,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     "audit appropriate values" when {
       "decision is made to allow access" in {
         whenRelationshipsConnectorIsCalled thenReturn true
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
         await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
 
         verify(auditService)
@@ -345,7 +363,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       "decision is made to deny access" in {
 
         whenRelationshipsConnectorIsCalled thenReturn false
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
         await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
 
         verify(auditService)
@@ -363,7 +382,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       }
 
       "no HMRC-AS-AGENT enrolment exists" in {
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
         await(service.authoriseForTrust(agentCode, utr, nonMtdAuthDetails))
 
         verify(auditService)
@@ -384,7 +404,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       val agentRecord =
         AgentRecord(Some(SuspensionDetails(true, Some(Set("TRS")))))
 
-      whenDesAgentClientApiConnectorIsCalled thenReturn (Future(agentRecord))
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForTrust(agentCode, clientId, mtdAuthDetails))
@@ -400,7 +421,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     "allow access for agent with a client relationship" in {
 
       whenRelationshipsConnectorIsCalled thenReturn true
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
@@ -410,7 +432,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
 
     "deny access for a non-mtd agent" in {
 
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForCgt(agentCode, cgtRef, nonMtdAuthDetails))
@@ -424,7 +447,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
     "deny access for a mtd agent without a client relationship" in {
 
       whenRelationshipsConnectorIsCalled thenReturn false
-      whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
@@ -436,7 +460,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       "decision is made to allow access" in {
 
         whenRelationshipsConnectorIsCalled thenReturn true
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
 
         await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
 
@@ -457,7 +482,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       "decision is made to deny access" in {
 
         whenRelationshipsConnectorIsCalled thenReturn false
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
 
         await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
 
@@ -477,7 +503,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
 
       "no HMRC-AS-AGENT enrolment exists" in {
 
-        whenDesAgentClientApiConnectorIsCalled thenReturn Future(agentRecord)
+        whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+          Right(agentRecord))
 
         await(service.authoriseForCgt(agentCode, cgtRef, nonMtdAuthDetails))
 
@@ -499,7 +526,8 @@ class ESAuthorisationServiceSpec extends UnitSpec with ResettingMockitoSugar {
       val agentRecord =
         AgentRecord(Some(SuspensionDetails(true, Some(Set("CGT")))))
 
-      whenDesAgentClientApiConnectorIsCalled thenReturn (Future(agentRecord))
+      whenDesAgentClientApiConnectorIsCalled thenReturn Future(
+        Right(agentRecord))
 
       val result =
         await(service.authoriseForCgt(agentCode, clientId, mtdAuthDetails))

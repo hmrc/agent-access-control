@@ -30,7 +30,13 @@ import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.domain._
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpReads, NotFoundException}
+import uk.gov.hmrc.http.{
+  HeaderCarrier,
+  HttpGet,
+  HttpReads,
+  NotFoundException,
+  Upstream4xxResponse
+}
 import uk.gov.hmrc.http.logging.Authorization
 
 @Singleton
@@ -83,9 +89,15 @@ class DesAgentClientApiConnector @Inject()(
 
   def getAgentRecord(agentId: TaxIdentifier)(
       implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[AgentRecord] = {
+      ec: ExecutionContext): Future[Either[String, AgentRecord]] = {
     getWithDesHeaders[AgentRecord]("GetAgentRecord",
                                    new URL(getAgentRecordUrl(agentId)))
+      .map(a => Right(a))
+      .recover {
+        case e: Upstream4xxResponse
+            if e.message contains ("AGENT_TERMINATED") =>
+          Left(e.message)
+      }
   }
 
   private def getAgentRecordUrl(agentId: TaxIdentifier) =
