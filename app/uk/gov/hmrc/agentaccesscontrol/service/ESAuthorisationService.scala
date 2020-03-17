@@ -145,7 +145,7 @@ class ESAuthorisationService @Inject()(
       ec: ExecutionContext) = {
     if (isSuspensionEnabled) {
       desAgentClientApiConnector.getAgentRecord(agentId).flatMap {
-        agentRecord =>
+        case Right(agentRecord) =>
           if (agentRecord.isSuspended) {
             if (agentRecord.suspendedFor(regime)) {
               Logger.warn(
@@ -157,6 +157,9 @@ class ESAuthorisationService @Inject()(
           } else {
             proceed
           }
+        case Left(message) =>
+          Logger.warn(message)
+          Future(false)
       }
     } else {
       proceed
