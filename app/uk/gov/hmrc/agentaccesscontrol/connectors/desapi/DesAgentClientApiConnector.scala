@@ -94,7 +94,9 @@ class DesAgentClientApiConnector @Inject()(
                                    new URL(getAgentRecordUrl(agentId)))
       .map(a => Right(a))
       .recover {
-        case e: Upstream4xxResponse => Left(e.message)
+        case e: Upstream4xxResponse
+            if e.message contains ("AGENT_TERMINATED") =>
+          Left(e.message)
       }
   }
 
