@@ -42,6 +42,8 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
   protected val wireMockAppConfiguration: Map[String, Any] = Map(
     "microservice.services.des.host"                        -> wiremockHost,
     "microservice.services.des.port"                        -> wiremockPort,
+    "microservice.services.des-paye.host"                   -> wiremockHost,
+    "microservice.services.des-paye.port"                   -> wiremockPort,
     "microservice.services.auth.host"                       -> wiremockHost,
     "microservice.services.auth.port"                       -> wiremockPort,
     "microservice.services.enrolment-store-proxy.host"      -> wiremockHost,

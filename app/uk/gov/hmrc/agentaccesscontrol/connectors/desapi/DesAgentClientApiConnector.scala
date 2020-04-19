@@ -42,7 +42,7 @@ import uk.gov.hmrc.http.logging.Authorization
 @Singleton
 class DesAgentClientApiConnector @Inject()(
     @Named("des-baseUrl") desBaseUrl: URL,
-    @Named("des-mdtp-baseUrl") desBaseUrlPaye: URL,
+    @Named("des-paye-baseUrl") desBaseUrlPaye: URL,
     @Named("des.authorization-token") authorizationToken: String,
     @Named("des.environment") environment: String,
     httpGet: HttpGet,
