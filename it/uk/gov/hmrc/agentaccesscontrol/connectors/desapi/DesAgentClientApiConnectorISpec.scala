@@ -55,6 +55,7 @@ class DesAgentClientApiConnectorISpec
       val connectorWithDifferentHeaders = new DesAgentClientApiConnector(
         new URL(wiremockBaseUrl),
         new URL(wiremockBaseUrl),
+        new URL(wiremockBaseUrl),
         "auth_token_33",
         "env_33",
         httpVerbs,
@@ -157,6 +158,7 @@ class DesAgentClientApiConnectorISpec
       val connectorWithDifferentHeaders = new DesAgentClientApiConnector(
         new URL(wiremockBaseUrl),
         new URL(wiremockBaseUrl),
+        new URL(wiremockBaseUrl),
         "auth_token_33",
         "env_33",
         httpVerbs,
@@ -225,8 +227,9 @@ class DesAgentClientApiConnectorISpec
 
     val httpVerbsNew = new HttpVerbs(mockAuditConnector, "", app.injector.instanceOf[Configuration], app.injector.instanceOf[ActorSystem])
     val auditConnector =
-      new DesAgentClientApiConnector(new URL(wiremockBaseUrl),new URL(wiremockBaseUrl), "secret", "test", httpVerbsNew, FakeMetrics)
+      new DesAgentClientApiConnector(new URL(wiremockBaseUrl),new URL(wiremockBaseUrl), new URL(wiremockBaseUrl), "secret", "test", httpVerbsNew, FakeMetrics)
     val connector = new DesAgentClientApiConnector(
+      new URL(wiremockBaseUrl),
       new URL(wiremockBaseUrl),
       new URL(wiremockBaseUrl),
       "secret",
