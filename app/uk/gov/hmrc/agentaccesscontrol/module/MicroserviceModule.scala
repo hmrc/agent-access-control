@@ -61,6 +61,7 @@ class MicroserviceModule(val environment: Environment,
 
     bindBaseUrl("agent-client-relationships")
     bindBaseUrl("des")
+    bindBaseUrl("des-mdtp")
     bindBaseUrl("enrolment-store-proxy")
     bindBaseUrl("agent-fi-relationship")
     bindBaseUrl("agent-mapping")
