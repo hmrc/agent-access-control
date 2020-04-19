@@ -44,8 +44,6 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
     "microservice.services.des.port"                        -> wiremockPort,
     "microservice.services.des-paye.host"                   -> wiremockHost,
     "microservice.services.des-paye.port"                   -> wiremockPort,
-    "microservice.services.des-sa.host"                     -> wiremockHost,
-    "microservice.services.des-sa.port"                     -> wiremockPort,
     "microservice.services.auth.host"                       -> wiremockHost,
     "microservice.services.auth.port"                       -> wiremockPort,
     "microservice.services.enrolment-store-proxy.host"      -> wiremockHost,
