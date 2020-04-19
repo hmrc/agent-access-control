@@ -43,6 +43,7 @@ import uk.gov.hmrc.http.logging.Authorization
 class DesAgentClientApiConnector @Inject()(
     @Named("des-baseUrl") desBaseUrl: URL,
     @Named("des-paye-baseUrl") desBaseUrlPaye: URL,
+    @Named("des-sa-baseUrl") desBaseUrlSa: URL,
     @Named("des.authorization-token") authorizationToken: String,
     @Named("des.environment") environment: String,
     httpGet: HttpGet,
@@ -81,8 +82,7 @@ class DesAgentClientApiConnector @Inject()(
   }
 
   private def saUrlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): URL =
-    new URL(desBaseUrlPaye,
-            s"/sa/agents/${saAgentReference.value}/client/$saUtr")
+    new URL(desBaseUrlSa, s"/sa/agents/${saAgentReference.value}/client/$saUtr")
 
   private def payeUrlFor(agentCode: AgentCode, empRef: EmpRef): URL =
     new URL(
