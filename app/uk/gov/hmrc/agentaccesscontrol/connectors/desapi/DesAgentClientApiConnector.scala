@@ -81,7 +81,8 @@ class DesAgentClientApiConnector @Inject()(
   }
 
   private def saUrlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): URL =
-    new URL(desBaseUrl, s"/sa/agents/${saAgentReference.value}/client/$saUtr")
+    new URL(desBaseUrlPaye,
+            s"/sa/agents/${saAgentReference.value}/client/$saUtr")
 
   private def payeUrlFor(agentCode: AgentCode, empRef: EmpRef): URL =
     new URL(
