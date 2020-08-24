@@ -31,8 +31,6 @@ import uk.gov.hmrc.http.HeaderCarrier
 @Singleton
 class AuditService @Inject()(val auditConnector: AuditConnector) {
 
-  import AgentAccessControlEvent.AgentAccessControlEvent
-
   def auditEvent(event: AgentAccessControlEvent,
                  transactionName: String,
                  agentCode: AgentCode,
@@ -77,8 +75,6 @@ class AuditService @Inject()(val auditConnector: AuditConnector) {
     }
 }
 
-object AgentAccessControlEvent extends Enumeration {
-  val AgentAccessControlDecision = Value
+sealed trait AgentAccessControlEvent
 
-  type AgentAccessControlEvent = AgentAccessControlEvent.Value
-}
+case object AgentAccessControlDecision extends AgentAccessControlEvent

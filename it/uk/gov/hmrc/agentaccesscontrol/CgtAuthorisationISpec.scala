@@ -1,7 +1,5 @@
 package uk.gov.hmrc.agentaccesscontrol
 
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
-import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, CgtRef}
 import uk.gov.hmrc.domain.AgentCode
@@ -69,10 +67,6 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
         .hasARelationshipWith(cgtRef)
 
       authResponseFor(agentCode, cgtRef, method).status shouldBe 200
-
-      DataStreamStub.verifyAuditRequestSent(
-        AgentAccessControlDecision,
-        Map("path" -> s"/agent-access-control/cgt-auth/agent/$agentCode/client/${cgtRef.value}"))
     }
 
     "record metrics for access control request" in {
@@ -164,10 +158,6 @@ class CgtAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metri
         .hasARelationshipWith(cgtRef)
 
       authResponseFor(agentCode, cgtRef, method).status shouldBe 200
-
-      DataStreamStub.verifyAuditRequestSent(
-        AgentAccessControlDecision,
-        Map("path" -> s"/agent-access-control/cgt-auth/agent/$agentCode/client/${cgtRef.value}"))
     }
 
     "record metrics for access control request" in {

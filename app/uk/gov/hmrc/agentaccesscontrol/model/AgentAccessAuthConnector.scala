@@ -14,35 +14,11 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentaccesscontrol.connectors
+package uk.gov.hmrc.agentaccesscontrol.model
 
-import java.net.URL
-
-import akka.actor.ActorSystem
-import com.typesafe.config.Config
-import javax.inject.{Inject, Named, Singleton}
-import play.api.Configuration
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.auth.core.{CredentialRole, PlayAuthConnector}
+import uk.gov.hmrc.auth.core.CredentialRole
 import uk.gov.hmrc.domain.SaAgentReference
-import uk.gov.hmrc.http.HttpPost
-import uk.gov.hmrc.play.http.ws.WSPost
-
-@Singleton
-class AgentAccessAuthConnector @Inject()(@Named("auth-baseUrl") baseUrl: URL,
-                                         val config: Configuration,
-                                         val _actorSystem: ActorSystem)
-    extends PlayAuthConnector {
-
-  override val serviceUrl = baseUrl.toString
-
-  override def http = new HttpPost with WSPost {
-    override val hooks = NoneRequired
-    override protected def configuration: Option[Config] =
-      Some(config.underlying)
-    override protected def actorSystem: ActorSystem = _actorSystem
-  }
-}
 
 case class AuthDetails(saAgentReference: Option[SaAgentReference],
                        arn: Option[Arn],

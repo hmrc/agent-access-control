@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 
 import play.api.mvc.{Request, Result, Results}
 import play.api.{Environment, Logger}
-import uk.gov.hmrc.agentaccesscontrol.connectors.AuthDetails
+import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core._
@@ -55,16 +55,14 @@ trait AuthAction extends AuthorisedFunctions with Results {
                             ggCredentialId = providerId,
                             affinityGroup = Some("Agent"),
                             agentUserRole = credRole))
-            case Some(_) => {
+            case Some(_) =>
               Logger.warn(
                 s"agent code from auth did not match the agent code in url")
               Future(Forbidden)
-            }
-            case None => {
+            case None =>
               Logger.info(
                 s"no agent code found in auth details for agent code $ac")
               Future(Forbidden)
-            }
           }
         }
       }

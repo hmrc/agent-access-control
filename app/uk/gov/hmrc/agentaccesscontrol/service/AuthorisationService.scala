@@ -20,10 +20,11 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{
-  AgentAccessControlEvent,
+  AgentAccessControlDecision,
   AuditService
 }
 import uk.gov.hmrc.agentaccesscontrol.connectors._
+import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
@@ -294,7 +295,7 @@ class AuthorisationService @Inject()(
     ).flatten
 
     auditService.auditEvent(
-      AgentAccessControlEvent.AgentAccessControlDecision,
+      AgentAccessControlDecision,
       "agent access decision",
       agentCode,
       regime,

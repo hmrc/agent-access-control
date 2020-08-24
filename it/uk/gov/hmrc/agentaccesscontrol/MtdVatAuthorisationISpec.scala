@@ -1,7 +1,5 @@
 package uk.gov.hmrc.agentaccesscontrol
 
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
-import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Vrn}
 import uk.gov.hmrc.domain.AgentCode
@@ -69,10 +67,6 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
         .hasARelationshipWith(vrn)
 
       authResponseFor(agentCode, vrn, method).status shouldBe 200
-
-      DataStreamStub.verifyAuditRequestSent(
-        AgentAccessControlDecision,
-        Map("path" -> s"/agent-access-control/mtd-vat-auth/agent/$agentCode/client/${vrn.value}"))
     }
 
     "record metrics for access control request" in {
@@ -165,10 +159,6 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
         .hasARelationshipWith(vrn)
 
       authResponseFor(agentCode, vrn, method).status shouldBe 200
-
-      DataStreamStub.verifyAuditRequestSent(
-        AgentAccessControlDecision,
-        Map("path" -> s"/agent-access-control/mtd-vat-auth/agent/$agentCode/client/${vrn.value}"))
     }
 
     "record metrics for access control request" in {

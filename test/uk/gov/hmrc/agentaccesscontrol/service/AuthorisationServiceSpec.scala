@@ -21,14 +21,13 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.{
   AfiRelationshipConnector,
-  AgentAccessAuthConnector,
-  AuthDetails,
   MappingConnector
 }
+import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.auth.core.Admin
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
@@ -342,7 +341,6 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   }
 
   private abstract class Context {
-    val mockAuthConnector = mock[AgentAccessAuthConnector]
     val mockDesAuthorisationService = mock[DesAuthorisationService]
     val mockESPAuthorisationService =
       mock[EnrolmentStoreProxyAuthorisationService]

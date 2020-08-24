@@ -18,21 +18,19 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
 import java.net.URL
 
-import javax.inject.{Inject, Named, Singleton}
 import com.codahale.metrics.MetricRegistry
+import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
+import javax.inject.{Inject, Singleton}
 import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Utr, Vrn, CgtRef}
+import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
+import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.domain.TaxIdentifier
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, NotFoundException}
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.{
-  HeaderCarrier,
-  HttpGet,
-  HttpResponse,
-  NotFoundException
-}
 
 case class Relationship(arn: String, clientId: String)
 
@@ -40,12 +38,19 @@ object Relationship {
   implicit val jsonReads = Json.reads[Relationship]
 }
 
+@ImplementedBy(classOf[RelationshipsConnectorImpl])
+trait RelationshipsConnector {
+  def relationshipExists(arn: Arn, identifier: TaxIdentifier)(
+      implicit ec: ExecutionContext,
+      hc: HeaderCarrier): Future[Boolean]
+}
+
 @Singleton
-class RelationshipsConnector @Inject()(
-    @Named("agent-client-relationships-baseUrl") baseUrl: URL,
-    httpGet: HttpGet,
-    metrics: Metrics)
-    extends HttpAPIMonitor {
+class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
+                                           httpClient: HttpClient,
+                                           metrics: Metrics)
+    extends RelationshipsConnector
+    with HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   def relationshipExists(arn: Arn, identifier: TaxIdentifier)(
@@ -60,12 +65,11 @@ class RelationshipsConnector @Inject()(
 
     val relationshipUrl =
       new URL(
-        baseUrl,
-        s"/agent-client-relationships/agent/${arn.value}/service/$serviceName/client/$clientType/$clientId").toString
+        s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/$serviceName/client/$clientType/$clientId").toString
 
     monitor(
       s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {
-      httpGet.GET[HttpResponse](relationshipUrl)
+      httpClient.GET[HttpResponse](relationshipUrl)
     }.map { _ =>
       true
     } recover {

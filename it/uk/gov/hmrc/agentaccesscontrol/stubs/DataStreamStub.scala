@@ -20,28 +20,9 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
-import play.api.libs.json.Json
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlEvent
 
 object DataStreamStub extends Eventually {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
-
-  def verifyAuditRequestSent(
-    event: AgentAccessControlEvent,
-    tags: Map[String, String] = Map.empty,
-    detail: Map[String, String] = Map.empty) =
-    eventually {
-      verify(
-        1,
-        postRequestedFor(urlPathEqualTo(auditUrl))
-          .withRequestBody(similarToJson(s"""{
-          |  "auditSource": "agent-access-control",
-          |  "auditType": "$event",
-          |  "tags": ${Json.toJson(tags)},
-          |  "detail": ${Json.toJson(detail)}
-          |}"""))
-      )
-    }
 
   private def auditUrl = "/write/audit"
 
@@ -51,7 +32,4 @@ object DataStreamStub extends Eventually {
       stubFor(post(urlPathEqualTo(auditUrl + "/merged")).willReturn(aResponse().withStatus(204)))
     )
   }
-
-  private def similarToJson(value: String) = equalToJson(value.stripMargin, true, true)
-
 }

@@ -4,11 +4,11 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.domain.{AgentCode, AgentUserId, EmpRef, SaUtr, TaxIdentifier}
+import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import concurrent.ExecutionContext.Implicits.global
 
 class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
 

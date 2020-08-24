@@ -17,25 +17,15 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.verify
 import org.scalatest.TestData
-import org.scalatest.concurrent.Eventually
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.{OneAppPerSuite, OneServerPerTest}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, CgtRef, MtdItId, Utr, Vrn}
-import uk.gov.hmrc.domain._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpVerbs}
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.MergedDataEvent
+import uk.gov.hmrc.agentmtdidentifiers.model._
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaAgentReference, SaUtr, TaxIdentifier}
 import uk.gov.hmrc.play.test.UnitSpec
-
-import scala.concurrent.ExecutionContext
 
 abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with StubUtils {
 
@@ -50,7 +40,7 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
     "microservice.services.auth.port"                       -> wiremockPort,
     "microservice.services.enrolment-store-proxy.host"      -> wiremockHost,
     "microservice.services.enrolment-store-proxy.port"      -> wiremockPort,
-    "auditing.enabled"                                      -> true,
+    "auditing.enabled"                                      -> false,
     "auditing.consumer.baseUri.host"                        -> wiremockHost,
     "auditing.consumer.baseUri.port"                        -> wiremockPort,
     "microservice.services.agent-client-relationships.host" -> wiremockHost,
@@ -59,7 +49,8 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
     "microservice.services.agent-mapping.port"              -> wiremockPort,
     "microservice.services.agent-fi-relationship.host"      -> wiremockHost,
     "microservice.services.agent-fi-relationship.port"      -> wiremockPort,
-    "features.enable-agent-suspension" -> true
+    "features.enable-agent-suspension" -> true,
+    "features.allowPayeAccess" -> true
   )
 
   protected def additionalConfiguration: Map[String, String] = Map.empty
@@ -550,22 +541,6 @@ trait StubUtils {
             .withStatus(status)))
       this
     }
-  }
-
-  trait MockAuditingContext extends MockitoSugar with Eventually {
-    val mockAuditConnector = mock[AuditConnector]
-    val wsHttp = new HttpVerbs {
-      lazy val auditConnector = mockAuditConnector
-    }
-
-    def capturedEvent() =
-      // HttpAuditing.AuditingHook does the auditing asynchronously, so we need
-      // to use eventually to avoid a race condition in this test
-      eventually {
-        val captor = ArgumentCaptor.forClass(classOf[MergedDataEvent])
-        verify(mockAuditConnector).sendMergedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
-        captor.getValue
-      }
   }
 
 }

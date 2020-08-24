@@ -1,23 +1,17 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
-import java.net.URL
-
-import akka.actor.ActorSystem
-import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
-import play.api.Configuration
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import uk.gov.hmrc.agentaccesscontrol.module.HttpVerbs
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, CgtRef, MtdItId, Utr, Vrn}
-import uk.gov.hmrc.domain._
+import uk.gov.hmrc.agentmtdidentifiers.model._
+import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
 
   val arn = Arn("B1111B")
   implicit val hc = HeaderCarrier()
-  val httpVerbs = app.injector.instanceOf[HttpVerbs]
+  val connector = app.injector.instanceOf[RelationshipsConnector]
 
   "relationshipExists for HMRC-MTD-IT" should {
     behave like aCheckEndpoint(MtdItId("C1111C"), "MtdItId")
@@ -36,7 +30,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
   }
 
   private def aCheckEndpoint(identifier: TaxIdentifier, clientType: String) = {
-    "return true when relationship exists" in new Context {
+    "return true when relationship exists" in {
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(identifier)
@@ -46,7 +40,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
       timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET")
     }
 
-    "return false when relationship does not exist" in new Context {
+    "return false when relationship does not exist" in {
       given()
         .mtdAgency(arn)
         .hasNoRelationshipWith(identifier)
@@ -56,7 +50,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
       timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET")
     }
 
-    "throw exception when unexpected status code encountered" in new Context {
+    "throw exception when unexpected status code encountered" in {
       given()
         .mtdAgency(arn)
         .statusReturnedForRelationship(identifier, 300)
@@ -66,18 +60,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
       }.getMessage should include("300")
     }
 
-    //TODO review the need for this auditing - I don't think intra-MDTP calls need to be audited only calls outside MDTP
-    "audit the call" in new Context {
-      given()
-        .mtdAgency(arn)
-        .hasARelationshipWith(identifier)
-
-      await(auditConnector.relationshipExists(arn, identifier))
-
-      anOutboundCallShouldBeAudited(arn, identifier)
-    }
-
-    "record metrics" in new Context {
+    "record metrics" in {
       val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
 
       given()
@@ -90,39 +73,4 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
       timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET")
     }
   }
-
-  private abstract class Context extends MockAuditingContext {
-
-    val httpVerbsNew = new HttpVerbs(mockAuditConnector, "", app.injector.instanceOf[Configuration], app.injector.instanceOf[ActorSystem])
-    val auditConnector =
-      new RelationshipsConnector(new URL(wiremockBaseUrl), httpVerbsNew, FakeMetrics)
-    val connector = new RelationshipsConnector(
-      new URL(wiremockBaseUrl),
-      httpVerbs,
-      app.injector.instanceOf[Metrics])
-
-    def anOutboundCallShouldBeAudited(arn: Arn, identifier: TaxIdentifier) = {
-      val event = capturedEvent()
-
-      val url = identifier match {
-        case _ @MtdItId(mtdItId) =>
-          s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
-        case _ @Vrn(vrn) =>
-          s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
-        case _ @Utr(utr) =>
-          s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-TERS-ORG/client/SAUTR/$utr"
-        case _ @CgtRef(cgtRef) =>
-          s"$wiremockBaseUrl/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/$cgtRef"
-      }
-
-      event.auditType shouldBe "OutboundCall"
-
-      event.request.tags("path") shouldBe url
-    }
-  }
-}
-
-object FakeMetrics extends Metrics {
-  override def defaultRegistry: MetricRegistry = new MetricRegistry
-  override def toJson: String = ???
 }

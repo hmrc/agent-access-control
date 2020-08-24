@@ -16,23 +16,21 @@ lazy val scoverageSettings = {
 
 lazy val compileDeps = Seq(
   ws,
-  "uk.gov.hmrc" %% "bootstrap-play-25" % "4.11.0",
-  "uk.gov.hmrc" %% "auth-client" % "2.21.0-play-25",
-  "uk.gov.hmrc" %% "play-whitelist-filter" % "2.0.0",
-  "uk.gov.hmrc" %% "domain" % "5.6.0-play-25",
-  "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.17.0-play-25",
-  "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "3.8.0",
-  "de.threedimensions" %% "metrics-play" % "2.5.13",
-  "com.github.blemale" %% "scaffeine" % "2.6.0"
+  "uk.gov.hmrc" %% "bootstrap-backend-play-27" % "2.24.0",
+  "uk.gov.hmrc" %% "auth-client" % "3.0.0-play-27",
+  "uk.gov.hmrc" %% "play-whitelist-filter" % "3.4.0-play-27",
+  "uk.gov.hmrc" %% "domain" % "5.9.0-play-27",
+  "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.19.0-play-27",
+  "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "4.4.0"
 )
 
 def testDeps(scope: String) = Seq(
-  "uk.gov.hmrc" %% "hmrctest" % "3.8.0-play-25" % scope,
-  "org.scalatest" %% "scalatest" % "3.0.7" % scope,
+  "uk.gov.hmrc" %% "hmrctest" % "3.8.0-play-26" % scope,
+  "org.scalatest" %% "scalatest" % "3.0.8" % scope,
   "org.mockito" % "mockito-core" % "2.27.0" % scope,
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.1" % scope,
-  "com.github.tomakehurst" % "wiremock" % "2.23.2" % scope,
-  "org.pegdown" % "pegdown" % "1.6.0" % scope
+  "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.3" % scope,
+  "com.github.tomakehurst" % "wiremock-jre8" % "2.27.1" % scope,
+  "org.scalamock" %% "scalamock" % "4.4.0" % scope
 )
 
 def tmpMacWorkaround(): Seq[ModuleID] =
@@ -44,10 +42,10 @@ lazy val root = (project in file("."))
   .settings(
     name := "agent-access-control",
     organization := "uk.gov.hmrc",
-    scalaVersion := "2.11.11",
+    scalaVersion := "2.12.10",
     majorVersion := 0,
     scalacOptions ++= Seq(
-      "-Xfatal-warnings",
+      //"-Xfatal-warnings",
       "-Xlint:-missing-interpolator,_",
       "-Yno-adapted-args",
       "-Ywarn-value-discard",
