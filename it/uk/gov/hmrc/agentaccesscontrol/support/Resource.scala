@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import play.api.libs.json.{Json, Writes}
-import play.api.libs.ws.{WS, WSRequest, WSResponse}
+import play.api.libs.ws.{WSRequest, WSResponse}
 import play.api.test.WsTestClient
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.http.ws.WSHttpResponse

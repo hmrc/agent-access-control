@@ -17,15 +17,16 @@
 package uk.gov.hmrc.agentaccesscontrol.service
 
 import javax.inject.{Inject, Singleton}
-import play.api.{Configuration, Logger}
+import play.api.Logger
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{
-  AgentAccessControlEvent,
+  AgentAccessControlDecision,
   AuditService
 }
-import uk.gov.hmrc.agentaccesscontrol.connectors.AuthDetails
+import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
+import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -36,11 +37,10 @@ class ESAuthorisationService @Inject()(
     relationshipsConnector: RelationshipsConnector,
     desAgentClientApiConnector: DesAgentClientApiConnector,
     auditService: AuditService)(implicit ec: ExecutionContext,
-                                config: Configuration)
+                                appConfig: AppConfig)
     extends LoggingAuthorisationResults {
 
-  private val isSuspensionEnabled =
-    config.getBoolean("features.enable-agent-suspension").getOrElse(false)
+  private lazy val isSuspensionEnabled = appConfig.featureAgentSuspension
 
   def authoriseForMtdVat(agentCode: AgentCode,
                          taxIdentifier: TaxIdentifier,
@@ -129,7 +129,7 @@ class ESAuthorisationService @Inject()(
       request: Request[Any],
       ec: ExecutionContext): Future[Unit] =
     auditService.auditEvent(
-      AgentAccessControlEvent.AgentAccessControlDecision,
+      AgentAccessControlDecision,
       "agent access decision",
       agentCode,
       regime,

@@ -1,7 +1,5 @@
 package uk.gov.hmrc.agentaccesscontrol
 
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
-import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.domain.AgentCode
@@ -69,10 +67,6 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         .hasARelationshipWith(utr)
 
       authResponseFor(agentCode, utr, method).status shouldBe 200
-
-      DataStreamStub.verifyAuditRequestSent(
-        AgentAccessControlDecision,
-        Map("path" -> s"/agent-access-control/trust-auth/agent/$agentCode/client/${utr.value}"))
     }
 
     "record metrics for access control request" in {
@@ -164,10 +158,6 @@ class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
         .hasARelationshipWith(utr)
 
       authResponseFor(agentCode, utr, method).status shouldBe 200
-
-      DataStreamStub.verifyAuditRequestSent(
-        AgentAccessControlDecision,
-        Map("path" -> s"/agent-access-control/trust-auth/agent/$agentCode/client/${utr.value}"))
     }
 
     "record metrics for access control request" in {

@@ -1,7 +1,5 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.afi
 
-import java.net.URL
-
 import uk.gov.hmrc.agentaccesscontrol.connectors.AfiRelationshipConnector
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
@@ -19,8 +17,10 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
+  val connector = app.injector.instanceOf[AfiRelationshipConnector]
+
   "hasRelationship" should {
-    "return true when relationship exists" in new Context {
+    "return true when relationship exists" in {
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
@@ -29,7 +29,7 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
       await(connector.hasRelationship(arn.value, clientId.value)) shouldBe true
     }
 
-    "return false when relationship does not exist" in new Context {
+    "return false when relationship does not exist" in {
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
@@ -38,7 +38,7 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
       await(connector.hasRelationship(arn.value, clientId.value)) shouldBe false
     }
 
-    "throw exception when unexpected status code encountered" in new Context {
+    "throw exception when unexpected status code encountered" in {
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
@@ -49,9 +49,4 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
       }.getMessage should include("300")
     }
   }
-
-  abstract class Context extends MockAuditingContext {
-    def connector = app.injector.instanceOf[AfiRelationshipConnector]
-  }
-
 }

@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
-import javax.inject.{Inject, Provider, Singleton}
-import play.api.mvc.{Action, AnyContent, Request}
-import play.api.{Configuration, Environment, Logger}
+import javax.inject.{Inject, Singleton}
+import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
+import play.api.{Environment, Logger}
+import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
@@ -26,22 +27,22 @@ import uk.gov.hmrc.agentaccesscontrol.service.{
 import uk.gov.hmrc.agentmtdidentifiers.model.{CgtRef, MtdItId, Utr, Vrn}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class AuthorisationController @Inject()(
     val authorisationService: AuthorisationService,
     override val authConnector: AuthConnector,
     val esAuthorisationService: ESAuthorisationService,
-    val config: Configuration,
     override val env: Environment,
-    ecp: Provider[ExecutionContextExecutor])
-    extends BaseController
+    cc: ControllerComponents)(implicit val ec: ExecutionContext,
+                              appConfig: AppConfig)
+    extends BackendController(cc)
     with AuthAction {
 
-  implicit val ec: ExecutionContext = ecp.get
+  val payeEnabled: Boolean = appConfig.featuresPayeAccess
 
   def isAuthorisedForSa(agentCode: AgentCode,
                         saUtr: SaUtr): Action[AnyContent] =
@@ -93,9 +94,6 @@ class AuthorisationController @Inject()(
     Action.async { implicit request: Request[_] =>
       withAgentAuthorised(agentCode) { authDetails =>
         {
-          val payeEnabled: Boolean =
-            config.getBoolean("features.allowPayeAccess").getOrElse(false)
-
           if (payeEnabled) {
             authorisationService.isAuthorisedForPaye(agentCode,
                                                      empRef,

@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol
 
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
-import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
@@ -294,10 +292,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         .andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-
-      DataStreamStub.verifyAuditRequestSent(
-        AgentAccessControlDecision,
-        Map("path" -> s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientUtr"))
     }
   }
 
@@ -552,10 +546,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
         .andAuthorisedByBoth648AndI648()
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-
-      DataStreamStub.verifyAuditRequestSent(
-        AgentAccessControlDecision,
-        Map("path" -> s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientUtr"))
     }
   }
 

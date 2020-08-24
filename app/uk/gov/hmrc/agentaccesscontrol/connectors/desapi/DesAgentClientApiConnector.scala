@@ -18,38 +18,58 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
 import java.net.URL
 
-import javax.inject.{Inject, Named, Singleton}
 import com.codahale.metrics.MetricRegistry
+import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
+import javax.inject.{Inject, Singleton}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
+import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.domain._
-
-import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.http.{
   HeaderCarrier,
-  HttpGet,
   HttpReads,
   NotFoundException,
   Upstream4xxResponse
 }
-import uk.gov.hmrc.http.logging.Authorization
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
+
+import scala.concurrent.{ExecutionContext, Future}
+
+@ImplementedBy(classOf[DesAgentClientApiConnectorImpl])
+trait DesAgentClientApiConnector {
+  def getSaAgentClientRelationship(saAgentReference: SaAgentReference,
+                                   saUtr: SaUtr)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse]
+  def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse]
+
+  def getAgentRecord(agentId: TaxIdentifier)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[Either[String, AgentRecord]]
+
+}
 
 @Singleton
-class DesAgentClientApiConnector @Inject()(
-    @Named("des-baseUrl") desBaseUrl: URL,
-    @Named("des-paye-baseUrl") desBaseUrlPaye: URL,
-    @Named("des-sa-baseUrl") desBaseUrlSa: URL,
-    @Named("des.authorization-token") authorizationToken: String,
-    @Named("des.environment") environment: String,
-    httpGet: HttpGet,
-    metrics: Metrics)
-    extends HttpAPIMonitor {
+class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
+                                               httpClient: HttpClient,
+                                               metrics: Metrics)
+    extends DesAgentClientApiConnector
+    with HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+
+  val desBaseUrl = appConfig.desUrl
+  val desBaseUrlPaye = appConfig.desPayeUrl
+  val desBaseUrlSa = appConfig.desSAUrl
+  val authorizationToken = appConfig.desToken
+  val environment = appConfig.desEnv
 
   private implicit val foundResponseReads: Reads[SaFoundResponse] =
     ((__ \ "Auth_64-8").read[Boolean] and
@@ -82,12 +102,11 @@ class DesAgentClientApiConnector @Inject()(
   }
 
   private def saUrlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): URL =
-    new URL(desBaseUrlSa, s"/sa/agents/${saAgentReference.value}/client/$saUtr")
+    new URL(s"$desBaseUrlSa/sa/agents/${saAgentReference.value}/client/$saUtr")
 
   private def payeUrlFor(agentCode: AgentCode, empRef: EmpRef): URL =
     new URL(
-      desBaseUrlPaye,
-      s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}")
+      s"$desBaseUrlPaye/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}")
 
   def getAgentRecord(agentId: TaxIdentifier)(
       implicit hc: HeaderCarrier,
@@ -121,9 +140,9 @@ class DesAgentClientApiConnector @Inject()(
       authorization = Some(Authorization(s"Bearer $authorizationToken")),
       extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
     monitor(s"ConsumedAPI-DES-$apiName-GET") {
-      httpGet.GET[A](url.toString)(implicitly[HttpReads[A]],
-                                   desHeaderCarrier,
-                                   ec)
+      httpClient.GET[A](url.toString)(implicitly[HttpReads[A]],
+                                      desHeaderCarrier,
+                                      ec)
     }
   }
 }

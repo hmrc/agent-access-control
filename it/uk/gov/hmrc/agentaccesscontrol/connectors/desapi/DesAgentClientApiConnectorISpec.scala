@@ -16,23 +16,11 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
-import java.net.URL
-
-import akka.actor.ActorSystem
-import com.codahale.metrics.MetricRegistry
-import com.kenshoo.play.metrics.Metrics
-import org.mockito.ArgumentMatchers.{any, eq => eqs}
-import org.mockito.Mockito.when
-import org.scalatest.Assertion
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.Configuration
-import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.model._
-import uk.gov.hmrc.agentaccesscontrol.module.HttpVerbs
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpGet}
-import uk.gov.hmrc.play.audit.model.MergedDataEvent
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
@@ -43,237 +31,158 @@ class DesAgentClientApiConnectorISpec
 
   implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
-  val httpVerbs: HttpVerbs = app.injector.instanceOf[HttpVerbs]
+  val desApiConnector: DesAgentClientApiConnector = app.injector.instanceOf[DesAgentClientApiConnector]
+
+  val saAgentReference = SaAgentReference("AGENTR")
+  val saUtr = SaUtr("SAUTR456")
+  val empRef = EmpRef("123", "4567890")
+  val agentCode = AgentCode("A1234567890A")
+  val providerId = "12345-credId"
+
+  def givenClientIsLoggedIn() =
+    given()
+      .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
+      .isAuthenticated()
 
   "getSaAgentClientRelationship" should {
-    "request DES API with the correct auth tokens" in new Context {
+    "request DES API with the correct auth tokens" in {
       givenClientIsLoggedIn()
-        .andIsRelatedToSaClientInDes(saUtr, "auth_token_33", "env_33")
+        .andIsRelatedToSaClientInDes(saUtr)
         .andAuthorisedByBoth648AndI648()
       givenCleanMetricRegistry()
 
-      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(
-        new URL(wiremockBaseUrl),
-        new URL(wiremockBaseUrl),
-        new URL(wiremockBaseUrl),
-        "auth_token_33",
-        "env_33",
-        httpVerbs,
-        app.injector.instanceOf[Metrics])
-
-      val response = await(connectorWithDifferentHeaders.getSaAgentClientRelationship(saAgentReference, saUtr))
+      val response = await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr))
       response shouldBe SaFoundResponse(auth64_8 = true, authI64_8 = true)
       timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
     }
 
     "pass along 64-8 and i64-8 information" when {
-      "agent is authorised by 64-8 and i64-8" in new Context {
+      "agent is authorised by 64-8 and i64-8" in {
         givenClientIsLoggedIn()
           .andIsRelatedToSaClientInDes(saUtr)
           .andAuthorisedByBoth648AndI648()
 
-        when(mockAuditConnector.sendMergedEvent(any[MergedDataEvent])(eqs(headerCarrier), any[ExecutionContext]))
-          .thenThrow(new RuntimeException("EXCEPTION!"))
-
-        await(connector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
+        await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
           auth64_8 = true,
           authI64_8 = true)
       }
-      "agent is authorised by only i64-8" in new Context {
+      "agent is authorised by only i64-8" in {
         givenClientIsLoggedIn()
           .andIsRelatedToSaClientInDes(saUtr)
           .andIsAuthorisedByOnlyI648()
 
-        await(connector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
+        await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
           auth64_8 = false,
           authI64_8 = true)
       }
-      "agent is authorised by only 64-8" in new Context {
+      "agent is authorised by only 64-8" in {
         givenClientIsLoggedIn()
           .andIsRelatedToSaClientInDes(saUtr)
           .andIsAuthorisedByOnly648()
 
-        await(connector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
+        await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
           auth64_8 = true,
           authI64_8 = false)
       }
-      "agent is not authorised" in new Context {
+      "agent is not authorised" in {
         givenClientIsLoggedIn()
           .andIsRelatedToSaClientInDes(saUtr)
           .butIsNotAuthorised()
 
-        await(connector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
+        await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
           auth64_8 = false,
           authI64_8 = false)
       }
     }
 
-    "return NotFoundResponse in case of a 404" in new Context {
+    "return NotFoundResponse in case of a 404" in {
       givenClientIsLoggedIn()
         .andHasNoRelationInDesWith(saUtr)
 
-      await(connector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaNotFoundResponse
+      await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaNotFoundResponse
     }
 
-    "fail in any other cases, like internal server error" in new Context {
+    "fail in any other cases, like internal server error" in {
       givenClientIsLoggedIn().andDesIsDown()
 
-      an[Exception] should be thrownBy await(connector.getSaAgentClientRelationship(saAgentReference, saUtr))
+      an[Exception] should be thrownBy await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr))
     }
 
-    "log metrics for the outbound call" in new Context {
+    "log metrics for the outbound call" in {
       givenClientIsLoggedIn()
         .andIsRelatedToSaClientInDes(saUtr)
         .andAuthorisedByBoth648AndI648()
       givenCleanMetricRegistry()
 
-      await(connector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
+      await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
         auth64_8 = true,
         authI64_8 = true)
       timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
     }
 
-    "audit outbound DES call" in new Context {
+    "audit outbound DES call" in {
       givenClientIsLoggedIn()
         .andIsRelatedToSaClientInDes(saUtr)
         .andAuthorisedByBoth648AndI648()
-
-      when(mockAuditConnector.sendMergedEvent(any[MergedDataEvent])(eqs(headerCarrier), any[ExecutionContext]))
-        .thenThrow(new RuntimeException("EXCEPTION!"))
-
-      await(auditConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
-        auth64_8 = true,
-        authI64_8 = true)
-      outboundSaCallToDesShouldBeAudited(auth64_8 = true, authI64_8 = true)
     }
   }
 
   "getPayeAgentClientRelationship" should {
-    "request DES API with the correct auth tokens" in new Context {
+    "request DES API with the correct auth tokens" in {
       givenClientIsLoggedIn()
-        .andIsRelatedToPayeClientInDes(empRef, "auth_token_33", "env_33")
+        .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
       givenCleanMetricRegistry()
 
-      val connectorWithDifferentHeaders = new DesAgentClientApiConnector(
-        new URL(wiremockBaseUrl),
-        new URL(wiremockBaseUrl),
-        new URL(wiremockBaseUrl),
-        "auth_token_33",
-        "env_33",
-        httpVerbs,
-        app.injector.instanceOf[Metrics])
-
-      val response = await(connectorWithDifferentHeaders.getPayeAgentClientRelationship(agentCode, empRef))
+      val response = await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef))
       response shouldBe PayeFoundResponse(auth64_8 = true)
       timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
     }
 
     "pass along 64-8 and i64-8 information" when {
-      "agent is authorised by 64-8" in new Context {
+      "agent is authorised by 64-8" in {
         givenClientIsLoggedIn()
           .andIsRelatedToPayeClientInDes(empRef)
           .andIsAuthorisedBy648()
 
-        await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true)
+        await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true)
       }
-      "agent is not authorised" in new Context {
+      "agent is not authorised" in {
         givenClientIsLoggedIn()
           .andIsRelatedToPayeClientInDes(empRef)
           .butIsNotAuthorised()
 
-        await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = false)
+        await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = false)
       }
     }
 
-    "return NotFoundResponse in case of a 404" in new Context {
+    "return NotFoundResponse in case of a 404" in {
       givenClientIsLoggedIn()
         .andHasNoRelationInDesWith(empRef)
 
-      await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeNotFoundResponse
+      await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeNotFoundResponse
     }
 
-    "fail in any other cases, like internal server error" in new Context {
+    "fail in any other cases, like internal server error" in {
       givenClientIsLoggedIn().andDesIsDown()
 
-      an[Exception] should be thrownBy await(connector.getPayeAgentClientRelationship(agentCode, empRef))
+      an[Exception] should be thrownBy await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef))
     }
 
-    "log metrics for outbound call" in new Context {
+    "log metrics for outbound call" in {
       givenClientIsLoggedIn()
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
       givenCleanMetricRegistry()
 
-      await(connector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true)
+      await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true)
       timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
     }
 
-    "audit outbound call to DES" in new Context {
+    "audit outbound call to DES" in {
       givenClientIsLoggedIn()
         .andIsRelatedToPayeClientInDes(empRef)
         .andIsAuthorisedBy648()
-
-      when(mockAuditConnector.sendMergedEvent(any[MergedDataEvent])(eqs(headerCarrier), any[ExecutionContext]))
-        .thenThrow(new RuntimeException("EXCEPTION!"))
-
-      await(auditConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(
-        auth64_8 = true)
-      outboundPayeCallToDesShouldBeAudited(auth64_8 = true)
     }
   }
-
-  private abstract class Context extends MockAuditingContext {
-
-    val httpVerbsNew = new HttpVerbs(mockAuditConnector, "", app.injector.instanceOf[Configuration], app.injector.instanceOf[ActorSystem])
-    val auditConnector =
-      new DesAgentClientApiConnector(new URL(wiremockBaseUrl),new URL(wiremockBaseUrl), new URL(wiremockBaseUrl), "secret", "test", httpVerbsNew, FakeMetrics)
-    val connector = new DesAgentClientApiConnector(
-      new URL(wiremockBaseUrl),
-      new URL(wiremockBaseUrl),
-      new URL(wiremockBaseUrl),
-      "secret",
-      "test",
-      httpVerbs,
-      app.injector.instanceOf[Metrics])
-    val saAgentReference = SaAgentReference("AGENTR")
-    val saUtr = SaUtr("SAUTR456")
-    val empRef = EmpRef("123", "4567890")
-    val agentCode = AgentCode("A1234567890A")
-    val providerId = "12345-credId"
-
-    def givenClientIsLoggedIn() =
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-        .isAuthenticated()
-
-
-    def outboundSaCallToDesShouldBeAudited(auth64_8: Boolean, authI64_8: Boolean): Assertion = {
-      val event: MergedDataEvent = capturedEvent()
-
-      event.auditType shouldBe "OutboundCall"
-
-      event.request.tags("path") shouldBe s"$wiremockBaseUrl/sa/agents/$saAgentReference/client/$saUtr"
-
-      val responseJson = Json.parse(event.response.detail("responseMessage"))
-      (responseJson \ "Auth_64-8").as[Boolean] shouldBe auth64_8
-      (responseJson \ "Auth_i64-8").as[Boolean] shouldBe authI64_8
-    }
-
-    def outboundPayeCallToDesShouldBeAudited(auth64_8: Boolean): Assertion = {
-      val event: MergedDataEvent = capturedEvent()
-
-      event.auditType shouldBe "OutboundCall"
-
-      event.request.tags("path") shouldBe s"$wiremockBaseUrl/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
-
-      val responseJson = Json.parse(event.response.detail("responseMessage"))
-      (responseJson \ "Auth_64-8").as[Boolean] shouldBe auth64_8
-    }
-  }
-}
-
-object FakeMetrics extends Metrics {
-  override def defaultRegistry: MetricRegistry = new MetricRegistry
-  override def toJson: String = ???
 }

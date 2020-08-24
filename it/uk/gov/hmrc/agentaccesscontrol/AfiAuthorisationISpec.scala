@@ -16,8 +16,6 @@ package uk.gov.hmrc.agentaccesscontrol
  * limitations under the License.
  */
 
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent.AgentAccessControlDecision
-import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.{AgentCode, Nino}
@@ -40,10 +38,6 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
           .andHasRelationship(arn, clientId)
 
         authResponseFor(agentCode, clientId, method).status shouldBe 200
-
-        DataStreamStub.verifyAuditRequestSent(
-          AgentAccessControlDecision,
-          Map("path" -> s"/agent-access-control/afi-auth/agent/$agentCode/client/$clientId"))
       }
 
     }
@@ -56,10 +50,6 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
           .andHasNoRelationship(arn, clientId)
 
         authResponseFor(agentCode, clientId, method).status shouldBe 401
-
-        DataStreamStub.verifyAuditRequestSent(
-          AgentAccessControlDecision,
-          Map("path" -> s"/agent-access-control/afi-auth/agent/$agentCode/client/$clientId"))
       }
     }
   }
@@ -74,10 +64,6 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
           .andHasRelationship(arn, clientId)
 
         authResponseFor(agentCode, clientId, method).status shouldBe 200
-
-        DataStreamStub.verifyAuditRequestSent(
-          AgentAccessControlDecision,
-          Map("path" -> s"/agent-access-control/afi-auth/agent/$agentCode/client/$clientId"))
       }
 
     }
@@ -90,10 +76,6 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
           .andHasNoRelationship(arn, clientId)
 
         authResponseFor(agentCode, clientId, method).status shouldBe 401
-
-        DataStreamStub.verifyAuditRequestSent(
-          AgentAccessControlDecision,
-          Map("path" -> s"/agent-access-control/afi-auth/agent/$agentCode/client/$clientId"))
       }
     }
   }
