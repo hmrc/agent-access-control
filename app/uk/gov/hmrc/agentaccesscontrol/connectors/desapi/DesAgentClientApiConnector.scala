@@ -33,7 +33,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.http._
-
+import uk.gov.hmrc.http.HttpErrorFunctions._
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[DesAgentClientApiConnectorImpl])
@@ -82,16 +82,13 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
     val url = saUrlFor(saAgentReference, saUtr)
     getWithDesHeaders("GetSaAgentClientRelationship", url) map { r =>
       r.status match {
-        case OK        => foundResponseReads.reads(Json.parse(r.body)).get
-        case NOT_FOUND => SaNotFoundResponse
-        case INTERNAL_SERVER_ERROR =>
-          throw UpstreamErrorResponse(
-            s"Error calling in getSaAgentClientRelationship at: $url",
-            BAD_GATEWAY)
+        case o if is2xx(o) => foundResponseReads.reads(Json.parse(r.body)).get
+        case NOT_FOUND     => SaNotFoundResponse
         case s =>
           throw UpstreamErrorResponse(
             s"Error calling in getSaAgentClientRelationship at: $url",
-            s)
+            s,
+            if (s == INTERNAL_SERVER_ERROR) BAD_GATEWAY else s)
       }
     }
 
@@ -104,13 +101,14 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
     val url = payeUrlFor(agentCode, empRef)
     getWithDesHeaders("GetPayeAgentClientRelationship", url) map (r =>
       r.status match {
-        case OK        => payeFoundResponseReads.reads(Json.parse(r.body)).get
+        case o if is2xx(o) =>
+          payeFoundResponseReads.reads(Json.parse(r.body)).get
         case NOT_FOUND => PayeNotFoundResponse
-        case INTERNAL_SERVER_ERROR =>
+        case s =>
           throw UpstreamErrorResponse(
-            s"Error calling in getSaAgentClientRelationship at: $url",
-            BAD_GATEWAY)
-        case s => throw UpstreamErrorResponse(s"Error calling: $url", s)
+            s"Error calling in getPayeAgentClientRelationship at: $url",
+            s,
+            if (s == INTERNAL_SERVER_ERROR) BAD_GATEWAY else s)
       })
   }
 

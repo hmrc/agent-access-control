@@ -22,12 +22,13 @@ import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{Inject, Singleton}
-import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.http.Status.NOT_FOUND
 import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.domain.TaxIdentifier
+import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{
   HeaderCarrier,
@@ -77,8 +78,8 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
       s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {
       httpClient.GET[HttpResponse](relationshipUrl)
     } map (_.status match {
-      case OK        => true
-      case NOT_FOUND => false
+      case o if is2xx(o) => true
+      case NOT_FOUND     => false
       case s =>
         throw UpstreamErrorResponse(s"Error calling: $relationshipUrl", s)
     })

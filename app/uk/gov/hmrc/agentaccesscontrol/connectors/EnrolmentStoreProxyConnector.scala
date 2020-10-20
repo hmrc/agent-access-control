@@ -79,10 +79,12 @@ class EnrolmentStoreProxyConnector @Inject()(appConfig: AppConfig,
             case "delegated" => parseResponseDelegated(response.json)
             case "principal" => parseResponsePrincipal(response.json)
           }
-        case NO_CONTENT => Set.empty[AgentUserId]
-        case INTERNAL_SERVER_ERROR =>
-          throw UpstreamErrorResponse(s"Error in getES0 at: $url", BAD_GATEWAY)
-        case s => throw UpstreamErrorResponse(s"Error in getES0 at: $url", s)
+        case NO_CONTENT | BAD_REQUEST => Set.empty[AgentUserId]
+        case s =>
+          throw UpstreamErrorResponse(
+            s"Error calling in getSaAgentClientRelationship at: $url",
+            s,
+            if (s == INTERNAL_SERVER_ERROR) BAD_GATEWAY else s)
     })
   }
 
