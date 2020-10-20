@@ -19,19 +19,17 @@ package uk.gov.hmrc.agentaccesscontrol.wiring
 import java.util.regex.{Matcher, Pattern}
 
 import akka.stream.Materializer
-import javax.inject.{Inject, Singleton}
 import app.Routes
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
-import play.api.Logger
+import javax.inject.{Inject, Singleton}
+import play.api.Logging
 import play.api.mvc.{Filter, RequestHeader, Result}
 import uk.gov.hmrc.http.{
-  HeaderCarrier,
   HttpException,
   Upstream4xxResponse,
   Upstream5xxResponse
 }
-import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
 import scala.concurrent.duration.NANOSECONDS
 import scala.concurrent.{ExecutionContext, Future}
@@ -48,7 +46,7 @@ class MicroserviceMonitoringFilter @Inject()(
     KeyToPatternMappingFromRoutes(routes, Set())
 }
 
-object KeyToPatternMappingFromRoutes {
+object KeyToPatternMappingFromRoutes extends Logging {
   def apply(routes: Routes, placeholders: Set[String]): Seq[(String, String)] =
     routes.documentation.map {
       case (method, route, _) => {
@@ -62,7 +60,7 @@ object KeyToPatternMappingFromRoutes {
             } else p)
           .mkString("__")
         val pattern = r.replace("$", ":")
-        Logger.info(s"$key-$method -> $pattern")
+        logger.info(s"$key-$method -> $pattern")
         (key, pattern)
       }
     }
@@ -71,13 +69,11 @@ object KeyToPatternMappingFromRoutes {
 abstract class MonitoringFilter(kenshooRegistry: MetricRegistry)(
     implicit ec: ExecutionContext)
     extends Filter
-    with MonitoringKeyMatcher {
+    with MonitoringKeyMatcher
+    with Logging {
 
   override def apply(nextFilter: (RequestHeader) => Future[Result])(
       requestHeader: RequestHeader): Future[Result] = {
-
-    implicit val hc: HeaderCarrier = fromHeadersAndSession(
-      requestHeader.headers)
 
     findMatchingKey(requestHeader.uri) match {
       case Some(key) =>
@@ -85,22 +81,20 @@ abstract class MonitoringFilter(kenshooRegistry: MetricRegistry)(
           nextFilter(requestHeader)
         }
       case None =>
-        Logger.debug(
+        logger.debug(
           s"API-Not-Monitored: ${requestHeader.method}-${requestHeader.uri}")
         nextFilter(requestHeader)
     }
   }
 
   private def monitor(serviceName: String)(function: => Future[Result])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Result] =
+      implicit ec: ExecutionContext): Future[Result] =
     timer(serviceName) {
       function
     }
 
   private def timer(serviceName: String)(function: => Future[Result])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Result] = {
+      implicit ec: ExecutionContext): Future[Result] = {
     val start = System.nanoTime()
     function.andThen {
       case Success(result) =>

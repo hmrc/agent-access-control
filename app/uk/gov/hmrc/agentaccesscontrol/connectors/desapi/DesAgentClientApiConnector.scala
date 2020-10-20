@@ -22,6 +22,7 @@ import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{Inject, Singleton}
+import play.api.http.Status._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.utils.UriEncoding
@@ -31,14 +32,8 @@ import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.logging.Authorization
-import uk.gov.hmrc.http.{
-  HeaderCarrier,
-  HttpReads,
-  NotFoundException,
-  Upstream4xxResponse
-}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
-
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.HttpErrorFunctions._
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[DesAgentClientApiConnectorImpl])
@@ -47,6 +42,7 @@ trait DesAgentClientApiConnector {
                                    saUtr: SaUtr)(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse]
+
   def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse]
@@ -82,23 +78,38 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
                                    saUtr: SaUtr)(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse] = {
+    import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
     val url = saUrlFor(saAgentReference, saUtr)
     getWithDesHeaders("GetSaAgentClientRelationship", url) map { r =>
-      foundResponseReads.reads(Json.parse(r.body)).get
-    } recover {
-      case _: NotFoundException => SaNotFoundResponse
+      r.status match {
+        case o if is2xx(o) => foundResponseReads.reads(Json.parse(r.body)).get
+        case NOT_FOUND     => SaNotFoundResponse
+        case s =>
+          throw UpstreamErrorResponse(
+            s"Error calling in getSaAgentClientRelationship at: $url",
+            s,
+            if (s == INTERNAL_SERVER_ERROR) BAD_GATEWAY else s)
+      }
     }
+
   }
 
   def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse] = {
+    import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
     val url = payeUrlFor(agentCode, empRef)
-    getWithDesHeaders("GetPayeAgentClientRelationship", url) map { r =>
-      payeFoundResponseReads.reads(Json.parse(r.body)).get
-    } recover {
-      case _: NotFoundException => PayeNotFoundResponse
-    }
+    getWithDesHeaders("GetPayeAgentClientRelationship", url) map (r =>
+      r.status match {
+        case o if is2xx(o) =>
+          payeFoundResponseReads.reads(Json.parse(r.body)).get
+        case NOT_FOUND => PayeNotFoundResponse
+        case s =>
+          throw UpstreamErrorResponse(
+            s"Error calling in getPayeAgentClientRelationship at: $url",
+            s,
+            if (s == INTERNAL_SERVER_ERROR) BAD_GATEWAY else s)
+      })
   }
 
   private def saUrlFor(saAgentReference: SaAgentReference, saUtr: SaUtr): URL =
@@ -111,6 +122,7 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
   def getAgentRecord(agentId: TaxIdentifier)(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[Either[String, AgentRecord]] = {
+    import uk.gov.hmrc.http.HttpReads.Implicits._
     getWithDesHeaders[AgentRecord]("GetAgentRecord",
                                    new URL(getAgentRecordUrl(agentId)))
       .map(a => Right(a))
@@ -140,9 +152,7 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
       authorization = Some(Authorization(s"Bearer $authorizationToken")),
       extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
     monitor(s"ConsumedAPI-DES-$apiName-GET") {
-      httpClient.GET[A](url.toString)(implicitly[HttpReads[A]],
-                                      desHeaderCarrier,
-                                      ec)
+      httpClient.GET[A](url.toString)(implicitly, desHeaderCarrier, ec)
     }
   }
 }

@@ -54,7 +54,7 @@ class AuthorisationControllerSpec
   val environment = mock[Environment]
   val arn = Arn("arn")
   val agentCode = "ABCDEF123456"
-  val credentialRole = Admin
+  val credentialRole = User
   val providerId = "12345-credId"
 
   def controller(appConfig: AppConfig = new AppConfig(mockServiceConfig())) = {
@@ -97,7 +97,7 @@ class AuthorisationControllerSpec
                                    arn = Some(arn),
                                    "ggId",
                                    Some("Agent"),
-                                   Some(Admin))
+                                   Some(User))
 
   private def anSaEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
 

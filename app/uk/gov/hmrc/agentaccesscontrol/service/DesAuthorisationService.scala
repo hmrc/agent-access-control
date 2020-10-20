@@ -45,10 +45,10 @@ class DesAuthorisationService @Inject()(
       .getPayeAgentClientRelationship(agentCode, empRef)
       .map(handleEBSResponse(agentCode, empRef, _))
 
-  private def handleCesaResponse(agentCode: AgentCode,
-                                 saUtr: SaUtr,
-                                 response: SaDesAgentClientFlagsApiResponse)(
-      implicit headerCarrier: HeaderCarrier): Boolean =
+  private def handleCesaResponse(
+      agentCode: AgentCode,
+      saUtr: SaUtr,
+      response: SaDesAgentClientFlagsApiResponse): Boolean =
     response match {
       case SaNotFoundResponse =>
         notAuthorised(
@@ -61,10 +61,10 @@ class DesAuthorisationService @Inject()(
           s"DES API returned false for at least one flag agent $agentCode and client $saUtr. 64-8=$auth64_8, i64-8=$authI64_8")
     }
 
-  private def handleEBSResponse(agentCode: AgentCode,
-                                empRef: EmpRef,
-                                response: PayeDesAgentClientFlagsApiResponse)(
-      implicit headerCarrier: HeaderCarrier): Boolean =
+  private def handleEBSResponse(
+      agentCode: AgentCode,
+      empRef: EmpRef,
+      response: PayeDesAgentClientFlagsApiResponse): Boolean =
     response match {
       case PayeNotFoundResponse =>
         notAuthorised(

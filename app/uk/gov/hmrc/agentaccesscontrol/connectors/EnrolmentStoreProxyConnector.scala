@@ -18,20 +18,21 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import java.net.URL
 
-import javax.inject.{Inject, Named, Singleton}
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
+import javax.inject.{Inject, Singleton}
+import play.api.http.Status._
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaAgentReference, SaUtr}
+import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{
-  BadRequestException,
   HeaderCarrier,
-  HttpGet,
-  HttpResponse
+  HttpClient,
+  HttpResponse,
+  UpstreamErrorResponse
 }
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -67,21 +68,25 @@ class EnrolmentStoreProxyConnector @Inject()(appConfig: AppConfig,
 
   private def getES0(enrolmentKey: String, usersType: String)(
       implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Set[AgentUserId]] =
+      ec: ExecutionContext): Future[Set[AgentUserId]] = {
+    val url = pathES0(enrolmentKey, usersType)
     monitor("ConsumedAPI-EnrolmentStoreProxy-ES0-GET") {
-      httpClient.GET[HttpResponse](pathES0(enrolmentKey, usersType))
+      httpClient.GET[HttpResponse](url)
     }.map(response =>
-        response.status match {
-          case 200 =>
-            usersType match {
-              case "delegated" => parseResponseDelegated(response.json)
-              case "principal" => parseResponsePrincipal(response.json)
-            }
-          case 204 => Set.empty[AgentUserId]
-      })
-      .recover {
-        case _: BadRequestException => Set.empty[AgentUserId]
-      }
+      response.status match {
+        case OK =>
+          usersType match {
+            case "delegated" => parseResponseDelegated(response.json)
+            case "principal" => parseResponsePrincipal(response.json)
+          }
+        case NO_CONTENT | BAD_REQUEST => Set.empty[AgentUserId]
+        case s =>
+          throw UpstreamErrorResponse(
+            s"Error calling in getSaAgentClientRelationship at: $url",
+            s,
+            if (s == INTERNAL_SERVER_ERROR) BAD_GATEWAY else s)
+    })
+  }
 
   private def parseResponseDelegated(json: JsValue): Set[AgentUserId] =
     (json \ "delegatedUserIds").as[Set[String]].map(AgentUserId)

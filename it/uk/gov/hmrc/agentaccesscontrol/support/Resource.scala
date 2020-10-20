@@ -41,13 +41,13 @@ class Resource(path: String)(port: Int) {
     implicit writes: Writes[A],
     hc: HeaderCarrier): HttpResponse = perform(url) { _.post(Json.toJson(body)) }
 
-  private def perform(url: String)(fun: WSRequest => Future[WSResponse])(implicit hc: HeaderCarrier): WSHttpResponse =
+  private def perform(url: String)(fun: WSRequest => Future[WSResponse])(implicit hc: HeaderCarrier): HttpResponse =
     await(
       fun(
         WsTestClient.wsUrl(url)(port)
-          .withHeaders(hc.headers: _*)
+          .withHttpHeaders(hc.headers: _*)
           .withRequestTimeout(Duration(20, SECONDS)))
-        .map(new WSHttpResponse(_)))
+        .map(WSHttpResponse(_)))
 
   private def await[A](future: Future[A]): A = Await.result(future, Duration(10, SECONDS))
 

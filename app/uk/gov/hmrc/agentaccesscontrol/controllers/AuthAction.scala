@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
-import play.api.mvc.{Request, Result, Results}
-import play.api.{Environment, Logger}
+import play.api.mvc.{Result, Results}
+import play.api.{Environment, Logging}
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
@@ -34,19 +34,18 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait AuthAction extends AuthorisedFunctions with Results {
+trait AuthAction extends AuthorisedFunctions with Results with Logging {
 
   def env: Environment
 
   def withAgentAuthorised[A](ac: AgentCode)(
       body: AuthDetails => Future[Result])(
-      implicit request: Request[A],
-      hc: HeaderCarrier,
+      implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[Result] = {
     authorised(AuthProviders(GovernmentGateway) and AffinityGroup.Agent)
       .retrieve(agentCode and allEnrolments and credentialRole and credentials) {
         case agentCodeOpt ~ enrols ~ credRole ~ Some(
-              Credentials(providerId, _)) => {
+              Credentials(providerId, _)) =>
           agentCodeOpt match {
             case Some(agentCode) if agentCode == ac.value =>
               body(
@@ -56,31 +55,29 @@ trait AuthAction extends AuthorisedFunctions with Results {
                             affinityGroup = Some("Agent"),
                             agentUserRole = credRole))
             case Some(_) =>
-              Logger.warn(
+              logger.warn(
                 s"agent code from auth did not match the agent code in url")
               Future(Forbidden)
             case None =>
-              Logger.info(
+              logger.info(
                 s"no agent code found in auth details for agent code $ac")
               Future(Forbidden)
           }
-        }
+        case err => throw new Exception(s"Authoisation retrieval error: $err")
       }
       .recover {
         handleException
       }
   }
 
-  private def handleException(
-      implicit ec: ExecutionContext,
-      request: Request[_]): PartialFunction[Throwable, Result] = {
+  private def handleException(): PartialFunction[Throwable, Result] = {
 
     case e: UnsupportedAffinityGroup =>
-      Logger.warn(s"user did not have the Agent Affinity Group ${e.getMessage}")
+      logger.warn(s"user did not have the Agent Affinity Group ${e.getMessage}")
       Forbidden
 
     case e: UnsupportedAuthProvider =>
-      Logger.warn(
+      logger.warn(
         s"user was not authorised in Government Gateway ${e.getMessage}")
       Forbidden
   }

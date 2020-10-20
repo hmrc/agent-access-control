@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
-import play.api.{Environment, Logger}
+import play.api.{Environment, Logging}
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
@@ -40,7 +40,8 @@ class AuthorisationController @Inject()(
     cc: ControllerComponents)(implicit val ec: ExecutionContext,
                               appConfig: AppConfig)
     extends BackendController(cc)
-    with AuthAction {
+    with AuthAction
+    with Logging {
 
   val payeEnabled: Boolean = appConfig.featuresPayeAccess
 
@@ -102,7 +103,7 @@ class AuthorisationController @Inject()(
               case _    => Unauthorized
             }
           } else {
-            Logger.warn(s"paye not enabled in configuration")
+            logger.warn(s"paye not enabled in configuration")
             Future successful Forbidden
           }
         }
