@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.service
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
+import play.api.Logging
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{
   AgentAccessControlDecision,
@@ -40,7 +40,8 @@ class AuthorisationService @Inject()(
     auditService: AuditService,
     mappingConnector: MappingConnector,
     afiRelationshipConnector: AfiRelationshipConnector)
-    extends LoggingAuthorisationResults {
+    extends LoggingAuthorisationResults
+    with Logging {
 
   private val accessGranted = true
   private val accessDenied = false
@@ -157,8 +158,7 @@ class AuthorisationService @Inject()(
                                agentAuthDetails: AuthDetails,
                                arn: Arn)(
       implicit ec: ExecutionContext,
-      hc: HeaderCarrier,
-      request: Request[Any]): Future[(Boolean, Boolean, Option[Boolean])] =
+      hc: HeaderCarrier): Future[(Boolean, Boolean, Option[Boolean])] =
     for {
       saAgentReferences <- mappingConnector
         .getAgentMappings("sa", arn)
@@ -171,7 +171,7 @@ class AuthorisationService @Inject()(
             val matchingAgentUserIds =
               delegatedAgentUserIds.intersect(agentUserIds)
             if (matchingAgentUserIds.isEmpty) {
-              Logger.warn(
+              logger.warn(
                 s"Relationship not found in EACD for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}")
               Future.successful((false, None))
             } else
@@ -179,10 +179,10 @@ class AuthorisationService @Inject()(
                 .isAuthorisedInCesa(agentCode, saAgentReference, saUtr)
                 .andThen {
                   case Success(false) =>
-                    Logger.info(
+                    logger.info(
                       s"Relationship not found in CESA for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}")
                   case Failure(e) =>
-                    Logger.info(
+                    logger.info(
                       s"Could not check relationship in CESA for arn=${arn.value} agentCode=${agentCode.value} agentUserId=${agentAuthDetails.ggCredentialId} saAgentReference=${saAgentReference.value} client=${saUtr.value}",
                       e
                     )

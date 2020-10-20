@@ -16,17 +16,17 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import play.api.Logger
+import play.api.Logging
 import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
 
-trait LoggingAuthorisationResults {
+trait LoggingAuthorisationResults extends Logging {
 
   protected def notAuthorised(agentCode: AgentCode,
                               clientTaxIdentifier: TaxIdentifier,
                               agentUserId: String,
                               agentReference: Option[TaxIdentifier] = None,
                               hasAgents: Option[Boolean] = None): Boolean = {
-    Logger.info(s"Not authorised: Access not allowed for ${agentReference
+    logger.info(s"Not authorised: Access not allowed for ${agentReference
       .map(ar => s"agent=$ar")
       .getOrElse("")} agentCode=${agentCode.value} agentUserId=$agentUserId client=$clientTaxIdentifier ${hasAgents
       .map(ha => s"clientHasAgents=$ha")
@@ -35,12 +35,12 @@ trait LoggingAuthorisationResults {
   }
 
   protected def notAuthorised(message: String): Boolean = {
-    Logger.info(s"Not authorised: $message")
+    logger.info(s"Not authorised: $message")
     false
   }
 
   protected def authorised(message: String): Boolean = {
-    Logger.info(message)
+    logger.info(message)
     true
   }
 
@@ -49,18 +49,18 @@ trait LoggingAuthorisationResults {
       clientTaxIdentifier: TaxIdentifier,
       agentUserId: String,
       agentReference: Option[TaxIdentifier] = None): Boolean = {
-    Logger.info(
+    logger.info(
       s"Authorised: Access allowed for agent=$agentReference agentCode=${agentCode.value} agentUserId=$agentUserId client=$clientTaxIdentifier")
     true
   }
 
   protected def found(message: String): Boolean = {
-    Logger.info(s"Found: $message")
+    logger.info(s"Found: $message")
     true
   }
 
   protected def notFound(message: String): Boolean = {
-    Logger.info(s"notFound: $message")
+    logger.info(s"notFound: $message")
     false
   }
 }

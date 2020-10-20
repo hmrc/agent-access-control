@@ -22,13 +22,19 @@ import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{Inject, Singleton}
+import play.api.http.Status.{NOT_FOUND, OK}
 import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.domain.TaxIdentifier
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, NotFoundException}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{
+  HeaderCarrier,
+  HttpClient,
+  HttpResponse,
+  UpstreamErrorResponse
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -70,10 +76,11 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
     monitor(
       s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {
       httpClient.GET[HttpResponse](relationshipUrl)
-    }.map { _ =>
-      true
-    } recover {
-      case _: NotFoundException => false
-    }
+    } map (_.status match {
+      case OK        => true
+      case NOT_FOUND => false
+      case s =>
+        throw UpstreamErrorResponse(s"Error calling: $relationshipUrl", s)
+    })
   }
 }

@@ -17,7 +17,6 @@
 package uk.gov.hmrc.agentaccesscontrol.service
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{
   AgentAccessControlDecision,
@@ -148,7 +147,7 @@ class ESAuthorisationService @Inject()(
         case Right(agentRecord) =>
           if (agentRecord.isSuspended) {
             if (agentRecord.suspendedFor(regime)) {
-              Logger.warn(
+              logger.warn(
                 s"agent with id : ${agentId.value} is suspended for regime $regime")
               Future(false)
             } else {
@@ -158,7 +157,7 @@ class ESAuthorisationService @Inject()(
             proceed
           }
         case Left(message) =>
-          Logger.warn(message)
+          logger.warn(message)
           Future(false)
       }
     } else {

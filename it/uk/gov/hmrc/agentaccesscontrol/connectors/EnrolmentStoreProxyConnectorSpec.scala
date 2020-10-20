@@ -5,7 +5,7 @@ import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain._
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -74,7 +74,7 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
           .agentAdmin(agentCode, providerId, None, None)
           .andEnrolmentStoreProxyReturnsAnError500()
 
-        an[Upstream5xxResponse] should be thrownBy await(connectorFn(clientId))
+        an[UpstreamErrorResponse] should be thrownBy await(connectorFn(clientId))
       }
 
       "record metrics for outbound call" in {

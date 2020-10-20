@@ -28,7 +28,7 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.{
   MappingConnector
 }
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
-import uk.gov.hmrc.auth.core.Admin
+import uk.gov.hmrc.auth.core.User
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -43,10 +43,10 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val providerId = "12345-credId"
 
   val nonMtdAuthDetails =
-    AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(Admin))
+    AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(User))
 
   val notEnrolledAuthDetails =
-    AuthDetails(None, None, "ggId", Some("Agent"), Some(Admin))
+    AuthDetails(None, None, "ggId", Some("Agent"), Some(User))
 
   implicit val hc = HeaderCarrier()
   implicit val ec = concurrent.ExecutionContext.Implicits.global
@@ -71,7 +71,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         Seq("credId" -> "ggId",
             "accessGranted" -> false,
             "affinityGroup" -> "Agent",
-            "agentUserRole" -> Admin)
+            "agentUserRole" -> User)
       )(hc, fakeRequest, ec)
     }
 
@@ -99,7 +99,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> true,
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
-          "agentUserRole" -> Admin
+          "agentUserRole" -> User
         )
       )(hc, fakeRequest, ec)
     }
@@ -126,19 +126,17 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> true,
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
-          "agentUserRole" -> Admin
+          "agentUserRole" -> User
         )
       )(hc, fakeRequest, ec)
     }
 
     "not hard code audited values" in new Context {
-      val differentSaAgentRef = SaAgentReference("XYZ123")
-
       whenESPIsCheckedForSaRelationship thenReturn true
       whenCesaIsCheckedForSaRelationship thenReturn true
 
       val authDetails =
-        AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(Admin))
+        AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(User))
 
       await(
         authorisationService.isAuthorisedForSa(agentCode,
@@ -157,7 +155,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> true,
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
-          "agentUserRole" -> Admin
+          "agentUserRole" -> User
         )
       )(hc, fakeRequest, ec)
     }
@@ -184,7 +182,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> true,
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
-          "agentUserRole" -> Admin
+          "agentUserRole" -> User
         )
       )(hc, fakeRequest, ec)
     }
@@ -212,7 +210,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> false,
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
-          "agentUserRole" -> Admin
+          "agentUserRole" -> User
         )
       )(hc, fakeRequest, ec)
     }
@@ -243,7 +241,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> true,
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
-          "agentUserRole" -> Admin
+          "agentUserRole" -> User
         )
       )(hc, fakeRequest, ec)
     }
@@ -272,7 +270,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> true,
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
-          "agentUserRole" -> Admin
+          "agentUserRole" -> User
         )
       )(hc, fakeRequest, ec)
     }
@@ -301,7 +299,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "enrolmentStoreResult" -> false,
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
-          "agentUserRole" -> Admin
+          "agentUserRole" -> User
         )
       )(hc, fakeRequest, ec)
     }

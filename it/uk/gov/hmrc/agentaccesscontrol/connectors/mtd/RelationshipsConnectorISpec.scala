@@ -1,10 +1,10 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
-import com.kenshoo.play.metrics.Metrics
 import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
@@ -61,8 +61,6 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
     }
 
     "record metrics" in {
-      val metricsRegistry = app.injector.instanceOf[Metrics].defaultRegistry
-
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(identifier)

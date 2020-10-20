@@ -21,10 +21,16 @@ import java.net.URL
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.Inject
+import play.api.http.Status.{NOT_FOUND, OK}
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, NotFoundException}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{
+  HeaderCarrier,
+  HttpClient,
+  HttpResponse,
+  UpstreamErrorResponse
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -45,10 +51,11 @@ class AfiRelationshipConnector @Inject()(appConfig: AppConfig,
 
     monitor("ConsumedAPI-AgentFiRelationship-Check-GET") {
       httpClient.GET[HttpResponse](afiRelationshipUrl)
-    } map { response =>
-      true
-    } recover {
-      case _: NotFoundException => false
-    }
+    } map (_.status match {
+      case OK        => true
+      case NOT_FOUND => false
+      case s =>
+        throw UpstreamErrorResponse(s"Error calling: $afiRelationshipUrl", s)
+    })
   }
 }

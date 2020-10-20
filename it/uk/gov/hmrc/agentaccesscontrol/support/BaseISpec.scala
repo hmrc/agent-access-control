@@ -18,13 +18,13 @@ package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatest.TestData
-import org.scalatestplus.play.{OneAppPerSuite, OneServerPerTest}
+import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneServerPerTest}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentmtdidentifiers.model._
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaAgentReference, SaUtr, TaxIdentifier}
+import uk.gov.hmrc.domain.{Vrn => _, _}
 import uk.gov.hmrc.play.test.UnitSpec
 
 abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with StubUtils {
@@ -60,11 +60,11 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
       .configure(wireMockAppConfiguration ++ additionalConfiguration)
 }
 
-abstract class WireMockWithOneAppPerSuiteISpec extends WireMockISpec with OneAppPerSuite {
+abstract class WireMockWithOneAppPerSuiteISpec extends WireMockISpec with GuiceOneAppPerSuite {
   override implicit lazy val app: Application = appBuilder.build()
 }
 
-abstract class WireMockWithOneServerPerTestISpec extends WireMockISpec with OneServerPerTest {
+abstract class WireMockWithOneServerPerTestISpec extends WireMockISpec with GuiceOneServerPerTest {
   override def newAppForTest(testData: TestData): Application = appBuilder.build()
 }
 
@@ -501,21 +501,6 @@ trait StubUtils {
               .withBody(responseBody)))
       this
     }
-
-
-
-
-    private val defaultOnlyUsedByAuditingAuthorityJson =
-      s"""
-         |  ,
-         |  "accounts": {
-         |    "agent": {
-         |      "agentUserRole": "admin"
-         |    }
-         |  },
-         |  "affinityGroup": "Agent"
-       """.stripMargin
-
   }
 
   trait RelationshipsStub[A] {

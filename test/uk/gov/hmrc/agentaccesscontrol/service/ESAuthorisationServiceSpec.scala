@@ -17,12 +17,8 @@
 package uk.gov.hmrc.agentaccesscontrol.service
 
 import org.scalamock.scalatest.MockFactory
-import play.api.mvc.Request
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentaccesscontrol.audit.{
-  AgentAccessControlEvent,
-  AuditService
-}
+import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
@@ -33,7 +29,7 @@ import uk.gov.hmrc.agentaccesscontrol.model.{
 }
 import uk.gov.hmrc.agentaccesscontrol.support.AuditSupport
 import uk.gov.hmrc.agentmtdidentifiers.model._
-import uk.gov.hmrc.auth.core.Admin
+import uk.gov.hmrc.auth.core.User
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, TaxIdentifier}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -84,9 +80,9 @@ class ESAuthorisationServiceSpec
   val saAgentRef = SaAgentReference("ABC456")
   val clientId = MtdItId("clientId")
   val mtdAuthDetails =
-    AuthDetails(None, Some(arn), "ggId", Some("Agent"), Some(Admin))
+    AuthDetails(None, Some(arn), "ggId", Some("Agent"), Some(User))
   val nonMtdAuthDetails =
-    AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(Admin))
+    AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(User))
   implicit val hc = HeaderCarrier()
   implicit val fakeRequest =
     FakeRequest("GET", "/agent-access-control/mtd-it-auth/agent/arn/client/utr")

@@ -21,14 +21,14 @@ import java.net.URL
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
+import play.api.Logging
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.model.AgentReferenceMappings
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
-
+import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.HttpReads.Implicits._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
@@ -36,7 +36,8 @@ import scala.util.control.NonFatal
 class MappingConnector @Inject()(appConfig: AppConfig,
                                  httpClient: HttpClient,
                                  metrics: Metrics)
-    extends HttpAPIMonitor {
+    extends HttpAPIMonitor
+    with Logging {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   def getAgentMappings(key: String, arn: Arn)(
@@ -46,7 +47,7 @@ class MappingConnector @Inject()(appConfig: AppConfig,
       httpClient.GET[AgentReferenceMappings](genMappingUrl(key, arn).toString)
     }.recover {
       case NonFatal(_) =>
-        Logger.warn("Something went wrong")
+        logger.warn("Something went wrong")
         AgentReferenceMappings.apply(List.empty)
     }
 
