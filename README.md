@@ -1,7 +1,5 @@
 # agent-access-control
 
-[![Build Status](https://travis-ci.org/hmrc/agent-access-control.svg?branch=master)](https://travis-ci.org/hmrc/agent-access-control) [ ![Download](https://api.bintray.com/packages/hmrc/releases/agent-access-control/images/download.svg) ](https://bintray.com/hmrc/releases/agent-access-control/_latestVersion)
-
 Delegated auth rules for [auth-client](https://github.com/hmrc/auth-client) library to allow access
 to agents to their clients's data. Currently supports:
 * PAYE (IR-PAYE)
@@ -10,6 +8,7 @@ to agents to their clients's data. Currently supports:
 * MTD Value Added Tax (VAT)
 * MTD Income Record Viewer (AFI)
 * MTD Trusts (TERS)
+* MTD Non-Taxable-Trusts (TERSNT)
 * MTD Capital Gains (CGT)
 
 
@@ -96,6 +95,16 @@ authorised(
      .withDelegatedAuthRule("trust-auth")) { // your protected logic }
 ```
 
+##### GET /agent-access-control/non-taxable-trust-auth/agent/:agentCode/client/:urn
+
+### Example usage
+```scala
+authorised(
+   Enrolment("HMRC-TERSNT-ORG")
+     .withIdentifier("URN", "123")
+     .withDelegatedAuthRule("non-taxable-trust-auth")) { // your protected logic }
+```
+
 ##### GET /agent-access-control/cgt-auth/agent/:agentCode/client/:cgtRef
 
 ### Example usage
@@ -132,6 +141,3 @@ Displays metrics as JSON.
 
 Displays `META-INF/MANIFEST.MF` as JSON.
 
-### License
-
-This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,13 @@ class ESAuthorisationService @Inject()(
       request: Request[_]): Future[Boolean] =
     authoriseFor(agentCode, taxIdentifier, "HMRC-TERS-ORG", authDetails)
 
+  def authoriseForNonTaxableTrust(agentCode: AgentCode,
+                                  taxIdentifier: TaxIdentifier,
+                                  authDetails: AuthDetails)(
+      implicit hc: HeaderCarrier,
+      request: Request[_]): Future[Boolean] =
+    authoriseFor(agentCode, taxIdentifier, "HMRC-TERSNT-ORG", authDetails)
+
   def authoriseForCgt(agentCode: AgentCode,
                       taxIdentifier: TaxIdentifier,
                       authDetails: AuthDetails)(
@@ -111,10 +118,11 @@ class ESAuthorisationService @Inject()(
 
   private def getDesRegimeFor(regime: String) = {
     regime match {
-      case "HMRC-MTD-IT"   => "ITSA"
-      case "HMRC-MTD-VAT"  => "VATC"
-      case "HMRC-TERS-ORG" => "TRS"
-      case "HMRC-CGT-PD"   => "CGT"
+      case "HMRC-MTD-IT"     => "ITSA"
+      case "HMRC-MTD-VAT"    => "VATC"
+      case "HMRC-TERS-ORG"   => "TRS"
+      case "HMRC-TERSNT-ORG" => "TRS" //this is the same with "HMRC-TERS-ORG"
+      case "HMRC-CGT-PD"     => "CGT"
     }
   }
 

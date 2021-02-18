@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
       case _ @Vrn(vrn)         => ("HMRC-MTD-VAT", "VRN", vrn)
       case _ @Utr(utr)         => ("HMRC-TERS-ORG", "SAUTR", utr)
       case _ @CgtRef(cgtRef)   => ("HMRC-CGT-PD", "CGTPDRef", cgtRef)
+      case _ @Urn(urn)         => ("HMRC-TERSNT-ORG", "URN", urn)
     }
 
     val relationshipUrl =
