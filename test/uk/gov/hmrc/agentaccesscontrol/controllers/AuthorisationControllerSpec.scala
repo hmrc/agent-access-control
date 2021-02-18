@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
 }
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Urn, Vrn}
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
 import uk.gov.hmrc.auth.core.{Nino => _, _}
@@ -276,6 +276,19 @@ class AuthorisationControllerSpec
 
   }
 
+  private def aNonTaxableTrustEndpoint(
+      fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
+    "return 200 when the point is called" in {
+      whenAuthIsCalled(authResponseMtdAgent)
+      whenNonTaxableTrustAuthorisationServiceIsCalled.returning(
+        Future successful true)
+      val response = controller().isAuthorisedForNonTaxableTrust(
+        AgentCode(agentCode),
+        Urn("urn123456"))(fakeRequest)
+      status(response) shouldBe 200
+    }
+  }
+
   "GET isAuthorisedForSa" should {
     behave like anSaEndpoint(
       FakeRequest("GET", "/agent-access-control/sa-auth/agent//client/utr"))
@@ -333,6 +346,21 @@ class AuthorisationControllerSpec
         .withJsonBody(Json.parse("{}")))
   }
 
+  "GET isAuthorisedForNonTaxableTrust" should {
+    behave like aNonTaxableTrustEndpoint(
+      FakeRequest(
+        "GET",
+        "/agent-access-control/non-taxable-trust-auth/agent//client/urn"))
+  }
+
+  "POST isAuthorisedForNonTaxableTrust" should {
+    behave like aNonTaxableTrustEndpoint(
+      FakeRequest(
+        "POST",
+        "/agent-access-control/non-taxable-trust-auth/agent//client/urn")
+        .withJsonBody(Json.parse("{}")))
+  }
+
   def whenAuthIsCalled(
       returnValue: Future[
         ~[~[~[Option[String], Enrolments], Option[CredentialRole]],
@@ -387,6 +415,13 @@ class AuthorisationControllerSpec
         _: HeaderCarrier,
         _: Request[Any]))
       .expects(*, *, *, *, *, *)
+
+  def whenNonTaxableTrustAuthorisationServiceIsCalled =
+    (esAuthorisationService
+      .authoriseForNonTaxableTrust(_: AgentCode, _: Urn, _: AuthDetails)(
+        _: HeaderCarrier,
+        _: Request[Any]))
+      .expects(*, *, *, *, *)
 
   private def mockServiceConfig(allowPayeAccess: Boolean = true) = {
     val servicesConfig = mock[ServicesConfig]

@@ -25,6 +25,10 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
     behave like aCheckEndpoint(Utr("101747641"), "Utr")
   }
 
+  "relationshipExists for HMRC-TERSNT-ORG" should {
+    behave like aCheckEndpoint(Urn("urn101747641"), "Urn")
+  }
+
   "relationshipExists for HMRC-CGT-PD" should {
     behave like aCheckEndpoint(CgtRef("XMCGTP123456789"), "CgtRef")
   }

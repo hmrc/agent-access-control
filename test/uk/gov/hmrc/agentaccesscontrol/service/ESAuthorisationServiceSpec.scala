@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -326,6 +326,55 @@ class ESAuthorisationServiceSpec
       val result =
         await(service.authoriseForTrust(agentCode, clientId, mtdAuthDetails))
 
+      result shouldBe false
+    }
+  }
+
+  "authoriseForNonTaxableTrust" should {
+
+    val urn = Urn("urn")
+
+    "allow access for agent with a client relationship" in {
+      givenAuditEvent()
+      whenDesAgentClientApiConnectorIsCalled returning Future(
+        Right(agentRecord))
+      whenRelationshipsConnectorIsCalled returning true
+
+      val result = await(
+        service.authoriseForNonTaxableTrust(agentCode, urn, mtdAuthDetails))
+
+      result shouldBe true
+    }
+
+    "deny access for a non-mtd agent" in {
+      givenAuditEvent()
+      val result = await(
+        service.authoriseForNonTaxableTrust(agentCode, urn, nonMtdAuthDetails))
+      result shouldBe false
+    }
+
+    "deny access for a mtd agent without a client relationship" in {
+      givenAuditEvent()
+      whenRelationshipsConnectorIsCalled returning false
+      whenDesAgentClientApiConnectorIsCalled returning Future(
+        Right(agentRecord))
+
+      val result = await(
+        service.authoriseForNonTaxableTrust(agentCode, urn, mtdAuthDetails))
+
+      result shouldBe false
+    }
+
+    "handle suspended agents and return false" in {
+
+      val agentRecord = AgentRecord(
+        Some(SuspensionDetails(suspensionStatus = true, Some(Set("TRS")))))
+
+      whenDesAgentClientApiConnectorIsCalled returning Future(
+        Right(agentRecord))
+
+      val result =
+        await(service.authoriseForTrust(agentCode, clientId, mtdAuthDetails))
       result shouldBe false
     }
   }

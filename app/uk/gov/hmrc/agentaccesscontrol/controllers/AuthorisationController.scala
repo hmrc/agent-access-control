@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
 }
-import uk.gov.hmrc.agentmtdidentifiers.model.{CgtRef, MtdItId, Utr, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -128,6 +128,21 @@ class AuthorisationController @Inject()(
         {
           esAuthorisationService
             .authoriseForTrust(agentCode, utr, authDetails)
+            .map {
+              case authorised if authorised => Ok
+              case _                        => Unauthorized
+            }
+        }
+      }
+    }
+
+  def isAuthorisedForNonTaxableTrust(agentCode: AgentCode,
+                                     urn: Urn): Action[AnyContent] =
+    Action.async { implicit request: Request[_] =>
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          esAuthorisationService
+            .authoriseForNonTaxableTrust(agentCode, urn, authDetails)
             .map {
               case authorised if authorised => Ok
               case _                        => Unauthorized
