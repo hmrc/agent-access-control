@@ -102,7 +102,7 @@ authorised(
 authorised(
    Enrolment("HMRC-TERSNT-ORG")
      .withIdentifier("URN", "123")
-     .withDelegatedAuthRule("non-taxable-trust-auth")) { // your protected logic }
+     .withDelegatedAuthRule("trust-auth")) { // your protected logic }
 ```
 
 ##### GET /agent-access-control/cgt-auth/agent/:agentCode/client/:cgtRef
