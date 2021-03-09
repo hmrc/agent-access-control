@@ -9,10 +9,10 @@ class NonTaxableTrustAuthorisationISpec extends WireMockWithOneServerPerTestISpe
 
   val agentCode: AgentCode = AgentCode("A11112222A")
   val arn: Arn = Arn("01234567890")
-  val urn: Urn = Urn("urn12345677890")
+  val urn: Urn = Urn("XXTRUST12345678")
   val providerId: String = "12345-credId"
 
-  "GET /agent-access-control/non-taxable-trust-auth/agent/:agentCode/client/:urn" should {
+  "GET /agent-access-control/trust-auth/agent/:agentCode/client/:urn" should {
     val method = "GET"
     "grant access when the agency and client are subscribed to the appropriate services and have a relationship" in {
       given()
@@ -69,7 +69,7 @@ class NonTaxableTrustAuthorisationISpec extends WireMockWithOneServerPerTestISpe
 
       authResponseFor(agentCode, urn, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-__non-taxable-trust-auth__agent__:__client__:-GET")
+      timerShouldExistsAndBeenUpdated("API-__trust-auth__agent__:__client__:-GET")
     }
 
     "handle suspended agents and return unauthorised" in {
@@ -82,7 +82,7 @@ class NonTaxableTrustAuthorisationISpec extends WireMockWithOneServerPerTestISpe
 
       authResponseFor(agentCode, urn, method).status shouldBe 401
 
-      timerShouldExistsAndBeenUpdated("API-__non-taxable-trust-auth__agent__:__client__:-GET")
+      timerShouldExistsAndBeenUpdated("API-__trust-auth__agent__:__client__:-GET")
     }
   }
 
@@ -143,13 +143,13 @@ class NonTaxableTrustAuthorisationISpec extends WireMockWithOneServerPerTestISpe
 
       authResponseFor(agentCode, urn, method).status shouldBe 200
 
-      timerShouldExistsAndBeenUpdated("API-__non-taxable-trust-auth__agent__:__client__:-POST")
+      timerShouldExistsAndBeenUpdated("API-__trust-auth__agent__:__client__:-POST")
     }
   }
 
   def authResponseFor(agentCode: AgentCode, urn: Urn, method: String): HttpResponse = {
     val resource =
-      new Resource(s"/agent-access-control/non-taxable-trust-auth/agent/${agentCode.value}/client/${urn.value}")(port)
+      new Resource(s"/agent-access-control/trust-auth/agent/${agentCode.value}/client/${urn.value}")(port)
     method match {
       case "GET" => resource.get()
       case "POST" => resource.post(body = """{"foo": "bar"}""")

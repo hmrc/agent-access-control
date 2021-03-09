@@ -37,7 +37,17 @@ object PathBinders {
 
   implicit object UtrBinder extends SimpleObjectBinder[Utr](Utr.apply, _.value)
 
-  implicit object UrnBinder extends SimpleObjectBinder[Urn](Urn.apply, _.value)
+  implicit object TrustTaxIdentifierBinder
+      extends SimpleObjectBinder[TrustTaxIdentifier](trustTax, _.value)
+
+  private val urnPattern = "^((?i)[a-z]{2}trust[0-9]{8})$"
+  private val utrPattern = "^\\d{10}$"
+
+  def trustTax(id: String) = id match {
+    case x if x.matches(utrPattern) => Utr(x)
+    case x if x.matches(urnPattern) => Urn(x)
+    case e                          => throw new Exception(s"invalid trust tax identifier $e")
+  }
 
   implicit object CgtBinder
       extends SimpleObjectBinder[CgtRef](CgtRef.apply, _.value)

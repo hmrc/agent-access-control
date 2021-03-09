@@ -122,27 +122,14 @@ class AuthorisationController @Inject()(
       }
     }
 
-  def isAuthorisedForTrust(agentCode: AgentCode, utr: Utr): Action[AnyContent] =
+  def isAuthorisedForTrust(
+      agentCode: AgentCode,
+      trustTaxIdentifier: TrustTaxIdentifier): Action[AnyContent] =
     Action.async { implicit request: Request[_] =>
       withAgentAuthorised(agentCode) { authDetails =>
         {
           esAuthorisationService
-            .authoriseForTrust(agentCode, utr, authDetails)
-            .map {
-              case authorised if authorised => Ok
-              case _                        => Unauthorized
-            }
-        }
-      }
-    }
-
-  def isAuthorisedForNonTaxableTrust(agentCode: AgentCode,
-                                     urn: Urn): Action[AnyContent] =
-    Action.async { implicit request: Request[_] =>
-      withAgentAuthorised(agentCode) { authDetails =>
-        {
-          esAuthorisationService
-            .authoriseForNonTaxableTrust(agentCode, urn, authDetails)
+            .authoriseForTrust(agentCode, trustTaxIdentifier, authDetails)
             .map {
               case authorised if authorised => Ok
               case _                        => Unauthorized

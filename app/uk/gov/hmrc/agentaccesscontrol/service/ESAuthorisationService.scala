@@ -26,6 +26,7 @@ import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
+import uk.gov.hmrc.agentmtdidentifiers.model.{TrustTaxIdentifier, Urn, Utr}
 import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -56,18 +57,18 @@ class ESAuthorisationService @Inject()(
     authoriseFor(agentCode, taxIdentifier, "HMRC-MTD-IT", authDetails)
 
   def authoriseForTrust(agentCode: AgentCode,
-                        taxIdentifier: TaxIdentifier,
+                        trustTaxIdentifier: TrustTaxIdentifier,
                         authDetails: AuthDetails)(
       implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] =
-    authoriseFor(agentCode, taxIdentifier, "HMRC-TERS-ORG", authDetails)
-
-  def authoriseForNonTaxableTrust(agentCode: AgentCode,
-                                  taxIdentifier: TaxIdentifier,
-                                  authDetails: AuthDetails)(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] =
-    authoriseFor(agentCode, taxIdentifier, "HMRC-TERSNT-ORG", authDetails)
+      request: Request[_]): Future[Boolean] = {
+    trustTaxIdentifier match {
+      case Utr(v) =>
+        authoriseFor(agentCode, Utr(v), "HMRC-TERS-ORG", authDetails)
+      case Urn(v) =>
+        authoriseFor(agentCode, Urn(v), "HMRC-TERSNT-ORG", authDetails)
+      case e => throw new Exception(s"unhandled TrustTaxIdentifier $e")
+    }
+  }
 
   def authoriseForCgt(agentCode: AgentCode,
                       taxIdentifier: TaxIdentifier,

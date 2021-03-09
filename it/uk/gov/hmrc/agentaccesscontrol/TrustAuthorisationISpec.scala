@@ -8,7 +8,7 @@ import uk.gov.hmrc.http.HttpResponse
 class TrustAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
   val agentCode = AgentCode("A11112222A")
   val arn = Arn("01234567890")
-  val utr = Utr("12345677890")
+  val utr = Utr("0123456789")
   val providerId = "12345-credId"
 
   "GET /agent-access-control/trust-auth/agent/:agentCode/client/:utr" should {
