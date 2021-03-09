@@ -30,7 +30,14 @@ import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
 }
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Urn, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model.{
+  Arn,
+  MtdItId,
+  TrustTaxIdentifier,
+  Urn,
+  Utr,
+  Vrn
+}
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
 import uk.gov.hmrc.auth.core.{Nino => _, _}
@@ -276,15 +283,24 @@ class AuthorisationControllerSpec
 
   }
 
-  private def aNonTaxableTrustEndpoint(
+  private def aTrustEndpoint(
       fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
-    "return 200 when the point is called" in {
+
+    "return 200 when the point is called with Utr" in {
       whenAuthIsCalled(authResponseMtdAgent)
-      whenNonTaxableTrustAuthorisationServiceIsCalled.returning(
-        Future successful true)
-      val response = controller().isAuthorisedForNonTaxableTrust(
-        AgentCode(agentCode),
-        Urn("urn123456"))(fakeRequest)
+      whenTrustAuthorisationServiceIsCalled.returning(Future successful true)
+      val response =
+        controller().isAuthorisedForTrust(AgentCode(agentCode),
+                                          Utr("0123456789"))(fakeRequest)
+      status(response) shouldBe 200
+    }
+
+    "return 200 when the point is called with Urn" in {
+      whenAuthIsCalled(authResponseMtdAgent)
+      whenTrustAuthorisationServiceIsCalled.returning(Future successful true)
+      val response =
+        controller().isAuthorisedForTrust(AgentCode(agentCode),
+                                          Urn("urn123456"))(fakeRequest)
       status(response) shouldBe 200
     }
   }
@@ -347,14 +363,14 @@ class AuthorisationControllerSpec
   }
 
   "GET isAuthorisedForNonTaxableTrust" should {
-    behave like aNonTaxableTrustEndpoint(
+    behave like aTrustEndpoint(
       FakeRequest(
         "GET",
         "/agent-access-control/non-taxable-trust-auth/agent//client/urn"))
   }
 
   "POST isAuthorisedForNonTaxableTrust" should {
-    behave like aNonTaxableTrustEndpoint(
+    behave like aTrustEndpoint(
       FakeRequest(
         "POST",
         "/agent-access-control/non-taxable-trust-auth/agent//client/urn")
@@ -416,9 +432,9 @@ class AuthorisationControllerSpec
         _: Request[Any]))
       .expects(*, *, *, *, *, *)
 
-  def whenNonTaxableTrustAuthorisationServiceIsCalled =
+  def whenTrustAuthorisationServiceIsCalled =
     (esAuthorisationService
-      .authoriseForNonTaxableTrust(_: AgentCode, _: Urn, _: AuthDetails)(
+      .authoriseForTrust(_: AgentCode, _: TrustTaxIdentifier, _: AuthDetails)(
         _: HeaderCarrier,
         _: Request[Any]))
       .expects(*, *, *, *, *)

@@ -95,7 +95,7 @@ authorised(
      .withDelegatedAuthRule("trust-auth")) { // your protected logic }
 ```
 
-##### GET /agent-access-control/non-taxable-trust-auth/agent/:agentCode/client/:urn
+##### GET /agent-access-control/trust-auth/agent/:agentCode/client/:urn
 
 ### Example usage
 ```scala

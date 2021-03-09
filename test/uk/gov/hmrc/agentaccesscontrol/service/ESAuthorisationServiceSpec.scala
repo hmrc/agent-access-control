@@ -324,7 +324,7 @@ class ESAuthorisationServiceSpec
         Right(agentRecord))
 
       val result =
-        await(service.authoriseForTrust(agentCode, clientId, mtdAuthDetails))
+        await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
 
       result shouldBe false
     }
@@ -340,16 +340,16 @@ class ESAuthorisationServiceSpec
         Right(agentRecord))
       whenRelationshipsConnectorIsCalled returning true
 
-      val result = await(
-        service.authoriseForNonTaxableTrust(agentCode, urn, mtdAuthDetails))
+      val result =
+        await(service.authoriseForTrust(agentCode, urn, mtdAuthDetails))
 
       result shouldBe true
     }
 
     "deny access for a non-mtd agent" in {
       givenAuditEvent()
-      val result = await(
-        service.authoriseForNonTaxableTrust(agentCode, urn, nonMtdAuthDetails))
+      val result =
+        await(service.authoriseForTrust(agentCode, urn, nonMtdAuthDetails))
       result shouldBe false
     }
 
@@ -359,8 +359,8 @@ class ESAuthorisationServiceSpec
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
 
-      val result = await(
-        service.authoriseForNonTaxableTrust(agentCode, urn, mtdAuthDetails))
+      val result =
+        await(service.authoriseForTrust(agentCode, urn, mtdAuthDetails))
 
       result shouldBe false
     }
@@ -374,7 +374,7 @@ class ESAuthorisationServiceSpec
         Right(agentRecord))
 
       val result =
-        await(service.authoriseForTrust(agentCode, clientId, mtdAuthDetails))
+        await(service.authoriseForTrust(agentCode, urn, mtdAuthDetails))
       result shouldBe false
     }
   }
