@@ -45,7 +45,7 @@ class Resource(path: String)(port: Int) {
     await(
       fun(
         WsTestClient.wsUrl(url)(port)
-          .withHttpHeaders(hc.headers: _*)
+          .withHttpHeaders(hc.headersForUrl(HeaderCarrier.Config())(url): _*)
           .withRequestTimeout(Duration(20, SECONDS)))
         .map(WSHttpResponse(_)))
 
