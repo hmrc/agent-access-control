@@ -17,10 +17,10 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
 import java.net.URL
-
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
+
 import javax.inject.{Inject, Singleton}
 import play.api.http.Status._
 import play.api.libs.functional.syntax._
@@ -33,6 +33,8 @@ import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.HttpErrorFunctions._
+
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[DesAgentClientApiConnectorImpl])
@@ -65,6 +67,15 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
   val desBaseUrlSa = appConfig.desSAUrl
   val authorizationToken = appConfig.desToken
   val environment = appConfig.desEnv
+
+  private val Environment = "Environment"
+  private val CorrelationId = "CorrelationId"
+  private val Authorization = "Authorization"
+
+  private def explicitDesHeaders =
+    Seq(Environment -> environment,
+        CorrelationId -> UUID.randomUUID().toString,
+        Authorization -> s"Bearer $authorizationToken")
 
   private implicit val foundResponseReads: Reads[SaFoundResponse] =
     ((__ \ "Auth_64-8").read[Boolean] and
@@ -147,11 +158,9 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
   private def getWithDesHeaders[A: HttpReads](apiName: String, url: URL)(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[A] = {
-    val desHeaderCarrier = hc.copy(
-      authorization = Some(Authorization(s"Bearer $authorizationToken")),
-      extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
     monitor(s"ConsumedAPI-DES-$apiName-GET") {
-      httpClient.GET[A](url.toString)(implicitly, desHeaderCarrier, ec)
+      httpClient
+        .GET[A](url.toString, headers = explicitDesHeaders)(implicitly, hc, ec)
     }
   }
 }
