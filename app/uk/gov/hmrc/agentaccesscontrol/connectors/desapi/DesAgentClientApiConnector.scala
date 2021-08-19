@@ -68,14 +68,14 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
   val authorizationToken = appConfig.desToken
   val environment = appConfig.desEnv
 
-  private val Environment = "Environment"
-  private val CorrelationId = "CorrelationId"
-  private val Authorization = "Authorization"
+  private val _Environment = "Environment"
+  private val _CorrelationId = "CorrelationId"
+  private val _Authorization = "Authorization"
 
   private def explicitDesHeaders =
-    Seq(Environment -> environment,
-        CorrelationId -> UUID.randomUUID().toString,
-        Authorization -> s"Bearer $authorizationToken")
+    Seq(_Environment -> environment,
+        _CorrelationId -> UUID.randomUUID().toString,
+        _Authorization -> s"Bearer $authorizationToken")
 
   private implicit val foundResponseReads: Reads[SaFoundResponse] =
     ((__ \ "Auth_64-8").read[Boolean] and
@@ -109,7 +109,7 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
       ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse] = {
     import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
     val url = payeUrlFor(agentCode, empRef)
-    getWithDesHeaders("GetPayeAgentClientRelationship", url) map (r =>
+    getWithDesPayeHeaders("GetPayeAgentClientRelationship", url) map (r =>
       r.status match {
         case o if is2xx(o) =>
           payeFoundResponseReads.reads(Json.parse(r.body)).get
@@ -161,6 +161,17 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
     monitor(s"ConsumedAPI-DES-$apiName-GET") {
       httpClient
         .GET[A](url.toString, headers = explicitDesHeaders)(implicitly, hc, ec)
+    }
+  }
+
+  private def getWithDesPayeHeaders[A: HttpReads](apiName: String, url: URL)(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[A] = {
+    val desHeaderCarrier = hc.copy(
+      authorization = Some(Authorization(s"Bearer $authorizationToken")),
+      extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
+    monitor(s"ConsumedAPI-DES-$apiName-GET") {
+      httpClient.GET[A](url.toString)(implicitly, desHeaderCarrier, ec)
     }
   }
 }
