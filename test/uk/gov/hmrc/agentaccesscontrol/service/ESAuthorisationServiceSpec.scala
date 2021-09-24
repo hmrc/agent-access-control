@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.service
 
 import org.scalamock.scalatest.MockFactory
 import play.api.test.FakeRequest
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
@@ -33,7 +34,7 @@ import uk.gov.hmrc.auth.core.User
 import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, TaxIdentifier}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -91,7 +92,7 @@ class ESAuthorisationServiceSpec
   "authoriseForMtdIt" should {
     "allow access for agent with a client relationship" in {
       givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning true
+      whenRelationshipsConnectorIsCalled returning Future.successful(true)
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
 
@@ -114,7 +115,7 @@ class ESAuthorisationServiceSpec
 
     "deny access for a mtd agent without a client relationship" in {
       givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning false
+      whenRelationshipsConnectorIsCalled returning Future.successful(false)
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
 
@@ -127,7 +128,7 @@ class ESAuthorisationServiceSpec
     "audit appropriate values" when {
       "decision is made to allow access" in {
         givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning true
+        whenRelationshipsConnectorIsCalled returning Future.successful(true)
         whenDesAgentClientApiConnectorIsCalled returning Future(
           Right(agentRecord))
 
@@ -136,7 +137,7 @@ class ESAuthorisationServiceSpec
 
       "decision is made to deny access" in {
         givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning false
+        whenRelationshipsConnectorIsCalled returning Future.successful(false)
         whenDesAgentClientApiConnectorIsCalled returning Future(
           Right(agentRecord))
 
@@ -175,7 +176,7 @@ class ESAuthorisationServiceSpec
 
     "allow access for agent with a client relationship" in {
       givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning true
+      whenRelationshipsConnectorIsCalled returning Future.successful(true)
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
 
@@ -198,7 +199,7 @@ class ESAuthorisationServiceSpec
 
     "deny access for a mtd agent without a client relationship" in {
       givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning false
+      whenRelationshipsConnectorIsCalled returning Future.successful(false)
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
 
@@ -211,7 +212,7 @@ class ESAuthorisationServiceSpec
     "audit appropriate values" when {
       "decision is made to allow access" in {
         givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning true
+        whenRelationshipsConnectorIsCalled returning Future.successful(true)
         whenDesAgentClientApiConnectorIsCalled returning Future(
           Right(agentRecord))
 
@@ -220,7 +221,7 @@ class ESAuthorisationServiceSpec
 
       "decision is made to deny access" in {
         givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning false
+        whenRelationshipsConnectorIsCalled returning Future.successful(false)
         whenDesAgentClientApiConnectorIsCalled returning Future(
           Right(agentRecord))
 
@@ -259,7 +260,7 @@ class ESAuthorisationServiceSpec
       givenAuditEvent()
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
-      whenRelationshipsConnectorIsCalled returning true
+      whenRelationshipsConnectorIsCalled returning Future.successful(true)
 
       val result =
         await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
@@ -279,7 +280,7 @@ class ESAuthorisationServiceSpec
 
     "deny access for a mtd agent without a client relationship" in {
       givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning false
+      whenRelationshipsConnectorIsCalled returning Future.successful(false)
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
 
@@ -292,7 +293,7 @@ class ESAuthorisationServiceSpec
     "audit appropriate values" when {
       "decision is made to allow access" in {
         givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning true
+        whenRelationshipsConnectorIsCalled returning Future.successful(true)
         whenDesAgentClientApiConnectorIsCalled returning Future(
           Right(agentRecord))
         await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
@@ -300,7 +301,7 @@ class ESAuthorisationServiceSpec
 
       "decision is made to deny access" in {
         givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning false
+        whenRelationshipsConnectorIsCalled returning Future.successful(false)
         whenDesAgentClientApiConnectorIsCalled returning Future(
           Right(agentRecord))
         await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
@@ -338,7 +339,7 @@ class ESAuthorisationServiceSpec
       givenAuditEvent()
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
-      whenRelationshipsConnectorIsCalled returning true
+      whenRelationshipsConnectorIsCalled returning Future.successful(true)
 
       val result =
         await(service.authoriseForTrust(agentCode, urn, mtdAuthDetails))
@@ -355,7 +356,7 @@ class ESAuthorisationServiceSpec
 
     "deny access for a mtd agent without a client relationship" in {
       givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning false
+      whenRelationshipsConnectorIsCalled returning Future.successful(false)
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
 
@@ -385,7 +386,7 @@ class ESAuthorisationServiceSpec
 
     "allow access for agent with a client relationship" in {
       givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning true
+      whenRelationshipsConnectorIsCalled returning Future.successful(true)
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
 
@@ -408,7 +409,7 @@ class ESAuthorisationServiceSpec
 
     "deny access for a mtd agent without a client relationship" in {
       givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning false
+      whenRelationshipsConnectorIsCalled returning Future.successful(false)
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
 
@@ -421,7 +422,7 @@ class ESAuthorisationServiceSpec
     "audit appropriate values" when {
       "decision is made to allow access" in {
         givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning true
+        whenRelationshipsConnectorIsCalled returning Future.successful(true)
         whenDesAgentClientApiConnectorIsCalled returning Future(
           Right(agentRecord))
 
@@ -430,7 +431,7 @@ class ESAuthorisationServiceSpec
 
       "decision is made to deny access" in {
         givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning false
+        whenRelationshipsConnectorIsCalled returning Future.successful(false)
         whenDesAgentClientApiConnectorIsCalled returning Future(
           Right(agentRecord))
 

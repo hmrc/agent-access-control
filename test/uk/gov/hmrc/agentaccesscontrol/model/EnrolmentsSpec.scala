@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.model
 
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 
 class EnrolmentsSpec extends UnitSpec {
 

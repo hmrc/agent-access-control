@@ -25,7 +25,6 @@ import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.domain.{Vrn => _, _}
-import uk.gov.hmrc.play.test.UnitSpec
 
 abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with StubUtils {
 

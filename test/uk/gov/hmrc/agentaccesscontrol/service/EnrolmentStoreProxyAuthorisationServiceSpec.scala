@@ -21,10 +21,11 @@ import org.mockito.Mockito.when
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.connectors.EnrolmentStoreProxyConnector
 import uk.gov.hmrc.domain.{AgentCode, AgentUserId, EmpRef, SaUtr}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 
 import scala.concurrent.Future
 

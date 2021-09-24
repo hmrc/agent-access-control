@@ -21,6 +21,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.FakeRequest
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.{
@@ -31,7 +32,7 @@ import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.auth.core.User
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 
 import scala.concurrent.Future
 
@@ -78,8 +79,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     "return false if SA agent reference is found and CesaAuthorisationService returns false and Enrolment Store " +
       "Proxy Authorisation returns true" in new Context {
 
-      whenESPIsCheckedForSaRelationship thenReturn true
-      whenCesaIsCheckedForSaRelationship thenReturn false
+      whenESPIsCheckedForSaRelationship thenReturn Future.successful(true)
+      whenCesaIsCheckedForSaRelationship thenReturn Future.successful(false)
 
       await(
         authorisationService.isAuthorisedForSa(
@@ -106,8 +107,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
     "return true if SA agent reference is found and DesAuthorisationService returns true and Enrolment Store Proxy Authorisation returns true" in new Context {
 
-      whenESPIsCheckedForSaRelationship thenReturn true
-      whenCesaIsCheckedForSaRelationship thenReturn true
+      whenESPIsCheckedForSaRelationship thenReturn Future.successful(true)
+      whenCesaIsCheckedForSaRelationship thenReturn Future.successful(true)
 
       await(
         authorisationService.isAuthorisedForSa(agentCode,
@@ -132,8 +133,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "not hard code audited values" in new Context {
-      whenESPIsCheckedForSaRelationship thenReturn true
-      whenCesaIsCheckedForSaRelationship thenReturn true
+      whenESPIsCheckedForSaRelationship thenReturn Future.successful(true)
+      whenCesaIsCheckedForSaRelationship thenReturn Future.successful(true)
 
       val authDetails =
         AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(User))
@@ -162,8 +163,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
     "still work if the fields only used for auditing are removed from the auth record" in new Context {
 
-      whenESPIsCheckedForSaRelationship thenReturn true
-      whenCesaIsCheckedForSaRelationship thenReturn true
+      whenESPIsCheckedForSaRelationship thenReturn Future.successful(true)
+      whenCesaIsCheckedForSaRelationship thenReturn Future.successful(true)
 
       await(
         authorisationService.isAuthorisedForSa(agentCode,
@@ -189,7 +190,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
     "return false without calling DES if Enrolment Store Proxy Authorisation returns false (to reduce the load on DES)" in new Context {
 
-      whenESPIsCheckedForSaRelationship thenReturn false
+      whenESPIsCheckedForSaRelationship thenReturn Future.successful(false)
       whenCesaIsCheckedForSaRelationship thenAnswer failBecauseDesShouldNotBeCalled
 
       await(
