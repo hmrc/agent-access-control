@@ -3,6 +3,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}

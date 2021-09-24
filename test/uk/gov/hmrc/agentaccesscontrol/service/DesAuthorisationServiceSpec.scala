@@ -18,14 +18,15 @@ package uk.gov.hmrc.agentaccesscontrol.service
 
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
-import scala.concurrent.ExecutionContext.Implicits.global
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model._
+import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
-import uk.gov.hmrc.play.test.UnitSpec
-
-import scala.concurrent.Future
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val agentCode = AgentCode("ABCDEF123456")
@@ -37,35 +38,35 @@ class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   "isAuthorisedInCesa" should {
     "return false if the Agent or the relationship between the Agent and Client was not found in DES" in new Context {
-      whenDesSaEndpointIsCalled thenReturn (SaNotFoundResponse)
+      whenDesSaEndpointIsCalled thenReturn Future.successful(SaNotFoundResponse)
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return true if the DES API returns 64-8=true and i64-8=true" in new Context {
-      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = true,
-                                                            authI64_8 = true))
+      whenDesSaEndpointIsCalled thenReturn Future.successful(
+        SaFoundResponse(auth64_8 = true, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe true
     }
 
     "return false if the DES API returns 64-8=true and i64-8=false" in new Context {
-      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = true,
-                                                            authI64_8 = false))
+      whenDesSaEndpointIsCalled thenReturn Future.successful(
+        SaFoundResponse(auth64_8 = true, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return false if the DES API returns 64-8=false and i64-8=true" in new Context {
-      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = false,
-                                                            authI64_8 = true))
+      whenDesSaEndpointIsCalled thenReturn Future.successful(
+        SaFoundResponse(auth64_8 = false, authI64_8 = true))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }
 
     "return false if the DES API returns 64-8=false and i64-8=false" in new Context {
-      whenDesSaEndpointIsCalled thenReturn (SaFoundResponse(auth64_8 = false,
-                                                            authI64_8 = false))
+      whenDesSaEndpointIsCalled thenReturn Future.successful(
+        SaFoundResponse(auth64_8 = false, authI64_8 = false))
 
       await(service.isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr)) shouldBe false
     }

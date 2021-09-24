@@ -22,7 +22,7 @@ import play.api.Environment
 import play.api.libs.json.Json
 import play.api.mvc.{AnyContent, ControllerComponents, Request}
 import play.api.test.FakeRequest
-import play.api.test.Helpers.stubControllerComponents
+import play.api.test.Helpers._
 import play.mvc.Http.Status
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
@@ -44,7 +44,7 @@ import uk.gov.hmrc.auth.core.{Nino => _, _}
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}

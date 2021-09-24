@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.binders
 
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 
 class EmpRefBinderSpec extends UnitSpec {
 
