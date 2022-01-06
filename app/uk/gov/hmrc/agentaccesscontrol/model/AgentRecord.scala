@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,9 @@ case class AgentRecord(suspensionDetails: Option[SuspensionDetails]) {
   def suspendedFor(regime: String): Boolean =
     suspensionDetails
       .flatMap(_.regimes)
-      .exists(regimes => regimes.contains(regime) || regimes.contains("ALL"))
+      .exists(regimes =>
+        regimes.contains(regime) || regimes.contains("ALL") || regimes.contains(
+          "AGSV"))
 }
 
 object AgentRecord {

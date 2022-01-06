@@ -72,11 +72,24 @@ class NonTaxableTrustAuthorisationISpec extends WireMockWithOneServerPerTestISpe
       timerShouldExistsAndBeenUpdated("API-__trust-auth__agent__:__client__:-GET")
     }
 
-    "handle suspended agents and return unauthorised" in {
+    "handle suspended TRS regime and return unauthorised" in {
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
         .givenAgentRecord(arn, suspended = true, "TRS")
+      given().mtdAgency(arn).hasARelationshipWith(urn)
+      givenCleanMetricRegistry()
+
+      authResponseFor(agentCode, urn, method).status shouldBe 401
+
+      timerShouldExistsAndBeenUpdated("API-__trust-auth__agent__:__client__:-GET")
+    }
+
+    "handle suspended AGSV regime and return unauthorised" in {
+      given()
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
+        .givenAgentRecord(arn, suspended = true, "AGSV")
       given().mtdAgency(arn).hasARelationshipWith(urn)
       givenCleanMetricRegistry()
 

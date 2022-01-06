@@ -85,11 +85,28 @@ class MtdVatAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Me
       timerShouldExistsAndBeenUpdated("API-__mtd-vat-auth__agent__:__client__:-GET")
     }
 
-    "handle suspended agents and return unauthorised" in {
+    "handle suspended for VATC regime and return unauthorised" in {
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
         .givenAgentRecord(arn, true, "VATC")
+
+      given()
+        .mtdAgency(arn)
+        .hasARelationshipWith(vrn)
+
+      givenCleanMetricRegistry()
+
+      authResponseFor(agentCode, vrn, method).status shouldBe 401
+
+      timerShouldExistsAndBeenUpdated("API-__mtd-vat-auth__agent__:__client__:-GET")
+    }
+
+    "handle suspended for AGSV regime and return unauthorised" in {
+      given()
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
+        .givenAgentRecord(arn, true, "AGSV")
 
       given()
         .mtdAgency(arn)
