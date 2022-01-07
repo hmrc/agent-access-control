@@ -85,18 +85,34 @@ class MtdItAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Met
       timerShouldExistsAndBeenUpdated("API-__mtd-it-auth__agent__:__client__:-GET")
     }
 
-    "handle suspended agents and return unauthorised" in {
+    "handle suspended for ITSA regime and return unauthorised" in {
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
         .isAuthenticated()
-        .givenAgentRecord(arn, true, "TRS")
+        .givenAgentRecord(arn, true, "ITSA")
 
       given()
         .mtdAgency(arn)
         .hasARelationshipWith(clientId)
       givenCleanMetricRegistry()
 
-      authResponseFor(agentCode, clientId, method).status shouldBe 200
+      authResponseFor(agentCode, clientId, method).status shouldBe 401
+
+      timerShouldExistsAndBeenUpdated("API-__mtd-it-auth__agent__:__client__:-GET")
+    }
+
+    "handle suspended for AGSV regime and return unauthorised" in {
+      given()
+        .agentAdmin(agentCode, providerId, None, Some(arn))
+        .isAuthenticated()
+        .givenAgentRecord(arn, true, "AGSV")
+
+      given()
+        .mtdAgency(arn)
+        .hasARelationshipWith(clientId)
+      givenCleanMetricRegistry()
+
+      authResponseFor(agentCode, clientId, method).status shouldBe 401
 
       timerShouldExistsAndBeenUpdated("API-__mtd-it-auth__agent__:__client__:-GET")
     }
