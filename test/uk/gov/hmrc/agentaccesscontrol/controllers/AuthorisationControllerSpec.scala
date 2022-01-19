@@ -33,6 +33,7 @@ import uk.gov.hmrc.agentaccesscontrol.service.{
 import uk.gov.hmrc.agentmtdidentifiers.model.{
   Arn,
   MtdItId,
+  PptRef,
   TrustTaxIdentifier,
   Urn,
   Utr,
@@ -156,7 +157,7 @@ class AuthorisationControllerSpec
     }
   }
 
-  private def anMdtitEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+  private def anMdtItEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
     "return 401 if the MtdAuthorisationService doesn't permit access" in {
       whenAuthIsCalled(authResponseMtdAgent)
       whenMtdItAuthorisationServiceIsCalled.returning(Future successful false)
@@ -220,6 +221,40 @@ class AuthorisationControllerSpec
       an[IllegalStateException] shouldBe thrownBy(
         status(controller().isAuthorisedForMtdVat(AgentCode(agentCode),
                                                   Vrn("vrn"))(fakeRequest)))
+    }
+  }
+
+  private def aPptEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+    "return 401 if the MtdPptAuthorisationService doesn't permit access" in {
+      whenAuthIsCalled(authResponseMtdAgent)
+      whenPptAuthorisationServiceIsCalled.returning(Future successful false)
+
+      val response =
+        controller().isAuthorisedForPpt(AgentCode(agentCode), PptRef("pptRef"))(
+          fakeRequest)
+
+      status(response) shouldBe Status.UNAUTHORIZED
+    }
+
+    "return 200 if the MtdPptAuthorisationService allows access" in {
+      whenAuthIsCalled(authResponseMtdAgent)
+      whenPptAuthorisationServiceIsCalled.returning(Future successful true)
+
+      val response =
+        controller().isAuthorisedForPpt(AgentCode(agentCode), PptRef("pptRef"))(
+          fakeRequest)
+
+      status(response) shouldBe Status.OK
+    }
+
+    "propagate exception if the MtdPptAuthorisationService fails" in {
+      whenAuthIsCalled(authResponseMtdAgent)
+      whenPptAuthorisationServiceIsCalled.returning(
+        Future failed new IllegalStateException("some error"))
+
+      an[IllegalStateException] shouldBe thrownBy(
+        status(controller().isAuthorisedForPpt(AgentCode(agentCode),
+                                               PptRef("pptRef"))(fakeRequest)))
     }
   }
 
@@ -317,12 +352,12 @@ class AuthorisationControllerSpec
   }
 
   "GET isAuthorisedForMtdIt" should {
-    behave like anMdtitEndpoint(
+    behave like anMdtItEndpoint(
       FakeRequest("GET", "/agent-access-control/mtd-it-auth/agent//client/utr"))
   }
 
   "POST isAuthorisedForMtdIt" should {
-    behave like anMdtitEndpoint(
+    behave like anMdtItEndpoint(
       FakeRequest("POST", "/agent-access-control/mtd-it-auth/agent//client/utr")
         .withJsonBody(Json.parse("{}")))
   }
@@ -377,6 +412,12 @@ class AuthorisationControllerSpec
         .withJsonBody(Json.parse("{}")))
   }
 
+  "POST isAuthorisedForPpt" should {
+    behave like aPptEndpoint(
+      FakeRequest("POST", "/agent-access-control/ppt-auth/agent//client/utr")
+        .withJsonBody(Json.parse("{}")))
+  }
+
   def whenAuthIsCalled(
       returnValue: Future[
         ~[~[~[Option[String], Enrolments], Option[CredentialRole]],
@@ -420,6 +461,13 @@ class AuthorisationControllerSpec
   def whenMtdVatAuthorisationServiceIsCalled =
     (esAuthorisationService
       .authoriseForMtdVat(_: AgentCode, _: Vrn, _: AuthDetails)(
+        _: HeaderCarrier,
+        _: Request[Any]))
+      .expects(*, *, *, *, *)
+
+  def whenPptAuthorisationServiceIsCalled =
+    (esAuthorisationService
+      .authoriseForPpt(_: AgentCode, _: PptRef, _: AuthDetails)(
         _: HeaderCarrier,
         _: Request[Any]))
       .expects(*, *, *, *, *)

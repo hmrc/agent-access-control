@@ -35,6 +35,9 @@ object PathBinders {
 
   implicit object VrnBinder extends SimpleObjectBinder[Vrn](Vrn.apply, _.value)
 
+  implicit object PptRefBinder
+      extends SimpleObjectBinder[PptRef](PptRef.apply, _.value)
+
   implicit object UtrBinder extends SimpleObjectBinder[Utr](Utr.apply, _.value)
 
   implicit object TrustTaxIdentifierBinder

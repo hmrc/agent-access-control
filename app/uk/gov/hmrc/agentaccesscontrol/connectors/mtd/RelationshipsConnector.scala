@@ -69,6 +69,8 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
       case _ @Utr(utr)         => ("HMRC-TERS-ORG", "SAUTR", utr)
       case _ @CgtRef(cgtRef)   => ("HMRC-CGT-PD", "CGTPDRef", cgtRef)
       case _ @Urn(urn)         => ("HMRC-TERSNT-ORG", "URN", urn)
+      case _ @PptRef(pptRef) =>
+        ("HMRC-PPT-ORG", "EtmpRegistrationNumber", pptRef)
     }
 
     val relationshipUrl =

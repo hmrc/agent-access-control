@@ -77,6 +77,13 @@ class ESAuthorisationService @Inject()(
       request: Request[_]): Future[Boolean] =
     authoriseFor(agentCode, taxIdentifier, "HMRC-CGT-PD", authDetails)
 
+  def authoriseForPpt(agentCode: AgentCode,
+                      taxIdentifier: TaxIdentifier,
+                      authDetails: AuthDetails)(
+      implicit hc: HeaderCarrier,
+      request: Request[_]): Future[Boolean] =
+    authoriseFor(agentCode, taxIdentifier, "HMRC-PPT-ORG", authDetails)
+
   private def authoriseFor(agentCode: AgentCode,
                            taxIdentifier: TaxIdentifier,
                            regime: String,
@@ -124,6 +131,7 @@ class ESAuthorisationService @Inject()(
       case "HMRC-TERS-ORG"   => "TRS"
       case "HMRC-TERSNT-ORG" => "TRS" //this is the same with "HMRC-TERS-ORG"
       case "HMRC-CGT-PD"     => "CGT"
+      case "HMRC-PPT-ORG"    => "PPT"
     }
   }
 
