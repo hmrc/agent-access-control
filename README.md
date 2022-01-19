@@ -10,6 +10,7 @@ to agents to their clients's data. Currently supports:
 * MTD Trusts (TERS)
 * MTD Non-Taxable-Trusts (TERSNT)
 * MTD Capital Gains (CGT)
+* MTD Plastic Packaging Tax (PPT)
 
 
 ### Testing
@@ -113,6 +114,16 @@ authorised(
    Enrolment("HMRC-CGT-PD")
      .withIdentifier("CGTPDRef", "123")
      .withDelegatedAuthRule("cgt-auth")) { // your protected logic }
+```
+
+##### GET /agent-access-control/ppt-auth/agent/:agentCode/client/:pptRef
+
+### Example usage
+```scala
+authorised(
+   Enrolment("HMRC-PPT-ORG")
+     .withIdentifier("EtmpRegistrationNumber", "123")
+     .withDelegatedAuthRule("ppt-auth")) { // your protected logic }
 ```
 
 Note: POSTs function exactly the same.

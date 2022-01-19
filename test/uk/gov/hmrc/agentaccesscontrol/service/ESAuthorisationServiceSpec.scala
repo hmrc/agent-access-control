@@ -252,6 +252,84 @@ class ESAuthorisationServiceSpec
     }
   }
 
+  "authoriseForPpt" should {
+
+    val pptRef = PptRef("pptRef")
+
+    "allow access for agent with a client relationship" in {
+      givenAuditEvent()
+      whenRelationshipsConnectorIsCalled returning Future.successful(true)
+      whenDesAgentClientApiConnectorIsCalled returning Future(
+        Right(agentRecord))
+
+      val result =
+        await(service.authoriseForPpt(agentCode, pptRef, mtdAuthDetails))
+
+      result shouldBe true
+    }
+
+    "deny access for a non-mtd agent" in {
+      givenAuditEvent()
+
+      val result =
+        await(service.authoriseForPpt(agentCode, pptRef, nonMtdAuthDetails))
+
+      result shouldBe false
+    }
+
+    "deny access for a mtd agent without a client relationship" in {
+      givenAuditEvent()
+      whenRelationshipsConnectorIsCalled returning Future.successful(false)
+      whenDesAgentClientApiConnectorIsCalled returning Future(
+        Right(agentRecord))
+
+      val result =
+        await(service.authoriseForPpt(agentCode, pptRef, mtdAuthDetails))
+
+      result shouldBe false
+    }
+
+    "audit appropriate values" when {
+      "decision is made to allow access" in {
+        givenAuditEvent()
+        whenRelationshipsConnectorIsCalled returning Future.successful(true)
+        whenDesAgentClientApiConnectorIsCalled returning Future(
+          Right(agentRecord))
+
+        await(service.authoriseForPpt(agentCode, pptRef, mtdAuthDetails))
+      }
+
+      "decision is made to deny access" in {
+        givenAuditEvent()
+        whenRelationshipsConnectorIsCalled returning Future.successful(true)
+        whenDesAgentClientApiConnectorIsCalled returning Future(
+          Right(agentRecord))
+
+        await(service.authoriseForPpt(agentCode, pptRef, mtdAuthDetails))
+      }
+
+      "no HMRC-AS-AGENT enrolment exists" in {
+
+        givenAuditEvent()
+        await(service.authoriseForPpt(agentCode, pptRef, nonMtdAuthDetails))
+      }
+    }
+
+    "handle suspended agents and return false" in {
+
+      val agentRecord =
+        AgentRecord(Some(SuspensionDetails(true, Some(Set("AGSV")))))
+
+      whenDesAgentClientApiConnectorIsCalled returning Future(
+        Right(agentRecord))
+
+      val result =
+        await(service.authoriseForPpt(agentCode, pptRef, mtdAuthDetails))
+
+      result shouldBe false
+    }
+  }
+
   "authoriseForTrust" should {
 
     val utr = Utr("utr")
@@ -398,9 +476,6 @@ class ESAuthorisationServiceSpec
 
     "deny access for a non-mtd agent" in {
       givenAuditEvent()
-//      whenDesAgentClientApiConnectorIsCalled returning Future(
-//        Right(agentRecord))
-
       val result =
         await(service.authoriseForCgt(agentCode, cgtRef, nonMtdAuthDetails))
 
@@ -439,12 +514,7 @@ class ESAuthorisationServiceSpec
       }
 
       "no HMRC-AS-AGENT enrolment exists" in {
-
         givenAuditEvent()
-
-//        whenDesAgentClientApiConnectorIsCalled.returning(
-//          Future(Right(agentRecord)))
-
         await(service.authoriseForCgt(agentCode, cgtRef, nonMtdAuthDetails))
       }
     }

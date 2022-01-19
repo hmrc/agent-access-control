@@ -34,6 +34,10 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
     behave like aCheckEndpoint(CgtRef("XMCGTP123456789"), "CgtRef")
   }
 
+  "relationshipExists for HMRC-PPT-ORG" should {
+    behave like aCheckEndpoint(PptRef("XHPPT0006633194"), "PptRef")
+  }
+
   private def aCheckEndpoint(identifier: TaxIdentifier, clientType: String) = {
     "return true when relationship exists" in {
       given()

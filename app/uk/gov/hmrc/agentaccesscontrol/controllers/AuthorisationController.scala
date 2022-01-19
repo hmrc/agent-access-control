@@ -152,4 +152,19 @@ class AuthorisationController @Inject()(
         }
       }
     }
+
+  def isAuthorisedForPpt(agentCode: AgentCode,
+                         pptRef: PptRef): Action[AnyContent] =
+    Action.async { implicit request: Request[_] =>
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          esAuthorisationService
+            .authoriseForPpt(agentCode, pptRef, authDetails)
+            .map {
+              case authorised if authorised => Ok
+              case _                        => Unauthorized
+            }
+        }
+      }
+    }
 }
