@@ -23,11 +23,7 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
-import uk.gov.hmrc.agentaccesscontrol.model.{
-  AgentRecord,
-  AuthDetails,
-  SuspensionDetails
-}
+import uk.gov.hmrc.agentaccesscontrol.model.{AgentRecord, AuthDetails}
 import uk.gov.hmrc.agentaccesscontrol.support.AuditSupport
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.auth.core.User
