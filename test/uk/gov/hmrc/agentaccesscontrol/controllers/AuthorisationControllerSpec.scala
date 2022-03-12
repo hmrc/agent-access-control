@@ -502,11 +502,6 @@ class AuthorisationControllerSpec
 
     (servicesConfig
       .getBoolean(_: String))
-      .expects("features.enable-agent-suspension")
-      .returning(true)
-
-    (servicesConfig
-      .getBoolean(_: String))
       .expects("features.allowPayeAccess")
       .returning(allowPayeAccess)
 

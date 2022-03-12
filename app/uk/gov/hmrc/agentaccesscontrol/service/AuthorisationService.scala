@@ -16,19 +16,20 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import javax.inject.{Inject, Singleton}
-import play.api.Logging
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{
   AgentAccessControlDecision,
   AuditService
 }
+import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors._
+import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
@@ -39,12 +40,16 @@ class AuthorisationService @Inject()(
     espAuthorisationService: EnrolmentStoreProxyAuthorisationService,
     auditService: AuditService,
     mappingConnector: MappingConnector,
-    afiRelationshipConnector: AfiRelationshipConnector)
+    afiRelationshipConnector: AfiRelationshipConnector,
+    val desAgentClientApiConnector: DesAgentClientApiConnector)(
+    implicit appConfig: AppConfig)
     extends LoggingAuthorisationResults
-    with Logging {
+    with AgentSuspensionChecker {
 
   private val accessGranted = true
   private val accessDenied = false
+
+  private lazy val isSuspensionEnabled = appConfig.featureAgentSuspension
 
   def isAuthorisedForSa(agentCode: AgentCode,
                         saUtr: SaUtr,
@@ -254,29 +259,40 @@ class AuthorisationService @Inject()(
       request: Request[Any]): Future[Boolean] =
     authDetails match {
       case authDetails @ AuthDetails(_, Some(arn), _, _, _) =>
-        val arnValue = arn.value
-        afiRelationshipConnector.hasRelationship(arnValue, nino.value) map {
-          hasRelationship =>
-            if (hasRelationship) {
-              auditDecision(agentCode,
-                            authDetails,
-                            "afi",
-                            nino,
-                            accessGranted,
-                            "" -> "")
-              found("Relationship Found")
-            } else {
-              auditDecision(agentCode,
-                            authDetails,
-                            "afi",
-                            nino,
-                            accessDenied,
-                            "" -> "")
-              notFound("No relationship found")
-            }
+        withSuspensionCheck(isSuspensionEnabled, arn, "PIR") {
+          authoriseBasedOnAfiRelationships(agentCode, nino, authDetails, arn)
         }
       case _ => Future successful notFound("Error retrieving arn")
     }
+
+  private def authoriseBasedOnAfiRelationships(agentCode: AgentCode,
+                                               nino: Nino,
+                                               authDetails: AuthDetails,
+                                               arn: Arn)(
+      implicit ec: ExecutionContext,
+      hc: HeaderCarrier,
+      request: Request[Any]): Future[Boolean] = {
+    afiRelationshipConnector.hasRelationship(arn.value, nino.value) map {
+      hasRelationship =>
+        if (hasRelationship) {
+          auditDecision(agentCode,
+                        authDetails,
+                        "afi",
+                        nino,
+                        accessGranted,
+                        "" -> "")
+          found("Relationship Found")
+        } else {
+          auditDecision(agentCode,
+                        authDetails,
+                        "afi",
+                        nino,
+                        accessDenied,
+                        "" -> "")
+          notFound("No relationship found")
+        }
+    }
+  }
 
   private def auditDecision(agentCode: AgentCode,
                             agentAuthDetails: AuthDetails,

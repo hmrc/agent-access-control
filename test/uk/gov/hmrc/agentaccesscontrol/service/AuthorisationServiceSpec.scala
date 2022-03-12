@@ -24,15 +24,19 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
+import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
+import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.{
   AfiRelationshipConnector,
   MappingConnector
 }
-import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
+import uk.gov.hmrc.agentaccesscontrol.model.{AgentRecord, AuthDetails}
 import uk.gov.hmrc.auth.core.User
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, SuspensionDetails}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.Future
 
@@ -41,13 +45,21 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val saAgentRef = SaAgentReference("ABC456")
   val clientSaUtr = SaUtr("CLIENTSAUTR456")
   val empRef = EmpRef("123", "01234567")
+  val nino: Nino = Nino("AA101010A")
   val providerId = "12345-credId"
+  val arn: Arn = Arn("arn")
+  val agentIsSuspended = Option(
+    SuspensionDetails(suspensionStatus = true, Some(Set("AGSV"))))
+  val agentIsNotSuspended = Option(
+    SuspensionDetails(suspensionStatus = false, None))
 
   val nonMtdAuthDetails =
     AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(User))
 
   val notEnrolledAuthDetails =
     AuthDetails(None, None, "ggId", Some("Agent"), Some(User))
+
+  val afiAuthDetails = AuthDetails(None, Some(arn), "ggId", None, None)
 
   implicit val hc = HeaderCarrier()
   implicit val ec = concurrent.ExecutionContext.Implicits.global
@@ -334,6 +346,90 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
   }
 
+  "isAuthorisedForAfi" when {
+
+    "agent suspension feature flag is OFF" should {
+
+      val agentSuspensionFeatureFlag = false
+
+      "return false when agent suspension feature flag is off and relationships exist" in new Context {
+        whenAgentSuspensionFeatureFlagIsChecked thenReturn agentSuspensionFeatureFlag
+
+        afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(
+          true)
+
+        await(
+          authorisationService
+            .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe true
+      }
+
+      "return false when agent suspension feature flag is off and relationships do not exist" in new Context {
+        whenAgentSuspensionFeatureFlagIsChecked thenReturn agentSuspensionFeatureFlag
+
+        afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(
+          false)
+
+        await(
+          authorisationService
+            .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
+      }
+    }
+
+    "agent suspension feature flag is ON" should {
+
+      val agentSuspensionFeatureFlag = true
+
+      "return false when error encountered fetching agent record from DES" in new Context {
+        whenAgentSuspensionFeatureFlagIsChecked thenReturn agentSuspensionFeatureFlag
+
+        whenDesIsCheckedForAgentRecord thenReturn Future(Left("error"))
+
+        await(
+          authorisationService
+            .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
+      }
+
+      "return false when agent is suspended" in new Context {
+        whenAgentSuspensionFeatureFlagIsChecked thenReturn agentSuspensionFeatureFlag
+
+        whenDesIsCheckedForAgentRecord thenReturn Future(
+          Right(AgentRecord(agentIsSuspended)))
+
+        await(
+          authorisationService
+            .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
+      }
+
+      "return false when agent is not suspended and relationships do not exist" in new Context {
+        whenAgentSuspensionFeatureFlagIsChecked thenReturn agentSuspensionFeatureFlag
+
+        whenDesIsCheckedForAgentRecord thenReturn Future(
+          Right(AgentRecord(agentIsNotSuspended)))
+
+        afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(
+          false)
+
+        await(
+          authorisationService
+            .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
+      }
+
+      "return true when agent is not suspended and relationships exist" in new Context {
+        whenAgentSuspensionFeatureFlagIsChecked thenReturn agentSuspensionFeatureFlag
+
+        whenDesIsCheckedForAgentRecord thenReturn Future(
+          Right(AgentRecord(agentIsNotSuspended)))
+
+        afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(
+          true)
+
+        await(
+          authorisationService
+            .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe true
+      }
+    }
+  }
+
   private val failBecauseDesShouldNotBeCalled = new Answer[Future[Boolean]] {
     override def answer(invocation: InvocationOnMock): Future[Boolean] =
       fail("DES should not be called")
@@ -346,12 +442,19 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     val mockAuditService = mock[AuditService]
     val mockAfiRelationshipConnector = mock[AfiRelationshipConnector]
     val mockMappingConnector = mock[MappingConnector]
+    val mockDesAgentClientApiConnector = mock[DesAgentClientApiConnector]
+    val servicesConfig = mock[ServicesConfig]
+
+    implicit val appConfig = new AppConfig(servicesConfig)
+
     val authorisationService = new AuthorisationService(
       mockDesAuthorisationService,
       mockESPAuthorisationService,
       mockAuditService,
       mockMappingConnector,
-      mockAfiRelationshipConnector)
+      mockAfiRelationshipConnector,
+      mockDesAgentClientApiConnector
+    )
 
     def whenESPIsCheckedForPayeRelationship() =
       when(
@@ -370,5 +473,14 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       when(
         mockDesAuthorisationService
           .isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
+
+    def whenDesIsCheckedForAgentRecord() =
+      when(mockDesAgentClientApiConnector.getAgentRecord(arn))
+
+    def afiRelationshipConnectorIsCheckedForRelatioinships =
+      when(mockAfiRelationshipConnector.hasRelationship(arn.value, nino.value))
+
+    def whenAgentSuspensionFeatureFlagIsChecked =
+      when(servicesConfig.getBoolean("features.enable-agent-suspension"))
   }
 }
