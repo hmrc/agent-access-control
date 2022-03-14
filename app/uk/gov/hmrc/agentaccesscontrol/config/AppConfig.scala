@@ -51,7 +51,7 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
 
   val agentMappingBaseUrl = baseUrl("agent-mapping")
 
-  val featureAgentSuspension =
+  lazy val featureAgentSuspension =
     servicesConfig.getBoolean("features.enable-agent-suspension")
 
   val featuresPayeAccess = servicesConfig.getBoolean("features.allowPayeAccess")

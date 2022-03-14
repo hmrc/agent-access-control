@@ -28,60 +28,94 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
   val arn = Arn("TARN0000001")
   val providerId = "12345-credId"
 
-  "GET /agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
-    val method = "GET"
-    "respond with 200" when {
-      "the client has authorised the agent" in {
-        given()
-          .agentAdmin(agentCode, providerId, None, Some(arn))
-          .isAuthenticated()
-          .andHasRelationship(arn, clientId)
+  val afiAuthUri = s"/agent-access-control/afi-auth/agent/${agentCode.value}/client/${clientId.value}"
+  val GET = "GET"
+  val POST = "POST"
+  val regime = "AGSV"
 
-        authResponseFor(agentCode, clientId, method).status shouldBe 200
+  s"Calling $afiAuthUri" when {
+
+    s"http method is $GET" should {
+
+      "respond with 200" when {
+        "the client has authorised the agent and agent is not suspended" in {
+          given()
+            .agentAdmin(agentCode, providerId, None, Some(arn))
+            .isAuthenticated()
+            .andHasRelationship(arn, clientId)
+            .givenAgentRecord(arn, suspended = false, regime)
+
+          authResponseFor(GET).status shouldBe 200
+        }
       }
 
+      "respond with 401" when {
+        "the client has authorised the agent but agent is suspended" in {
+          given()
+            .agentAdmin(agentCode, providerId, None, Some(arn))
+            .isAuthenticated()
+            .andHasRelationship(arn, clientId)
+            .givenAgentRecord(arn, suspended = true, regime)
+
+          authResponseFor(GET).status shouldBe 401
+        }
+      }
+
+      "respond with 401" when {
+        "the client has not authorised the agent and agent is not suspended" in {
+          given()
+            .agentAdmin(agentCode, providerId, None, Some(arn))
+            .isAuthenticated()
+            .andHasNoRelationship(arn, clientId)
+            .givenAgentRecord(arn, suspended = false, regime)
+
+          authResponseFor(GET).status shouldBe 401
+        }
+      }
     }
 
-    "respond with 401" when {
-      "the client has not authorised the agent" in {
-        given()
-          .agentAdmin(agentCode, providerId, None, Some(arn))
-          .isAuthenticated()
-          .andHasNoRelationship(arn, clientId)
+    s"http method is $POST" should {
 
-        authResponseFor(agentCode, clientId, method).status shouldBe 401
+      "respond with 200" when {
+        "the client has authorised the agent and agent is not suspended" in {
+          given()
+            .agentAdmin(agentCode, providerId, None, Some(arn))
+            .isAuthenticated()
+            .andHasRelationship(arn, clientId)
+            .givenAgentRecord(arn, suspended = false, regime)
+
+          authResponseFor(POST).status shouldBe 200
+        }
+      }
+
+      "respond with 401" when {
+        "the client has authorised the agent but agent is suspended" in {
+          given()
+            .agentAdmin(agentCode, providerId, None, Some(arn))
+            .isAuthenticated()
+            .andHasRelationship(arn, clientId)
+            .givenAgentRecord(arn, suspended = true, regime)
+
+          authResponseFor(POST).status shouldBe 401
+        }
+      }
+
+      "respond with 401" when {
+        "the client has not authorised the agent and agent is not suspended" in {
+          given()
+            .agentAdmin(agentCode, providerId, None, Some(arn))
+            .isAuthenticated()
+            .andHasNoRelationship(arn, clientId)
+            .givenAgentRecord(arn, suspended = false, regime)
+
+          authResponseFor(POST).status shouldBe 401
+        }
       }
     }
   }
 
-  "POST /agent-access-control/afi-auth/agent/:agentCode/client/:nino" should {
-    val method = "POST"
-    "respond with 200" when {
-      "the client has authorised the agent" in {
-        given()
-          .agentAdmin(agentCode, providerId, None, Some(arn))
-          .isAuthenticated()
-          .andHasRelationship(arn, clientId)
-
-        authResponseFor(agentCode, clientId, method).status shouldBe 200
-      }
-
-    }
-
-    "respond with 401" when {
-      "the client has not authorised the agent" in {
-        given()
-          .agentAdmin(agentCode, providerId, None, Some(arn))
-          .isAuthenticated()
-          .andHasNoRelationship(arn, clientId)
-
-        authResponseFor(agentCode, clientId, method).status shouldBe 401
-      }
-    }
-  }
-
-  def authResponseFor(agentCode: AgentCode, nino: Nino, method: String): HttpResponse = {
-    val resource = new Resource(s"/agent-access-control/afi-auth/agent/${agentCode.value}/client/${nino.value}")(port)
+  def authResponseFor(method: String): HttpResponse = {
+    val resource = new Resource(afiAuthUri)(port)
     method match {
       case "GET"  => resource.get()
       case "POST" => resource.post(body = """{"foo": "bar"}""")
