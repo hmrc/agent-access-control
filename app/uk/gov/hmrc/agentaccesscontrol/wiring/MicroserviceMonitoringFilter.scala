@@ -186,20 +186,3 @@ trait MonitoringKeyMatcher {
       }
 
 }
-
-//@Singleton
-//class WhitelistFilter @Inject() (configuration: Configuration) extends AkamaiWhitelistFilter with MicroserviceFilterSupport {
-//
-//  override val whitelist: Seq[String] = whitelistConfig("microservice.whitelist.ips")
-//  override val destination: Call = Call("GET", "/agent-access-control/forbidden")
-//  override val excludedPaths: Seq[Call] = Seq(
-//    Call("GET", "/ping/ping"),
-//    Call("GET", "/admin/details"),
-//    Call("GET", "/admin/metrics"),
-//    Call("GET", "/agent-access-control/forbidden"))
-//
-//  def enabled(): Boolean = configuration.getBoolean("microservice.whitelist.enabled").getOrElse(true)
-//
-//  private def whitelistConfig(key: String): Seq[String] =
-//    new String(Base64.getDecoder().decode(configuration.getString(key).getOrElse("")), "UTF-8").split(",")
-//}
