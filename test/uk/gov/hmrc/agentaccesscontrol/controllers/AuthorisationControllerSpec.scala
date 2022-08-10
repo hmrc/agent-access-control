@@ -504,6 +504,11 @@ class AuthorisationControllerSpec
       .getBoolean(_: String))
       .expects("features.allowPayeAccess")
       .returning(allowPayeAccess)
+    (servicesConfig
+      .getBoolean(_: String))
+      .expects("features.enable-granular-permissions")
+      .returning(true)
+      .anyNumberOfTimes()
 
     servicesConfig
   }
