@@ -45,7 +45,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
         .hasARelationshipWith(identifier)
       givenCleanMetricRegistry()
 
-      await(connector.relationshipExists(arn, identifier)) shouldBe true
+      await(connector.relationshipExists(arn, None, identifier)) shouldBe true
       timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET")
     }
 
@@ -55,7 +55,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
         .hasNoRelationshipWith(identifier)
       givenCleanMetricRegistry()
 
-      await(connector.relationshipExists(arn, identifier)) shouldBe false
+      await(connector.relationshipExists(arn, None, identifier)) shouldBe false
       timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET")
     }
 
@@ -65,7 +65,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
         .statusReturnedForRelationship(identifier, 300)
 
       intercept[Exception] {
-        await(connector.relationshipExists(arn, identifier))
+        await(connector.relationshipExists(arn, None, identifier))
       }.getMessage should include("300")
     }
 
@@ -75,7 +75,7 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
         .hasARelationshipWith(identifier)
       givenCleanMetricRegistry()
 
-      await(connector.relationshipExists(arn, identifier))
+      await(connector.relationshipExists(arn, None, identifier))
 
       timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET")
     }

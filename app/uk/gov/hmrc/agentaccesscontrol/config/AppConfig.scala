@@ -35,6 +35,8 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
 
   val acrBaseUrl = baseUrl("agent-client-relationships")
 
+  val agentPermissionsUrl = servicesConfig.baseUrl("agent-permissions")
+
   val desUrl = baseUrl("des")
 
   val desToken = getConfString("des.authorization-token")
@@ -55,4 +57,7 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
     servicesConfig.getBoolean("features.enable-agent-suspension")
 
   val featuresPayeAccess = servicesConfig.getBoolean("features.allowPayeAccess")
+
+  def enableGranularPermissions =
+    servicesConfig.getBoolean("features.enable-granular-permissions")
 }

@@ -23,6 +23,7 @@ import uk.gov.hmrc.agentaccesscontrol.audit.{
   AuditService
 }
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
+import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
@@ -37,8 +38,9 @@ import scala.concurrent.{ExecutionContext, Future}
 class ESAuthorisationService @Inject()(
     relationshipsConnector: RelationshipsConnector,
     val desAgentClientApiConnector: DesAgentClientApiConnector,
-    auditService: AuditService)(implicit ec: ExecutionContext,
-                                appConfig: AppConfig)
+    agentPermissionsConnector: AgentPermissionsConnector,
+    auditService: AuditService,
+    appConfig: AppConfig)(implicit ec: ExecutionContext)
     extends LoggingAuthorisationResults
     with AgentSuspensionChecker {
 
@@ -121,8 +123,10 @@ class ESAuthorisationService @Inject()(
       arn: Arn,
       userRoleOpt: Option[CredentialRole])(implicit hc: HeaderCarrier,
                                            request: Request[_]) = {
-    relationshipsConnector.relationshipExists(arn, taxIdentifier).map {
-      result =>
+    checkForRelationship(arn,
+                         Some(agentAuthDetails.ggCredentialId),
+                         taxIdentifier)
+      .map { result =>
         auditDecision(agentCode,
                       agentAuthDetails,
                       taxIdentifier,
@@ -137,7 +141,7 @@ class ESAuthorisationService @Inject()(
           notAuthorised(
             s"Access not allowed for agentCode=$agentCode arn=${arn.value} client=${taxIdentifier.value} userRole: ${userRoleOpt
               .getOrElse("None found")}")
-    }
+      }
   }
 
   private def getDesRegimeFor(regime: String) = {
@@ -169,5 +173,26 @@ class ESAuthorisationService @Inject()(
       Seq("credId" -> agentAuthDetails.ggCredentialId,
           "accessGranted" -> result) ++ extraDetails
     )
+
+  def checkForRelationship(arn: Arn,
+                           maybeUserId: Option[String],
+                           taxIdentifier: TaxIdentifier)(
+      implicit ec: ExecutionContext,
+      hc: HeaderCarrier): Future[Boolean] =
+    for {
+      // Check whether Granular Permissions are enabled and opted-in for this agent.
+      // If so, when calling agent-client-relationships, we will check whether a relationship exists _for that specific agent user_.
+      // If Granular Permissions are not enabled or opted out, we only check whether a relationship exists with the agency.
+      granPermsEnabled <- if (!appConfig.enableGranularPermissions)
+        Future.successful(false)
+      else agentPermissionsConnector.granularPermissionsOptinRecordExists(arn)
+      _ = if (granPermsEnabled && maybeUserId.isEmpty)
+        throw new IllegalArgumentException(
+          "Cannot check for relationship: Granular Permissions are enabled but no user id is provided.")
+      userId = if (granPermsEnabled) maybeUserId else None
+      result <- relationshipsConnector.relationshipExists(arn,
+                                                          userId,
+                                                          taxIdentifier)
+    } yield result
 
 }

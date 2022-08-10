@@ -20,6 +20,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatest.TestData
 import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneServerPerTest}
 import play.api.Application
+import play.api.http.Status.{NOT_FOUND, NO_CONTENT}
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
@@ -48,6 +49,8 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
     "microservice.services.agent-mapping.port"              -> wiremockPort,
     "microservice.services.agent-fi-relationship.host"      -> wiremockHost,
     "microservice.services.agent-fi-relationship.port"      -> wiremockPort,
+    "microservice.services.agent-permissions.host"          -> wiremockHost,
+    "microservice.services.agent-permissions.port"          -> wiremockPort,
     "features.enable-agent-suspension" -> true,
     "features.allowPayeAccess" -> true
   )
@@ -510,16 +513,43 @@ trait StubUtils {
 
     def hasNoRelationshipWith(identifier: TaxIdentifier): A = statusReturnedForRelationship(identifier, 404)
 
+    def hasAssignedRelationshipToAgentUser(identifier: TaxIdentifier, agentUserId: String): A = statusReturnedForUserLevelRelationship(identifier, agentUserId, 200)
+
+    def isOptedInToGranularPermissions: A = statusReturnedForGPOptInRecordExists(NO_CONTENT)
+    def isOptedOutOfGranularPermissions: A = statusReturnedForGPOptInRecordExists(NOT_FOUND)
+
+    private def acrUrl(identifier: TaxIdentifier): String = identifier match {
+      case _ @MtdItId(mtdItId) =>
+        s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
+      case _ @Vrn(vrn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
+      case _ @Utr(utr) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-TERS-ORG/client/SAUTR/$utr"
+      case _ @CgtRef(cgtRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/$cgtRef"
+      case _ @Urn(urn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-TERSNT-ORG/client/URN/$urn"
+      case _ @PptRef(pptRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PPT-ORG/client/EtmpRegistrationNumber/$pptRef"
+    }
+
     def statusReturnedForRelationship(identifier: TaxIdentifier, status: Int): A = {
-      val url = identifier match {
-        case _ @MtdItId(mtdItId) =>
-          s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
-        case _ @Vrn(vrn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
-        case _ @Utr(utr) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-TERS-ORG/client/SAUTR/$utr"
-        case _ @CgtRef(cgtRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/$cgtRef"
-        case _ @Urn(urn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-TERSNT-ORG/client/URN/$urn"
-        case _ @PptRef(pptRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PPT-ORG/client/EtmpRegistrationNumber/$pptRef"
-      }
+      val url = acrUrl(identifier)
+
+      stubFor(
+        get(urlEqualTo(url))
+          .willReturn(aResponse()
+            .withStatus(status)))
+      this
+    }
+
+    def statusReturnedForUserLevelRelationship(identifier: TaxIdentifier, agentUserId: String, status: Int): A = {
+      val url = acrUrl(identifier) + s"?userId=$agentUserId"
+
+      stubFor(
+        get(urlEqualTo(url))
+          .willReturn(aResponse()
+            .withStatus(status)))
+      this
+    }
+
+    def statusReturnedForGPOptInRecordExists(status: Int): A = {
+      val url = s"/agent-permissions/arn/${arn.value}/optin-record-exists"
 
       stubFor(
         get(urlEqualTo(url))

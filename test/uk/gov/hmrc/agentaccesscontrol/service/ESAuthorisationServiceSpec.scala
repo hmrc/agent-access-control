@@ -21,6 +21,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
+import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
 import uk.gov.hmrc.agentaccesscontrol.model.{AgentRecord, AuthDetails}
@@ -43,34 +44,44 @@ class ESAuthorisationServiceSpec
   val relationshipsConnector = mock[RelationshipsConnector]
   val auditService = mock[AuditService]
   val desAgentClientApiConnector = mock[DesAgentClientApiConnector]
+  val agentPermissionsConnector = stub[AgentPermissionsConnector]
 
-  val servicesConfig = mock[ServicesConfig]
-  (servicesConfig
-    .baseUrl(_: String))
-    .expects(*)
-    .atLeastOnce()
-    .returning("blah-url")
-  (servicesConfig
-    .getConfString(_: String, _: String))
-    .expects(*, *)
-    .atLeastOnce()
-    .returning("blah-url")
+  def appConfig: AppConfig = {
+    val theStub = stub[ServicesConfig]
+    (theStub
+      .baseUrl(_: String))
+      .when(*)
+      .returns("blah-url")
+    (theStub
+      .getConfString(_: String, _: String))
+      .when(*, *)
+      .returns("blah-url")
+    (theStub
+      .getBoolean(_: String))
+      .when("features.enable-granular-permissions")
+      .returns(true)
+    (theStub
+      .getBoolean(_: String))
+      .when("features.enable-agent-suspension")
+      .returns(true)
+    (theStub
+      .getBoolean(_: String))
+      .when("features.allowPayeAccess")
+      .returns(true)
+    new AppConfig(theStub)
+  }
 
-  (servicesConfig
-    .getBoolean(_: String))
-    .expects("features.enable-agent-suspension")
-    .returning(true)
-
-  (servicesConfig
-    .getBoolean(_: String))
-    .expects("features.allowPayeAccess")
-    .returning(true)
-
-  implicit val appConfig = new AppConfig(servicesConfig)
+  (agentPermissionsConnector
+    .granularPermissionsOptinRecordExists(_: Arn)(_: HeaderCarrier,
+                                                  _: ExecutionContext))
+    .when(*, *, *)
+    .returns(Future.successful(true))
 
   val service = new ESAuthorisationService(relationshipsConnector,
                                            desAgentClientApiConnector,
-                                           auditService)
+                                           agentPermissionsConnector,
+                                           auditService,
+                                           appConfig)
 
   val agentCode = AgentCode("agentCode")
   val arn = Arn("arn")
@@ -530,11 +541,84 @@ class ESAuthorisationServiceSpec
     }
   }
 
+  "granular permissions logic" should {
+    "when GP enabled and opted in, specify user to check in relationship service call" in {
+      val cgtRef = CgtRef("XMCGTP123456789")
+      givenAuditEvent()
+      whenDesAgentClientApiConnectorIsCalled returning Future(
+        Right(agentRecord))
+
+      val agentPermissionsConnector = stub[AgentPermissionsConnector]
+      (agentPermissionsConnector
+        .granularPermissionsOptinRecordExists(_: Arn)(_: HeaderCarrier,
+                                                      _: ExecutionContext))
+        .when(*, *, *)
+        .returns(Future.successful(true)) // user is opted-in to granular permissions
+
+      val stubRelationshipsConnector = stub[RelationshipsConnector]
+      (stubRelationshipsConnector
+        .relationshipExists(_: Arn, _: Option[String], _: TaxIdentifier)(
+          _: ExecutionContext,
+          _: HeaderCarrier))
+        .when(*, *, *, *, *)
+        .returns(Future.successful(true))
+      val esaService = new ESAuthorisationService(stubRelationshipsConnector,
+                                                  desAgentClientApiConnector,
+                                                  agentPermissionsConnector,
+                                                  auditService,
+                                                  appConfig)
+
+      await(esaService.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
+
+      (stubRelationshipsConnector
+        .relationshipExists(_: Arn, _: Option[String], _: TaxIdentifier)(
+          _: ExecutionContext,
+          _: HeaderCarrier))
+        .verify(arn, Some("ggId"), cgtRef, *, *) // Check that we have specified the user id
+    }
+
+    "when GP outed out, do NOT specify user to check in relationship service call" in {
+      val cgtRef = CgtRef("XMCGTP123456789")
+      givenAuditEvent()
+      whenDesAgentClientApiConnectorIsCalled returning Future(
+        Right(agentRecord))
+
+      val agentPermissionsConnector = stub[AgentPermissionsConnector]
+      (agentPermissionsConnector
+        .granularPermissionsOptinRecordExists(_: Arn)(_: HeaderCarrier,
+                                                      _: ExecutionContext))
+        .when(*, *, *)
+        .returns(Future.successful(false)) // user is opted-out of granular permissions
+
+      val stubRelationshipsConnector = stub[RelationshipsConnector]
+      (stubRelationshipsConnector
+        .relationshipExists(_: Arn, _: Option[String], _: TaxIdentifier)(
+          _: ExecutionContext,
+          _: HeaderCarrier))
+        .when(*, *, *, *, *)
+        .returns(Future.successful(true))
+      val esaService = new ESAuthorisationService(stubRelationshipsConnector,
+                                                  desAgentClientApiConnector,
+                                                  agentPermissionsConnector,
+                                                  auditService,
+                                                  appConfig)
+
+      await(esaService.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
+
+      (stubRelationshipsConnector
+        .relationshipExists(_: Arn, _: Option[String], _: TaxIdentifier)(
+          _: ExecutionContext,
+          _: HeaderCarrier))
+        .verify(arn, None, cgtRef, *, *) // Check that we have NOT specified the user id
+    }
+  }
+
   def whenRelationshipsConnectorIsCalled =
     (relationshipsConnector
-      .relationshipExists(_: Arn, _: MtdItId)(_: ExecutionContext,
-                                              _: HeaderCarrier))
-      .expects(*, *, *, *)
+      .relationshipExists(_: Arn, _: Option[String], _: MtdItId)(
+        _: ExecutionContext,
+        _: HeaderCarrier))
+      .expects(*, *, *, *, *)
 
   def whenDesAgentClientApiConnectorIsCalled =
     (desAgentClientApiConnector

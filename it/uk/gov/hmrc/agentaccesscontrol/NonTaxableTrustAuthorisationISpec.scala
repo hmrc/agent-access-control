@@ -21,6 +21,7 @@ class NonTaxableTrustAuthorisationISpec extends WireMockWithOneServerPerTestISpe
         .givenAgentRecord(arn, suspended = false, "TRS")
       given().mtdAgency(arn).hasARelationshipWith(urn)
 
+
       val status = authResponseFor(agentCode, urn, method).status
       status shouldBe 200
     }

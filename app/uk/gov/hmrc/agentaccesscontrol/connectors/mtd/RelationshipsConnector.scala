@@ -47,7 +47,9 @@ object Relationship {
 
 @ImplementedBy(classOf[RelationshipsConnectorImpl])
 trait RelationshipsConnector {
-  def relationshipExists(arn: Arn, identifier: TaxIdentifier)(
+  def relationshipExists(arn: Arn,
+                         maybeUserId: Option[String],
+                         identifier: TaxIdentifier)(
       implicit ec: ExecutionContext,
       hc: HeaderCarrier): Future[Boolean]
 }
@@ -60,7 +62,9 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
     with HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def relationshipExists(arn: Arn, identifier: TaxIdentifier)(
+  def relationshipExists(arn: Arn,
+                         maybeUserId: Option[String],
+                         identifier: TaxIdentifier)(
       implicit ec: ExecutionContext,
       hc: HeaderCarrier): Future[Boolean] = {
     val (serviceName, clientType, clientId) = identifier match {
@@ -73,9 +77,10 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
         ("HMRC-PPT-ORG", "EtmpRegistrationNumber", pptRef)
     }
 
+    val urlParam = maybeUserId.fold("")(userId => s"?userId=$userId")
     val relationshipUrl =
       new URL(
-        s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/$serviceName/client/$clientType/$clientId").toString
+        s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/$serviceName/client/$clientType/$clientId" + urlParam).toString
 
     monitor(
       s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {
