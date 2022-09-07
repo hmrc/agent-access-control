@@ -12,6 +12,14 @@ to agents to their clients's data. Currently supports:
 * MTD Capital Gains (CGT)
 * MTD Plastic Packaging Tax (PPT)
 
+### Agent access groups
+
+The rules for access control have changed with agent access groups. If an agency has opted to turn on access groups then the agent user will be granted access to a client if
+ * the client has a relationship with the agency
+ * the client and the agent user belong to the same access group or the client does not belong to any access group
+
+If the agency has opted to turn off access groups then the agent user will be granted access provided the client has a relationship with the agency.
+
 
 ### Testing
 In Terminal, Run the following profile:
