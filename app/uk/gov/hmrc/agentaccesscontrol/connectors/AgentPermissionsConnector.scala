@@ -25,12 +25,7 @@ import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{
-  HeaderCarrier,
-  HttpClient,
-  HttpResponse,
-  UpstreamErrorResponse
-}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 
 import java.net.URL
 import javax.inject.{Inject, Singleton}
@@ -66,7 +61,9 @@ class AgentPermissionsConnectorImpl @Inject()(
           case Status.NO_CONTENT => true
           case Status.NOT_FOUND  => false
           case other =>
-            throw UpstreamErrorResponse(response.body, other, other)
+            logger.warn(
+              s"Got $other when checking for optin record exists. Response message: '${response.body}''")
+            false
         }
       }
     }
