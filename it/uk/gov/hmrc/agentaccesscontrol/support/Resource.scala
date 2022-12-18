@@ -41,13 +41,15 @@ class Resource(path: String)(port: Int) {
     implicit writes: Writes[A],
     hc: HeaderCarrier): HttpResponse = perform(url) { _.post(Json.toJson(body)) }
 
-  private def perform(url: String)(fun: WSRequest => Future[WSResponse])(implicit hc: HeaderCarrier): HttpResponse =
+  private def perform(url: String)(fun: WSRequest => Future[WSResponse])(implicit hc: HeaderCarrier): HttpResponse = {
+    val headers = hc.headersForUrl(HeaderCarrier.Config())(url) :+ ("Authorization" -> "Bearer XYZ")
     await(
       fun(
         WsTestClient.wsUrl(url)(port)
-          .withHttpHeaders(hc.headersForUrl(HeaderCarrier.Config())(url): _*)
+          .withHttpHeaders(headers: _*)
           .withRequestTimeout(Duration(20, SECONDS)))
         .map(WSHttpResponse(_)))
+  }
 
   private def await[A](future: Future[A]): A = Await.result(future, Duration(10, SECONDS))
 
