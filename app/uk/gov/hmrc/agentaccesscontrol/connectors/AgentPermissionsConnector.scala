@@ -55,7 +55,7 @@ class AgentPermissionsConnectorImpl @Inject()(
     val url =
       new URL(agentPermissionsBaseUrl,
               s"/agent-permissions/arn/${arn.value}/optin-record-exists")
-    monitor(s"ConsumedAPI-AP-granularPermissionsOptinRecordExists-$arn-GET") {
+    monitor(s"ConsumedAPI-AP-granularPermissionsOptinRecordExists-GET") {
       http.GET[HttpResponse](url.toString).map { response =>
         response.status match {
           case Status.NO_CONTENT => true
