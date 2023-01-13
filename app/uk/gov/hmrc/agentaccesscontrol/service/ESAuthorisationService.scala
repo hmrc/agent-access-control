@@ -27,7 +27,13 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, TrustTaxIdentifier, Urn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.{
+  Arn,
+  EnrolmentKey,
+  TrustTaxIdentifier,
+  Urn,
+  Utr
+}
 import uk.gov.hmrc.auth.core.CredentialRole
 import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -125,6 +131,7 @@ class ESAuthorisationService @Inject()(
                                            request: Request[_]) = {
     checkForRelationship(arn,
                          Some(agentAuthDetails.ggCredentialId),
+                         regime,
                          taxIdentifier)
       .map { result =>
         auditDecision(agentCode,
@@ -176,23 +183,68 @@ class ESAuthorisationService @Inject()(
 
   def checkForRelationship(arn: Arn,
                            maybeUserId: Option[String],
+                           regime: String,
                            taxIdentifier: TaxIdentifier)(
       implicit ec: ExecutionContext,
-      hc: HeaderCarrier): Future[Boolean] =
+      hc: HeaderCarrier): Future[Boolean] = {
+
     for {
       // Check whether Granular Permissions are enabled and opted-in for this agent.
       // If so, when calling agent-client-relationships, we will check whether a relationship exists _for that specific agent user_.
+      // (A relationship is also deemed to exist if the agent user is part of an appropriate tax service group)
       // If Granular Permissions are not enabled or opted out, we only check whether a relationship exists with the agency.
       granPermsEnabled <- if (!appConfig.enableGranularPermissions)
         Future.successful(false)
       else agentPermissionsConnector.granularPermissionsOptinRecordExists(arn)
-      _ = if (granPermsEnabled && maybeUserId.isEmpty)
-        throw new IllegalArgumentException(
-          "Cannot check for relationship: Granular Permissions are enabled but no user id is provided.")
-      userId = if (granPermsEnabled) maybeUserId else None
-      result <- relationshipsConnector.relationshipExists(arn,
-                                                          userId,
+
+      result <- (granPermsEnabled, maybeUserId) match {
+        // Granular permissions are off: only check whether the agency as a whole has a relationship with the client
+        case (false, _) =>
+          relationshipsConnector.relationshipExists(arn, None, taxIdentifier)
+        // If the user is part of a tax service group for the given tax service, allow access - no relationship needed
+        // Otherwise check if the user has a relationship with the specific agent user
+        case (true, Some(userId)) =>
+          isAuthorisedBasedOnTaxServiceGroup(arn, userId, regime, taxIdentifier)
+            .flatMap {
+              case true => Future.successful(true)
+              case false =>
+                relationshipsConnector.relationshipExists(arn,
+                                                          Some(userId),
                                                           taxIdentifier)
+            }
+        case (true, None) =>
+          throw new IllegalArgumentException(
+            "Cannot check for relationship: Granular Permissions are enabled but no user id is provided.")
+      }
     } yield result
+  }
+
+  private def isAuthorisedBasedOnTaxServiceGroup(arn: Arn,
+                                                 userId: String,
+                                                 regime: String,
+                                                 taxIdentifier: TaxIdentifier)(
+      implicit ec: ExecutionContext,
+      hc: HeaderCarrier): Future[Boolean] = {
+    val taxGroupsServiceKey = regime match {
+      case "HMRC-TERS-ORG" | "HMRC-TERSNT-ORG" =>
+        "HMRC-TERS" // tax service groups use the nonstandard key "HMRC-TERS" to mean either type of trust
+      case x => x
+    }
+    agentPermissionsConnector
+      .getTaxServiceGroups(arn, taxGroupsServiceKey)
+      .map {
+        case Some(taxServiceAccessGroup) =>
+          val isUserIdInTaxServiceGroup = taxServiceAccessGroup.teamMembers
+            .getOrElse(Set.empty)
+            .map(_.id)
+            .contains(userId)
+          val isClientExcluded = taxServiceAccessGroup.excludedClients
+            .getOrElse(Set.empty)
+            .exists(_.enrolmentKey == EnrolmentKey
+              .enrolmentKey(serviceId = regime, clientId = taxIdentifier.value))
+          isUserIdInTaxServiceGroup && !isClientExcluded
+        case None => false
+      }
+  }
 
 }

@@ -41,6 +41,7 @@ class AuthorisationService @Inject()(
     auditService: AuditService,
     mappingConnector: MappingConnector,
     afiRelationshipConnector: AfiRelationshipConnector,
+    agentPermissions: AgentPermissionsConnector,
     val desAgentClientApiConnector: DesAgentClientApiConnector)(
     implicit appConfig: AppConfig)
     extends LoggingAuthorisationResults

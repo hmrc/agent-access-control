@@ -22,10 +22,13 @@ import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneServerPerTest}
 import play.api.Application
 import play.api.http.Status.{NOT_FOUND, NO_CONTENT}
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.domain.{Vrn => _, _}
+
+import java.time.LocalDateTime
 
 abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with StubUtils {
 
@@ -514,9 +517,34 @@ trait StubUtils {
     def hasNoRelationshipWith(identifier: TaxIdentifier): A = statusReturnedForRelationship(identifier, 404)
 
     def hasAssignedRelationshipToAgentUser(identifier: TaxIdentifier, agentUserId: String): A = statusReturnedForUserLevelRelationship(identifier, agentUserId, 200)
+    def hasNoAssignedRelationshipToAgentUser(identifier: TaxIdentifier, agentUserId: String): A = statusReturnedForUserLevelRelationship(identifier, agentUserId, 404)
 
     def isOptedInToGranularPermissions: A = statusReturnedForGPOptInRecordExists(NO_CONTENT)
     def isOptedOutOfGranularPermissions: A = statusReturnedForGPOptInRecordExists(NOT_FOUND)
+
+    def userIsInTaxServiceGroup(taxService: String, agentUserId: String, excludedClients: Set[Client] = Set.empty): A = {
+      val url = s"/agent-permissions/arn/${arn.value}/tax-group/$taxService"
+      val response: TaxServiceAccessGroup =
+        TaxServiceAccessGroup(
+          arn = arn,
+          groupName = taxService + "-group",
+          created = LocalDateTime.now,
+          lastUpdated = LocalDateTime.now,
+          createdBy = AgentUser("someId", "someName"),
+          lastUpdatedBy = AgentUser("someId", "someName"),
+          teamMembers = Some(Set(AgentUser(agentUserId, "Johnny Agent"))),
+          service = taxService,
+          automaticUpdates = false,
+          excludedClients = Some(excludedClients)
+        )
+
+      stubFor(
+        get(urlEqualTo(url))
+          .willReturn(aResponse()
+            .withStatus(200)
+          .withBody(Json.toJson(response).toString())))
+      this
+    }
 
     private def acrUrl(identifier: TaxIdentifier): String = identifier match {
       case _ @MtdItId(mtdItId) =>

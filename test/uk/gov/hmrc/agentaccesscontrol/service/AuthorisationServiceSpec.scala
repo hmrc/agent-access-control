@@ -22,20 +22,23 @@ import org.mockito.stubbing.Answer
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlDecision
-import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
+import uk.gov.hmrc.agentaccesscontrol.audit.{
+  AgentAccessControlDecision,
+  AuditService
+}
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.{
   AfiRelationshipConnector,
+  AgentPermissionsConnector,
   MappingConnector
 }
 import uk.gov.hmrc.agentaccesscontrol.model.{AgentRecord, AuthDetails}
-import uk.gov.hmrc.auth.core.User
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaAgentReference, SaUtr}
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, SuspensionDetails}
+import uk.gov.hmrc.auth.core.User
+import uk.gov.hmrc.domain._
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.Future
@@ -444,6 +447,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     val mockMappingConnector = mock[MappingConnector]
     val mockDesAgentClientApiConnector = mock[DesAgentClientApiConnector]
     val servicesConfig = mock[ServicesConfig]
+    val mockAgentPermissionsConnector = mock[AgentPermissionsConnector]
 
     implicit val appConfig = new AppConfig(servicesConfig)
 
@@ -453,6 +457,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       mockAuditService,
       mockMappingConnector,
       mockAfiRelationshipConnector,
+      mockAgentPermissionsConnector,
       mockDesAgentClientApiConnector
     )
 

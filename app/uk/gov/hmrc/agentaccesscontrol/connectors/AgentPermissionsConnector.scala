@@ -21,9 +21,10 @@ import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import play.api.Logging
 import play.api.http.Status
+import play.api.libs.json.Json
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, TaxServiceAccessGroup}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 
@@ -36,6 +37,10 @@ trait AgentPermissionsConnector {
   def granularPermissionsOptinRecordExists(arn: Arn)(
       implicit hc: HeaderCarrier,
       executionContext: ExecutionContext): Future[Boolean]
+
+  def getTaxServiceGroups(arn: Arn, service: String)(
+      implicit hc: HeaderCarrier,
+      executionContext: ExecutionContext): Future[Option[TaxServiceAccessGroup]]
 }
 
 @Singleton
@@ -64,6 +69,30 @@ class AgentPermissionsConnectorImpl @Inject()(
             logger.warn(
               s"Got $other when checking for optin record exists. Response message: '${response.body}''")
             false
+        }
+      }
+    }
+  }
+
+  def getTaxServiceGroups(arn: Arn, service: String)(
+      implicit hc: HeaderCarrier,
+      executionContext: ExecutionContext)
+    : Future[Option[TaxServiceAccessGroup]] = {
+    val url =
+      new URL(agentPermissionsBaseUrl,
+              s"/agent-permissions/arn/${arn.value}/tax-group/$service")
+    monitor(s"ConsumedAPI-AP-getTaxServiceGroups-GET") {
+      http.GET[HttpResponse](url.toString).map { response =>
+        response.status match {
+          case Status.NOT_FOUND => None
+          case Status.OK =>
+            Json
+              .parse(response.body)
+              .asOpt[TaxServiceAccessGroup]
+              .orElse(
+                throw new RuntimeException(
+                  s"getTaxServiceGroups returned invalid Json for $arn $service: ${response.body}")
+              )
         }
       }
     }

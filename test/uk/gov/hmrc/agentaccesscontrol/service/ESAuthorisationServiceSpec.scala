@@ -77,6 +77,12 @@ class ESAuthorisationServiceSpec
     .when(*, *, *)
     .returns(Future.successful(true))
 
+  (agentPermissionsConnector
+    .getTaxServiceGroups(_: Arn, _: String)(_: HeaderCarrier,
+                                            _: ExecutionContext))
+    .when(*, *, *, *)
+    .returns(Future.successful(None))
+
   val service = new ESAuthorisationService(relationshipsConnector,
                                            desAgentClientApiConnector,
                                            agentPermissionsConnector,
@@ -554,6 +560,11 @@ class ESAuthorisationServiceSpec
                                                       _: ExecutionContext))
         .when(*, *, *)
         .returns(Future.successful(true)) // user is opted-in to granular permissions
+      (agentPermissionsConnector
+        .getTaxServiceGroups(_: Arn, _: String)(_: HeaderCarrier,
+                                                _: ExecutionContext))
+        .when(*, *, *, *)
+        .returns(Future.successful(None)) // this endpoint will be called so we must provide a stub
 
       val stubRelationshipsConnector = stub[RelationshipsConnector]
       (stubRelationshipsConnector
