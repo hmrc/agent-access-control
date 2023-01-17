@@ -630,6 +630,7 @@ class ESAuthorisationServiceSpec
         _: ExecutionContext,
         _: HeaderCarrier))
       .expects(*, *, *, *, *)
+      .atLeastOnce()
 
   def whenDesAgentClientApiConnectorIsCalled =
     (desAgentClientApiConnector

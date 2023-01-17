@@ -189,6 +189,11 @@ class ESAuthorisationService @Inject()(
       hc: HeaderCarrier): Future[Boolean] = {
 
     for {
+      // Does a relationship exist between agency (ARN) and client?
+      agencyHasRelationship <- relationshipsConnector.relationshipExists(
+        arn,
+        None,
+        taxIdentifier)
       // Check whether Granular Permissions are enabled and opted-in for this agent.
       // If so, when calling agent-client-relationships, we will check whether a relationship exists _for that specific agent user_.
       // (A relationship is also deemed to exist if the agent user is part of an appropriate tax service group)
@@ -197,13 +202,15 @@ class ESAuthorisationService @Inject()(
         Future.successful(false)
       else agentPermissionsConnector.granularPermissionsOptinRecordExists(arn)
 
-      result <- (granPermsEnabled, maybeUserId) match {
-        // Granular permissions are off: only check whether the agency as a whole has a relationship with the client
-        case (false, _) =>
-          relationshipsConnector.relationshipExists(arn, None, taxIdentifier)
-        // If the user is part of a tax service group for the given tax service, allow access - no relationship needed
-        // Otherwise check if the user has a relationship with the specific agent user
-        case (true, Some(userId)) =>
+      result <- (agencyHasRelationship, granPermsEnabled, maybeUserId) match {
+        // The agency hasn't got a relationship at all with the client: deny access
+        case (false, _, _) => Future.successful(false)
+        // The agency has a relationship and granular permissions are off: grant access
+        case (true, false, _) => Future.successful(true)
+        // Granular permissions are enabled. Grant access if either:
+        //  - the user is part of the tax service group for the given tax service, (no user relationship needed), or
+        //  - the user has a relationship with the specific agent user
+        case (true, true, Some(userId)) =>
           isAuthorisedBasedOnTaxServiceGroup(arn, userId, regime, taxIdentifier)
             .flatMap {
               case true => Future.successful(true)
@@ -212,7 +219,7 @@ class ESAuthorisationService @Inject()(
                                                           Some(userId),
                                                           taxIdentifier)
             }
-        case (true, None) =>
+        case (true, true, None) =>
           throw new IllegalArgumentException(
             "Cannot check for relationship: Granular Permissions are enabled but no user id is provided.")
       }

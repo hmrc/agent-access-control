@@ -193,6 +193,23 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         // Check that we have called agent-client-relationships to check for the user assignment (as the tax service group check should have failed)
         WireMock.verify(1, WireMock.getRequestedFor(WireMock.urlPathEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}")).withQueryParam("userId", WireMock.equalTo(providerId)))
       }
+      "GP enabled, agent user IS in the relevant tax service group but there is no agency-level relationship" in {
+        val aStrangersCgtRef = CgtRef("XMCGTP987654321")
+        given()
+          .agentAdmin(agentCode, providerId, None, Some(arn))
+          .isAuthenticated()
+          .givenAgentRecord(arn, false, "CGT")
+
+        given()
+          .mtdAgency(arn)
+          .isOptedInToGranularPermissions
+          .hasARelationshipWith(cgtRef)
+          .hasNoAssignedRelationshipToAgentUser(cgtRef, providerId)
+          .userIsInTaxServiceGroup("HMRC-CGT-PD", providerId)
+
+        val status = authResponseFor(agentCode, aStrangersCgtRef, method).status
+        status shouldBe 401
+      }
     }
   }
 
