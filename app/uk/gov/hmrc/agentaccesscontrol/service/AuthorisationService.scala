@@ -21,7 +21,6 @@ import uk.gov.hmrc.agentaccesscontrol.audit.{
   AgentAccessControlDecision,
   AuditService
 }
-import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors._
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
@@ -42,15 +41,12 @@ class AuthorisationService @Inject()(
     mappingConnector: MappingConnector,
     afiRelationshipConnector: AfiRelationshipConnector,
     agentPermissions: AgentPermissionsConnector,
-    val desAgentClientApiConnector: DesAgentClientApiConnector)(
-    implicit appConfig: AppConfig)
+    val desAgentClientApiConnector: DesAgentClientApiConnector)
     extends LoggingAuthorisationResults
     with AgentSuspensionChecker {
 
   private val accessGranted = true
   private val accessDenied = false
-
-  private lazy val isSuspensionEnabled = appConfig.featureAgentSuspension
 
   def isAuthorisedForSa(agentCode: AgentCode,
                         saUtr: SaUtr,
@@ -260,7 +256,7 @@ class AuthorisationService @Inject()(
       request: Request[Any]): Future[Boolean] =
     authDetails match {
       case authDetails @ AuthDetails(_, Some(arn), _, _, _) =>
-        withSuspensionCheck(isSuspensionEnabled, arn, "PIR") {
+        withSuspensionCheck(arn, "PIR") {
           authoriseBasedOnAfiRelationships(agentCode, nino, authDetails, arn)
         }
       case _ => Future successful notFound("Error retrieving arn")

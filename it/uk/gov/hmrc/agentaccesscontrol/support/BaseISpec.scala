@@ -54,7 +54,7 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
     "microservice.services.agent-fi-relationship.port"      -> wiremockPort,
     "microservice.services.agent-permissions.host"          -> wiremockHost,
     "microservice.services.agent-permissions.port"          -> wiremockPort,
-    "features.enable-agent-suspension" -> true,
+   // "features.enable-agent-suspension" -> true,
     "features.allowPayeAccess" -> true
   )
 

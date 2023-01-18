@@ -26,28 +26,24 @@ trait AgentSuspensionChecker { this: LoggingAuthorisationResults =>
 
   val desAgentClientApiConnector: DesAgentClientApiConnector
 
-  def withSuspensionCheck(isSuspensionEnabled: Boolean,
-                          agentId: TaxIdentifier,
-                          regime: String)(proceed: => Future[Boolean])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Boolean] = {
-    if (isSuspensionEnabled) {
-      desAgentClientApiConnector.getAgentRecord(agentId).flatMap {
-        case Right(agentRecord) =>
-          if (agentRecord.isSuspended && agentRecord.suspendedFor(regime)) {
-            logger.warn(
-              s"agent with id : ${agentId.value} is suspended for regime $regime")
-            Future(false)
-          } else {
-            proceed
-          }
-        case Left(message) =>
-          logger.warn(message)
+  def withSuspensionCheck(agentId: TaxIdentifier, regime: String)(
+      proceed: => Future[Boolean])(implicit hc: HeaderCarrier,
+                                   ec: ExecutionContext): Future[Boolean] = {
+
+    desAgentClientApiConnector.getAgentRecord(agentId).flatMap {
+      case Right(agentRecord) =>
+        if (agentRecord.isSuspended && agentRecord.suspendedFor(regime)) {
+          logger.warn(
+            s"agent with id : ${agentId.value} is suspended for regime $regime")
           Future(false)
-      }
-    } else {
-      proceed
+        } else {
+          proceed
+        }
+      case Left(message) =>
+        logger.warn(message)
+        Future(false)
     }
+
   }
 
 }

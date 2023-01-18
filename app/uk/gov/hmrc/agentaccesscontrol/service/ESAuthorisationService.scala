@@ -50,8 +50,6 @@ class ESAuthorisationService @Inject()(
     extends LoggingAuthorisationResults
     with AgentSuspensionChecker {
 
-  private lazy val isSuspensionEnabled = appConfig.featureAgentSuspension
-
   def authoriseForMtdVat(agentCode: AgentCode,
                          taxIdentifier: TaxIdentifier,
                          authDetails: AuthDetails)(
@@ -102,7 +100,7 @@ class ESAuthorisationService @Inject()(
       request: Request[_]): Future[Boolean] =
     authDetails match {
       case agentAuthDetails @ AuthDetails(_, Some(arn), _, _, userRoleOpt) =>
-        withSuspensionCheck(isSuspensionEnabled, arn, getDesRegimeFor(regime)) {
+        withSuspensionCheck(arn, getDesRegimeFor(regime)) {
           authoriseBasedOnRelationships(agentCode,
                                         taxIdentifier,
                                         regime,
