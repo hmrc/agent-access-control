@@ -62,10 +62,6 @@ class ESAuthorisationServiceSpec
       .returns(true)
     (theStub
       .getBoolean(_: String))
-      .when("features.enable-agent-suspension")
-      .returns(true)
-    (theStub
-      .getBoolean(_: String))
       .when("features.allowPayeAccess")
       .returns(true)
     new AppConfig(theStub)
