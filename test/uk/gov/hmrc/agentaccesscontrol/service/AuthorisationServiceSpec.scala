@@ -349,57 +349,51 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
   }
 
-  "isAuthorisedForAfi" when {
+  "isAuthorisedForAfi" should {
 
-    "agent suspension feature flag is ON" should {
+    "return false when error encountered fetching agent record from DES" in new Context {
+      // whenAgentSuspensionFeatureFlagIsChecked thenReturn true
 
+      whenDesIsCheckedForAgentRecord thenReturn Future(Left("error"))
 
-      "return false when error encountered fetching agent record from DES" in new Context {
-        whenAgentSuspensionFeatureFlagIsChecked thenReturn true
+      await(
+        authorisationService
+          .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
+    }
 
-        whenDesIsCheckedForAgentRecord thenReturn Future(Left("error"))
+    "return false when agent is suspended" in new Context {
 
-        await(
-          authorisationService
-            .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
-      }
+      whenDesIsCheckedForAgentRecord thenReturn Future(
+        Right(AgentRecord(agentIsSuspended)))
 
-      "return false when agent is suspended" in new Context {
-        whenAgentSuspensionFeatureFlagIsChecked thenReturn true
+      await(
+        authorisationService
+          .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
+    }
 
-        whenDesIsCheckedForAgentRecord thenReturn Future(
-          Right(AgentRecord(agentIsSuspended)))
+    "return false when agent is not suspended and relationships do not exist" in new Context {
 
-        await(
-          authorisationService
-            .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
-      }
+      whenDesIsCheckedForAgentRecord thenReturn Future(
+        Right(AgentRecord(agentIsNotSuspended)))
 
-      "return false when agent is not suspended and relationships do not exist" in new Context {
+      afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(
+        false)
 
-        whenDesIsCheckedForAgentRecord thenReturn Future(
-          Right(AgentRecord(agentIsNotSuspended)))
+      await(
+        authorisationService
+          .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
+    }
 
-        afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(
-          false)
+    "return true when agent is not suspended and relationships exist" in new Context {
 
-        await(
-          authorisationService
-            .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
-      }
+      whenDesIsCheckedForAgentRecord thenReturn Future(
+        Right(AgentRecord(agentIsNotSuspended)))
 
-      "return true when agent is not suspended and relationships exist" in new Context {
+      afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(true)
 
-        whenDesIsCheckedForAgentRecord thenReturn Future(
-          Right(AgentRecord(agentIsNotSuspended)))
-
-        afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(
-          true)
-
-        await(
-          authorisationService
-            .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe true
-      }
+      await(
+        authorisationService
+          .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe true
     }
   }
 
@@ -455,7 +449,5 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     def afiRelationshipConnectorIsCheckedForRelatioinships =
       when(mockAfiRelationshipConnector.hasRelationship(arn.value, nino.value))
 
-    def whenAgentSuspensionFeatureFlagIsChecked =
-      when(servicesConfig.getBoolean("features.enable-agent-suspension"))
   }
 }
