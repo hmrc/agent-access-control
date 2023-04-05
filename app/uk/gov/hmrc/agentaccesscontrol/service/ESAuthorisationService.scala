@@ -238,13 +238,11 @@ class ESAuthorisationService @Inject()(
     agentPermissionsConnector
       .getTaxServiceGroups(arn, taxGroupsServiceKey)
       .map {
-        case Some(taxServiceAccessGroup) =>
-          val isUserIdInTaxServiceGroup = taxServiceAccessGroup.teamMembers
-            .getOrElse(Set.empty)
+        case Some(taxGroup) =>
+          val isUserIdInTaxServiceGroup = taxGroup.teamMembers
             .map(_.id)
             .contains(userId)
-          val isClientExcluded = taxServiceAccessGroup.excludedClients
-            .getOrElse(Set.empty)
+          val isClientExcluded = taxGroup.excludedClients
             .exists(_.enrolmentKey == EnrolmentKey
               .enrolmentKey(serviceId = regime, clientId = taxIdentifier.value))
           isUserIdInTaxServiceGroup && !isClientExcluded
