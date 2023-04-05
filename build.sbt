@@ -1,4 +1,3 @@
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
 
 lazy val scoverageSettings = {
   import scoverage.ScoverageKeys
@@ -38,7 +37,6 @@ lazy val root = (project in file("."))
       compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.4.4" cross CrossVersion.full),
       "com.github.ghik" % "silencer-lib" % "1.4.4" % Provided cross CrossVersion.full
     ),
-    publishingSettings,
     scoverageSettings,
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     routesImport += "uk.gov.hmrc.agentaccesscontrol.binders.PathBinders._",
