@@ -26,9 +26,11 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentmtdidentifiers.model._
+import uk.gov.hmrc.agents.accessgroups.{AgentUser, Client, TaxGroup}
 import uk.gov.hmrc.domain.{Vrn => _, _}
 
 import java.time.LocalDateTime
+import java.util.UUID
 
 abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with StubUtils {
 
@@ -523,18 +525,19 @@ trait StubUtils {
 
     def userIsInTaxServiceGroup(taxService: String, agentUserId: String, excludedClients: Set[Client] = Set.empty): A = {
       val url = s"/agent-permissions/arn/${arn.value}/tax-group/$taxService"
-      val response: TaxServiceAccessGroup =
-        TaxServiceAccessGroup(
+      val response: TaxGroup =
+        TaxGroup(
+          id = UUID.randomUUID(),
           arn = arn,
           groupName = taxService + "-group",
           created = LocalDateTime.now,
           lastUpdated = LocalDateTime.now,
           createdBy = AgentUser("someId", "someName"),
           lastUpdatedBy = AgentUser("someId", "someName"),
-          teamMembers = Some(Set(AgentUser(agentUserId, "Johnny Agent"))),
+          teamMembers = Set(AgentUser(agentUserId, "Johnny Agent")),
           service = taxService,
           automaticUpdates = false,
-          excludedClients = Some(excludedClients)
+          excludedClients = excludedClients
         )
 
       stubFor(

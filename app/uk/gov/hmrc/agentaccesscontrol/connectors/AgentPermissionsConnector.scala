@@ -24,7 +24,8 @@ import play.api.http.Status
 import play.api.libs.json.Json
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, TaxServiceAccessGroup}
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agents.accessgroups.TaxGroup
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 
@@ -40,7 +41,7 @@ trait AgentPermissionsConnector {
 
   def getTaxServiceGroups(arn: Arn, service: String)(
       implicit hc: HeaderCarrier,
-      executionContext: ExecutionContext): Future[Option[TaxServiceAccessGroup]]
+      executionContext: ExecutionContext): Future[Option[TaxGroup]]
 }
 
 @Singleton
@@ -76,8 +77,7 @@ class AgentPermissionsConnectorImpl @Inject()(
 
   def getTaxServiceGroups(arn: Arn, service: String)(
       implicit hc: HeaderCarrier,
-      executionContext: ExecutionContext)
-    : Future[Option[TaxServiceAccessGroup]] = {
+      executionContext: ExecutionContext): Future[Option[TaxGroup]] = {
     val url =
       new URL(agentPermissionsBaseUrl,
               s"/agent-permissions/arn/${arn.value}/tax-group/$service")
@@ -88,7 +88,7 @@ class AgentPermissionsConnectorImpl @Inject()(
           case Status.OK =>
             Json
               .parse(response.body)
-              .asOpt[TaxServiceAccessGroup]
+              .asOpt[TaxGroup]
               .orElse(
                 throw new RuntimeException(
                   s"getTaxServiceGroups returned invalid Json for $arn $service: ${response.body}")

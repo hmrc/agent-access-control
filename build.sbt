@@ -1,4 +1,3 @@
-import uk.gov.hmrc.SbtAutoBuildPlugin
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
 
 lazy val scoverageSettings = {
@@ -12,21 +11,6 @@ lazy val scoverageSettings = {
     Test / parallelExecution := false
   )
 }
-
-lazy val compileDeps = Seq(
-  "uk.gov.hmrc" %% "bootstrap-backend-play-28"  % "7.12.0",
-  "uk.gov.hmrc" %% "play-allowlist-filter"      % "1.1.0",
-  "uk.gov.hmrc" %% "agent-mtd-identifiers"      % "0.51.0-play-28",
-  "uk.gov.hmrc" %% "agent-kenshoo-monitoring"   % "4.8.0-play-28"
-)
-
-def testDeps(scope: String) = Seq(
-  "org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0"         % scope,
-  "org.scalatestplus"      %% "mockito-3-12"       % "3.2.10.0"      % scope,
-  "com.github.tomakehurst"  % "wiremock-jre8"      % "2.26.1"        % scope,
-  "org.scalamock"          %% "scalamock"          % "4.4.0"         % scope,
-  "com.vladsch.flexmark"    % "flexmark-all"       % "0.35.10"       % scope
-)
 
 lazy val root = (project in file("."))
   .settings(
@@ -49,7 +33,7 @@ lazy val root = (project in file("."))
     resolvers ++= Seq(
       Resolver.typesafeRepo("releases"),
     ),
-    libraryDependencies ++= compileDeps ++ testDeps("test") ++ testDeps("it"),
+    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
     libraryDependencies ++= Seq(
       compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.4.4" cross CrossVersion.full),
       "com.github.ghik" % "silencer-lib" % "1.4.4" % Provided cross CrossVersion.full
