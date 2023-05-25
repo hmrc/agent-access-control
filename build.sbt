@@ -1,22 +1,10 @@
 
-lazy val scoverageSettings = {
-  import scoverage.ScoverageKeys
-  Seq(
-    // Semicolon-separated list of regexs matching classes to exclude
-    ScoverageKeys.coverageExcludedPackages := """uk\.gov\.hmrc\.BuildInfo;.*\.Routes;.*\.RoutesPrefix;.*Filters?;MicroserviceAuditConnector;Module;GraphiteStartUp;.*\.Reverse[^.]*""",
-    ScoverageKeys.coverageMinimum := 80.00,
-    ScoverageKeys.coverageFailOnMinimum := true,
-    ScoverageKeys.coverageHighlighting := true,
-    Test / parallelExecution := false
-  )
-}
-
 lazy val root = (project in file("."))
   .settings(
     name := "agent-access-control",
     organization := "uk.gov.hmrc",
-    scalaVersion := "2.12.10",
-    majorVersion := 0,
+    scalaVersion := "2.12.15",
+    majorVersion := 1,
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
       "-Xlint:-missing-interpolator,_",
@@ -27,17 +15,12 @@ lazy val root = (project in file("."))
       "-feature",
       "-unchecked",
       "-language:implicitConversions",
-      "-P:silencer:pathFilters=views;routes"),
+      "-Wconf:src=target/.*:s", // silence warnings from compiled files
+      "-Wconf:src=routes/.*:s"  // silence warnings from routes files
+    ),
     PlayKeys.playDefaultPort := 9431,
-    resolvers ++= Seq(
-      Resolver.typesafeRepo("releases"),
-    ),
+    resolvers ++= Seq(Resolver.typesafeRepo("releases")),
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
-    libraryDependencies ++= Seq(
-      compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.4.4" cross CrossVersion.full),
-      "com.github.ghik" % "silencer-lib" % "1.4.4" % Provided cross CrossVersion.full
-    ),
-    scoverageSettings,
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     routesImport += "uk.gov.hmrc.agentaccesscontrol.binders.PathBinders._",
     Compile / scalafmtOnCompile := true,
@@ -45,6 +28,8 @@ lazy val root = (project in file("."))
   )
   .configs(IntegrationTest)
   .settings(
+    CodeCoverageSettings.scoverageSettings,
+    Test / parallelExecution := false,
     IntegrationTest / Keys.fork := false,
     Defaults.itSettings,
     IntegrationTest / unmanagedSourceDirectories += baseDirectory(_ / "it").value,
