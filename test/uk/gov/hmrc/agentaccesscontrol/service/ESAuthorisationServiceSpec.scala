@@ -60,10 +60,6 @@ class ESAuthorisationServiceSpec
       .getBoolean(_: String))
       .when("features.enable-granular-permissions")
       .returns(true)
-    (theStub
-      .getBoolean(_: String))
-      .when("features.allowPayeAccess")
-      .returns(true)
     new AppConfig(theStub)
   }
 

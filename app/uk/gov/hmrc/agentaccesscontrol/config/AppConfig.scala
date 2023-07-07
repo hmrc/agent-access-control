@@ -53,8 +53,6 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
 
   val agentMappingBaseUrl = baseUrl("agent-mapping")
 
-  val featuresPayeAccess = servicesConfig.getBoolean("features.allowPayeAccess")
-
   def enableGranularPermissions =
     servicesConfig.getBoolean("features.enable-granular-permissions")
 }

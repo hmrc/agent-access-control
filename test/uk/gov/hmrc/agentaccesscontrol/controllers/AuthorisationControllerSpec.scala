@@ -24,7 +24,6 @@ import play.api.mvc.{AnyContent, ControllerComponents, Request}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.mvc.Http.Status
-import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
@@ -44,7 +43,6 @@ import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
 import uk.gov.hmrc.auth.core.{Nino => _, _}
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -65,12 +63,12 @@ class AuthorisationControllerSpec
   val credentialRole = User
   val providerId = "12345-credId"
 
-  def controller(appConfig: AppConfig = new AppConfig(mockServiceConfig())) = {
+  def controller(): AuthorisationController = {
     new AuthorisationController(authorisationService,
                                 mockAuthConnector,
                                 esAuthorisationService,
                                 environment,
-                                cc)(global, appConfig)
+                                cc)(global)
   }
 
   override protected def beforeEach(): Unit = {
@@ -268,16 +266,6 @@ class AuthorisationControllerSpec
                                          EmpRef("123", "123456"))(fakeRequest)
 
       status(response) shouldBe 200
-    }
-
-    "return 403 when Paye is disabled" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      val response =
-        controller(new AppConfig(mockServiceConfig(false))).isAuthorisedForPaye(
-          AgentCode(agentCode),
-          EmpRef("123", "123456"))(fakeRequest)
-
-      status(response) shouldBe 403
     }
   }
 
@@ -487,29 +475,4 @@ class AuthorisationControllerSpec
         _: Request[Any]))
       .expects(*, *, *, *, *)
 
-  private def mockServiceConfig(allowPayeAccess: Boolean = true) = {
-    val servicesConfig = mock[ServicesConfig]
-    (servicesConfig
-      .baseUrl(_: String))
-      .expects(*)
-      .atLeastOnce()
-      .returning("blah-url")
-    (servicesConfig
-      .getConfString(_: String, _: String))
-      .expects(*, *)
-      .atLeastOnce()
-      .returning("blah-url")
-
-    (servicesConfig
-      .getBoolean(_: String))
-      .expects("features.allowPayeAccess")
-      .returning(allowPayeAccess)
-    (servicesConfig
-      .getBoolean(_: String))
-      .expects("features.enable-granular-permissions")
-      .returning(true)
-      .anyNumberOfTimes()
-
-    servicesConfig
-  }
 }
