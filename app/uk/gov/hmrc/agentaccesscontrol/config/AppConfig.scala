@@ -24,35 +24,35 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
 
   val appName = "agent-access-control"
 
-  def getConfString(key: String) =
+  def getConfString(key: String): String =
     servicesConfig.getConfString(
       key,
       throw new RuntimeException(s"config '$key' not found"))
 
-  def baseUrl(serviceName: String) = servicesConfig.baseUrl(serviceName)
+  def baseUrl(serviceName: String): String = servicesConfig.baseUrl(serviceName)
 
-  val authBaseUrl = baseUrl("auth")
+  val authBaseUrl: String = baseUrl("auth")
 
-  val acrBaseUrl = baseUrl("agent-client-relationships")
+  val acrBaseUrl: String = baseUrl("agent-client-relationships")
 
-  val agentPermissionsUrl = servicesConfig.baseUrl("agent-permissions")
+  val agentPermissionsUrl: String = servicesConfig.baseUrl("agent-permissions")
 
-  val desUrl = baseUrl("des")
+  val desUrl: String = baseUrl("des")
 
-  val desToken = getConfString("des.authorization-token")
+  val desToken: String = getConfString("des.authorization-token")
 
-  val desEnv = getConfString("des.environment")
+  val desEnv: String = getConfString("des.environment")
 
-  val desPayeUrl = baseUrl("des-paye")
+  val desPayeUrl: String = baseUrl("des-paye")
 
-  val desSAUrl = baseUrl("des-sa")
+  val desSAUrl: String = baseUrl("des-sa")
 
-  val esProxyBaseUrl = baseUrl("enrolment-store-proxy")
+  val esProxyBaseUrl: String = baseUrl("enrolment-store-proxy")
 
-  val afiBaseUrl = baseUrl("agent-fi-relationship")
+  val afiBaseUrl: String = baseUrl("agent-fi-relationship")
 
-  val agentMappingBaseUrl = baseUrl("agent-mapping")
+  val agentMappingBaseUrl: String = baseUrl("agent-mapping")
 
-  def enableGranularPermissions =
+  def enableGranularPermissions: Boolean =
     servicesConfig.getBoolean("features.enable-granular-permissions")
 }

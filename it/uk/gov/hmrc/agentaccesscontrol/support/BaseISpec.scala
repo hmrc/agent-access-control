@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import org.scalatest.TestData
 import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneServerPerTest}
 import play.api.Application
@@ -173,13 +174,13 @@ trait StubUtils {
           s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"))
 
     class SaDesStubBuilder(client: SaUtr, authorizationToken: String, environment: String) {
-      def andIsAuthorisedByOnly648(): A = withFlags(true, false)
+      def andIsAuthorisedByOnly648(): A = withFlags(auth_64_8 = true, auth_i64_8 = false)
 
-      def andIsAuthorisedByOnlyI648(): A = withFlags(false, true)
+      def andIsAuthorisedByOnlyI648(): A = withFlags(auth_64_8 = false, auth_i64_8 = true)
 
-      def butIsNotAuthorised(): A = withFlags(false, false)
+      def butIsNotAuthorised(): A = withFlags(auth_64_8 = false, auth_i64_8 = false)
 
-      def andAuthorisedByBoth648AndI648(): A = withFlags(true, true)
+      def andAuthorisedByBoth648AndI648(): A = withFlags(auth_64_8 = true, auth_i64_8 = true)
 
       private def withFlags(auth_64_8: Boolean, auth_i64_8: Boolean): A = {
         stubFor(
@@ -215,7 +216,7 @@ trait StubUtils {
       }
     }
 
-    def  givenAgentRecord(taxId: TaxIdentifier, suspended: Boolean, regime: String) = {
+    def  givenAgentRecord(taxId: TaxIdentifier, suspended: Boolean, regime: String): StubMapping = {
       stubFor(
         get(
           urlPathEqualTo(

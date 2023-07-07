@@ -25,19 +25,8 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.mvc.Http.Status
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
-import uk.gov.hmrc.agentaccesscontrol.service.{
-  AuthorisationService,
-  ESAuthorisationService
-}
-import uk.gov.hmrc.agentmtdidentifiers.model.{
-  Arn,
-  MtdItId,
-  PptRef,
-  TrustTaxIdentifier,
-  Urn,
-  Utr,
-  Vrn
-}
+import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, ESAuthorisationService}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, PptRef, TrustTaxIdentifier, Urn, Utr, Vrn}
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
 import uk.gov.hmrc.auth.core.{Nino => _, _}
@@ -53,14 +42,14 @@ class AuthorisationControllerSpec
     with BeforeAndAfterEach
     with MockFactory {
 
-  val authorisationService = mock[AuthorisationService]
-  val esAuthorisationService = mock[ESAuthorisationService]
+  val authorisationService: AuthorisationService = mock[AuthorisationService]
+  val esAuthorisationService: ESAuthorisationService = mock[ESAuthorisationService]
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
   val cc: ControllerComponents = stubControllerComponents()
-  val environment = mock[Environment]
-  val arn = Arn("arn")
+  val environment: Environment = mock[Environment]
+  val arn: Arn = Arn("arn")
   val agentCode = "ABCDEF123456"
-  val credentialRole = User
+  val credentialRole: User.type = User
   val providerId = "12345-credId"
 
   def controller(): AuthorisationController = {
@@ -81,7 +70,7 @@ class AuthorisationControllerSpec
               state = "Active",
               delegatedAuthRule = None))
 
-  val ggCredentials = Credentials("ggId", "GovernmentGateway")
+  val ggCredentials: Credentials = Credentials("ggId", "GovernmentGateway")
 
   val authResponseMtdAgent
     : Future[~[~[~[Option[String], Enrolments], Option[CredentialRole]],
@@ -91,21 +80,21 @@ class AuthorisationControllerSpec
             Some(credentialRole)),
       Some(ggCredentials))
 
-  val saAgentReference = SaAgentReference("enrol-123")
+  val saAgentReference: SaAgentReference = SaAgentReference("enrol-123")
 
-  val nonMtdAuthDetails = AuthDetails(saAgentReference = Some(saAgentReference),
+  val nonMtdAuthDetails: AuthDetails = AuthDetails(saAgentReference = Some(saAgentReference),
                                       arn = None,
                                       ggCredentialId = "12345-credId",
                                       affinityGroup = Some("Agent"),
                                       agentUserRole = Some(credentialRole))
 
-  val mtdAuthDetails = AuthDetails(saAgentReference = None,
+  val mtdAuthDetails: AuthDetails = AuthDetails(saAgentReference = None,
                                    arn = Some(arn),
                                    "ggId",
                                    Some("Agent"),
                                    Some(User))
 
-  private def anSaEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+  private def anSaEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
 
     "return 401 if the AuthorisationService doesn't permit access" in {
 
@@ -155,7 +144,7 @@ class AuthorisationControllerSpec
     }
   }
 
-  private def anMdtItEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+  private def anMdtItEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
     "return 401 if the MtdAuthorisationService doesn't permit access" in {
       whenAuthIsCalled(authResponseMtdAgent)
       whenMtdItAuthorisationServiceIsCalled.returning(Future successful false)
@@ -190,7 +179,7 @@ class AuthorisationControllerSpec
     }
   }
 
-  private def anMtdVatEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+  private def anMtdVatEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
     "return 401 if the MtdVatAuthorisationService doesn't permit access" in {
       whenAuthIsCalled(authResponseMtdAgent)
       whenMtdVatAuthorisationServiceIsCalled.returning(Future successful false)
@@ -222,7 +211,7 @@ class AuthorisationControllerSpec
     }
   }
 
-  private def aPptEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+  private def aPptEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
     "return 401 if the MtdPptAuthorisationService doesn't permit access" in {
       whenAuthIsCalled(authResponseMtdAgent)
       whenPptAuthorisationServiceIsCalled.returning(Future successful false)
@@ -256,7 +245,7 @@ class AuthorisationControllerSpec
     }
   }
 
-  private def aPayeEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+  private def aPayeEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
     "return 200 when Paye is enabled" in {
       whenAuthIsCalled(authResponseMtdAgent)
       whenPayeAuthorisationServiceIsCalled.returning(Future successful true)
@@ -269,7 +258,7 @@ class AuthorisationControllerSpec
     }
   }
 
-  private def anAfiEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]) = {
+  private def anAfiEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
 
     "return 200 if the AuthorisationService allows access" in {
 
