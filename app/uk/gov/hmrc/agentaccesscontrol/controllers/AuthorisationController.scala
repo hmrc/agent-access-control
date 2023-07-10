@@ -19,16 +19,13 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
 import play.api.{Environment, Logging}
-import uk.gov.hmrc.agentaccesscontrol.service.{
-  AuthorisationService,
-  ESAuthorisationService
-}
+import uk.gov.hmrc.agentaccesscontrol.service.{AuthorisationService, ESAuthorisationService}
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class AuthorisationController @Inject()(
@@ -173,5 +170,37 @@ class AuthorisationController @Inject()(
         }
       }
     }
+
+
+  //v2 proposal - replaces all services using esAuthorisationService
+  def isAuthorisedForMTDService(regime: String,
+                                agentCode: AgentCode,
+                                taxIdentifier: String): Action[AnyContent] =
+    Action.async { implicit request: Request[_] =>
+      if (validTaxIdForService(taxIdentifier, regime)) {
+        val taxId = Service
+          .forId(regime)
+          .supportedClientIdType
+          .createUnderlying(taxIdentifier)
+        withAgentAuthorised(agentCode) { authDetails =>
+          esAuthorisationService
+            .authoriseFor(agentCode, taxId, regime, authDetails)
+            .map { isAuthorised =>
+              if (isAuthorised) Ok else Unauthorized
+            }
+        }
+      } else {
+        Future.successful(BadRequest)
+      }
+    }
+
+  /** Checks taxIdentifier type is valid for regime before auth check */
+  private def validTaxIdForService(taxIdentifier: String,
+                                   regime: String): Boolean = {
+    Service
+      .findById(regime)
+      .exists(service => service.supportedClientIdType.isValid(taxIdentifier))
+  }
+
 
 }

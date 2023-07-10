@@ -147,6 +147,18 @@ authorised(
 )
 ```
 
+### Proposal for v2 delegated auth
+##### GET /agent-access-control/:serviceKey/agent/:agentCode/client/:taxIdentifier
+
+```scala
+authorised(
+  Enrolment(":serviceKey")
+    .withIdentifier("taxIdType", ":taxIdentifier")
+    .withDeledatedAuthRule(":serviceKey") { /* your protected logic */  }
+)
+```
+
+
 ### Response
 Headers: need to contain a valid `Authorization` header.
 

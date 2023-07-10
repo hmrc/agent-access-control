@@ -100,7 +100,7 @@ class ESAuthorisationService @Inject()(
     // AAC does not care about regime for non-uk, handled in ACR - it does mean audits will be uk for both
     authoriseFor(agentCode, taxIdentifier, "HMRC-CBC-ORG", authDetails)
 
-  private def authoriseFor(agentCode: AgentCode,
+  def authoriseFor(agentCode: AgentCode,
                            taxIdentifier: TaxIdentifier,
                            regime: String,
                            authDetails: AuthDetails)(
