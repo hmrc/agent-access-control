@@ -62,6 +62,7 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
     with HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
+  //noinspection ScalaStyle
   def relationshipExists(arn: Arn,
                          maybeUserId: Option[String],
                          identifier: TaxIdentifier)(
@@ -75,6 +76,8 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
       case _ @Urn(urn)         => ("HMRC-TERSNT-ORG", "URN", urn)
       case _ @PptRef(pptRef) =>
         ("HMRC-PPT-ORG", "EtmpRegistrationNumber", pptRef)
+      case _ @CbcId(cbcId) =>
+        ("HMRC-CBC-ORG", "cbcId", cbcId) // treat both types as UK for ACR to determine
     }
 
     val urlParam = maybeUserId.fold("")(userId => s"?userId=$userId")

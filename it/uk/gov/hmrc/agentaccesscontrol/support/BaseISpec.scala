@@ -556,6 +556,7 @@ trait StubUtils {
       case _ @CgtRef(cgtRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/$cgtRef"
       case _ @Urn(urn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-TERSNT-ORG/client/URN/$urn"
       case _ @PptRef(pptRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PPT-ORG/client/EtmpRegistrationNumber/$pptRef"
+      case _ @CbcId(cbcId) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CBC-ORG/client/cbcId/$cbcId"
     }
 
     def statusReturnedForRelationship(identifier: TaxIdentifier, status: Int): A = {

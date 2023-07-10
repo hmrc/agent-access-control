@@ -7,7 +7,9 @@ GET        /afi-auth/agent/:agentCode/client/:nino                              
 GET        /trust-auth/agent/:agentCode/client/:trustTaxIdentifier              @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForTrust(agentCode: uk.gov.hmrc.domain.AgentCode, trustTaxIdentifier: uk.gov.hmrc.agentmtdidentifiers.model.TrustTaxIdentifier)
 GET        /cgt-auth/agent/:agentCode/client/:cgtRef                            @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForCgt(agentCode: uk.gov.hmrc.domain.AgentCode, cgtRef: uk.gov.hmrc.agentmtdidentifiers.model.CgtRef)
 GET        /ppt-auth/agent/:agentCode/client/:pptRef                            @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForPpt(agentCode: uk.gov.hmrc.domain.AgentCode, pptRef: uk.gov.hmrc.agentmtdidentifiers.model.PptRef)
+GET        /cbc-auth/agent/:agentCode/client/:cbcId                             @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForCbc(agentCode: uk.gov.hmrc.domain.AgentCode, cbcId: uk.gov.hmrc.agentmtdidentifiers.model.CbcId)
 
+# TODO remove if unused
 POST       /epaye-auth/agent/:agentCode/client/:empRef                          @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForPaye(agentCode: uk.gov.hmrc.domain.AgentCode, empRef: uk.gov.hmrc.domain.EmpRef)
 POST       /sa-auth/agent/:agentCode/client/:saUtr                              @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForSa(agentCode: uk.gov.hmrc.domain.AgentCode, saUtr: uk.gov.hmrc.domain.SaUtr)
 POST       /mtd-it-auth/agent/:agentCode/client/:mtdItId                        @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.isAuthorisedForMtdIt(agentCode: uk.gov.hmrc.domain.AgentCode, mtdItId: uk.gov.hmrc.agentmtdidentifiers.model.MtdItId)

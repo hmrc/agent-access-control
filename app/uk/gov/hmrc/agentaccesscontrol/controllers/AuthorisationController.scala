@@ -159,4 +159,19 @@ class AuthorisationController @Inject()(
       }
     }
 
+  def isAuthorisedForCbc(agentCode: AgentCode,
+                         cbcId: CbcId): Action[AnyContent] =
+    Action.async { implicit request: Request[_] =>
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          esAuthorisationService
+            .authoriseForCbc(agentCode, cbcId, authDetails)
+            .map {
+              case authorised if authorised => Ok
+              case _                        => Unauthorized
+            }
+        }
+      }
+    }
+
 }
