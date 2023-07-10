@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import org.scalatest.TestData
 import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneServerPerTest}
 import play.api.Application
@@ -55,8 +56,7 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
     "microservice.services.agent-fi-relationship.host"      -> wiremockHost,
     "microservice.services.agent-fi-relationship.port"      -> wiremockPort,
     "microservice.services.agent-permissions.host"          -> wiremockHost,
-    "microservice.services.agent-permissions.port"          -> wiremockPort,
-    "features.allowPayeAccess" -> true
+    "microservice.services.agent-permissions.port"          -> wiremockPort
   )
 
   protected def additionalConfiguration: Map[String, String] = Map.empty
@@ -174,13 +174,13 @@ trait StubUtils {
           s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"))
 
     class SaDesStubBuilder(client: SaUtr, authorizationToken: String, environment: String) {
-      def andIsAuthorisedByOnly648(): A = withFlags(true, false)
+      def andIsAuthorisedByOnly648(): A = withFlags(auth_64_8 = true, auth_i64_8 = false)
 
-      def andIsAuthorisedByOnlyI648(): A = withFlags(false, true)
+      def andIsAuthorisedByOnlyI648(): A = withFlags(auth_64_8 = false, auth_i64_8 = true)
 
-      def butIsNotAuthorised(): A = withFlags(false, false)
+      def butIsNotAuthorised(): A = withFlags(auth_64_8 = false, auth_i64_8 = false)
 
-      def andAuthorisedByBoth648AndI648(): A = withFlags(true, true)
+      def andAuthorisedByBoth648AndI648(): A = withFlags(auth_64_8 = true, auth_i64_8 = true)
 
       private def withFlags(auth_64_8: Boolean, auth_i64_8: Boolean): A = {
         stubFor(
@@ -216,7 +216,7 @@ trait StubUtils {
       }
     }
 
-    def  givenAgentRecord(taxId: TaxIdentifier, suspended: Boolean, regime: String) = {
+    def  givenAgentRecord(taxId: TaxIdentifier, suspended: Boolean, regime: String): StubMapping = {
       stubFor(
         get(
           urlPathEqualTo(
@@ -556,6 +556,7 @@ trait StubUtils {
       case _ @CgtRef(cgtRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/$cgtRef"
       case _ @Urn(urn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-TERSNT-ORG/client/URN/$urn"
       case _ @PptRef(pptRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PPT-ORG/client/EtmpRegistrationNumber/$pptRef"
+      case _ @CbcId(cbcId) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CBC-ORG/client/cbcId/$cbcId"
     }
 
     def statusReturnedForRelationship(identifier: TaxIdentifier, status: Int): A = {

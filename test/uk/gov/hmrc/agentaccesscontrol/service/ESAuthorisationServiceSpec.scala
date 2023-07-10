@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.service
 
 import org.scalamock.scalatest.MockFactory
+import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
@@ -41,10 +42,13 @@ class ESAuthorisationServiceSpec
     with MockFactory
     with AuditSupport {
 
-  val relationshipsConnector = mock[RelationshipsConnector]
-  val auditService = mock[AuditService]
-  val desAgentClientApiConnector = mock[DesAgentClientApiConnector]
-  val agentPermissionsConnector = stub[AgentPermissionsConnector]
+  val relationshipsConnector: RelationshipsConnector =
+    mock[RelationshipsConnector]
+  val auditService: AuditService = mock[AuditService]
+  val desAgentClientApiConnector: DesAgentClientApiConnector =
+    mock[DesAgentClientApiConnector]
+  val agentPermissionsConnector: AgentPermissionsConnector =
+    stub[AgentPermissionsConnector]
 
   def appConfig: AppConfig = {
     val theStub = stub[ServicesConfig]
@@ -59,10 +63,6 @@ class ESAuthorisationServiceSpec
     (theStub
       .getBoolean(_: String))
       .when("features.enable-granular-permissions")
-      .returns(true)
-    (theStub
-      .getBoolean(_: String))
-      .when("features.allowPayeAccess")
       .returns(true)
     new AppConfig(theStub)
   }
@@ -85,18 +85,19 @@ class ESAuthorisationServiceSpec
                                            auditService,
                                            appConfig)
 
-  val agentCode = AgentCode("agentCode")
-  val arn = Arn("arn")
-  val saAgentRef = SaAgentReference("ABC456")
-  val clientId = MtdItId("clientId")
-  val mtdAuthDetails =
+  val agentCode: AgentCode = AgentCode("agentCode")
+  val arn: Arn = Arn("arn")
+  val saAgentRef: SaAgentReference = SaAgentReference("ABC456")
+  val clientId: MtdItId = MtdItId("clientId")
+  val mtdAuthDetails: AuthDetails =
     AuthDetails(None, Some(arn), "ggId", Some("Agent"), Some(User))
-  val nonMtdAuthDetails =
+  val nonMtdAuthDetails: AuthDetails =
     AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(User))
-  implicit val hc = HeaderCarrier()
-  implicit val fakeRequest =
+  implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
     FakeRequest("GET", "/agent-access-control/mtd-it-auth/agent/arn/client/utr")
-  val agentRecord = AgentRecord(Some(SuspensionDetails(false, None)))
+  val agentRecord: AgentRecord = AgentRecord(
+    Some(SuspensionDetails(suspensionStatus = false, None)))
 
   "authoriseForMtdIt" should {
     "allow access for agent with a client relationship" in {
@@ -167,7 +168,8 @@ class ESAuthorisationServiceSpec
     "handle suspended agents and return false" in {
 
       val agentRecord =
-        AgentRecord(Some(SuspensionDetails(true, Some(Set("ITSA")))))
+        AgentRecord(
+          Some(SuspensionDetails(suspensionStatus = true, Some(Set("ITSA")))))
 
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
@@ -249,7 +251,8 @@ class ESAuthorisationServiceSpec
     "handle suspended agents and return false" in {
 
       val agentRecord =
-        AgentRecord(Some(SuspensionDetails(true, Some(Set("ALL")))))
+        AgentRecord(
+          Some(SuspensionDetails(suspensionStatus = true, Some(Set("ALL")))))
 
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
@@ -327,7 +330,8 @@ class ESAuthorisationServiceSpec
     "handle suspended agents and return false" in {
 
       val agentRecord =
-        AgentRecord(Some(SuspensionDetails(true, Some(Set("AGSV")))))
+        AgentRecord(
+          Some(SuspensionDetails(suspensionStatus = true, Some(Set("AGSV")))))
 
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
@@ -406,7 +410,8 @@ class ESAuthorisationServiceSpec
     "handle suspended agents and return false" in {
 
       val agentRecord =
-        AgentRecord(Some(SuspensionDetails(true, Some(Set("TRS")))))
+        AgentRecord(
+          Some(SuspensionDetails(suspensionStatus = true, Some(Set("TRS")))))
 
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
@@ -531,7 +536,8 @@ class ESAuthorisationServiceSpec
     "handle suspended agents and return false" in {
 
       val agentRecord =
-        AgentRecord(Some(SuspensionDetails(true, Some(Set("CGT")))))
+        AgentRecord(
+          Some(SuspensionDetails(suspensionStatus = true, Some(Set("CGT")))))
 
       whenDesAgentClientApiConnectorIsCalled.returning(
         Future(Right(agentRecord)))

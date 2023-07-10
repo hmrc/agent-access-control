@@ -11,6 +11,7 @@ to agents to their clients's data. Currently supports:
 * MTD Non-Taxable-Trusts (TERSNT)
 * MTD Capital Gains (CGT)
 * MTD Plastic Packaging Tax (PPT)
+* Country by country reporting (CBC)
 
 ### Agent access groups
 
@@ -50,7 +51,7 @@ authorised(
    Enrolment("IR-PAYE")
      .withIdentifier("TaxOfficeNumber", "123")
      .withIdentifier("TaxOfficeReference", "123")
-     .withDelegatedAuthRule("epaye-auth")) { // your protected logic }
+     .withDelegatedAuthRule("epaye-auth")) { /* your protected logic */ }
 ```
 
 ##### GET /agent-access-control/sa-auth/agent/:agentCode/client/:saUtr
@@ -60,7 +61,7 @@ authorised(
 authorised(
    Enrolment("IR-SA")
      .withIdentifier("UTR", "123")
-     .withDelegatedAuthRule("sa-auth")) { // your protected logic }
+     .withDelegatedAuthRule("sa-auth")) { /* your protected logic */ }
 ```
 
 
@@ -71,7 +72,7 @@ authorised(
 authorised(
    Enrolment("HMRC-MTD-IT")
      .withIdentifier("MTDITID", "123")
-     .withDelegatedAuthRule("mtd-it-auth")) { // your protected logic }
+     .withDelegatedAuthRule("mtd-it-auth")) { /* your protected logic */ }
 ```
 
 ##### GET /agent-access-control/mtd-vat-auth/agent/:agentCode/client/:vrn
@@ -81,7 +82,7 @@ authorised(
 authorised(
    Enrolment("HMRC-MTD-VAT")
      .withIdentifier("VRN", "123")
-     .withDelegatedAuthRule("mtd-vat-auth")) { // your protected logic }
+     .withDelegatedAuthRule("mtd-vat-auth")) { /* your protected logic */ }
 ```
 
 ##### GET /agent-access-control/afi-auth/agent/:agentCode/client/:nino
@@ -91,7 +92,7 @@ authorised(
 authorised(
    Enrolment("HMRC-NI")
      .withIdentifier("NINO", "123")
-     .withDelegatedAuthRule("afi-auth")) { // your protected logic }
+     .withDelegatedAuthRule("afi-auth")) { /* your protected logic */ }
 ```
 
 ##### GET /agent-access-control/trust-auth/agent/:agentCode/client/:utr
@@ -101,7 +102,7 @@ authorised(
 authorised(
    Enrolment("HMRC-TERS-ORG")
      .withIdentifier("SAUTR", "123")
-     .withDelegatedAuthRule("trust-auth")) { // your protected logic }
+     .withDelegatedAuthRule("trust-auth")) { /* your protected logic */ }
 ```
 
 ##### GET /agent-access-control/trust-auth/agent/:agentCode/client/:urn
@@ -111,7 +112,7 @@ authorised(
 authorised(
    Enrolment("HMRC-TERSNT-ORG")
      .withIdentifier("URN", "123")
-     .withDelegatedAuthRule("trust-auth")) { // your protected logic }
+     .withDelegatedAuthRule("trust-auth")) { /* your protected logic */ }
 ```
 
 ##### GET /agent-access-control/cgt-auth/agent/:agentCode/client/:cgtRef
@@ -121,7 +122,7 @@ authorised(
 authorised(
    Enrolment("HMRC-CGT-PD")
      .withIdentifier("CGTPDRef", "123")
-     .withDelegatedAuthRule("cgt-auth")) { // your protected logic }
+     .withDelegatedAuthRule("cgt-auth")) { /* your protected logic */ }
 ```
 
 ##### GET /agent-access-control/ppt-auth/agent/:agentCode/client/:pptRef
@@ -131,10 +132,20 @@ authorised(
 authorised(
    Enrolment("HMRC-PPT-ORG")
      .withIdentifier("EtmpRegistrationNumber", "123")
-     .withDelegatedAuthRule("ppt-auth")) { // your protected logic }
+     .withDelegatedAuthRule("ppt-auth")) { /* your protected logic */  }
 ```
 
 Note: POSTs function exactly the same.
+
+##### GET /agent-access-control/cbc-auth/agent/:agentCode/client/:cbcId
+
+```scala
+authorised(
+  Enrolment("HMRC-CBC-ORG" /* or HMRC-CBC-NONUK-ORG */)
+    .withIdentifier("cbcId", "XYCBC1234567890")
+    .withDeledatedAuthRule("cbc-auth") { /* your protected logic */  }
+)
+```
 
 ### Response
 Headers: need to contain a valid `Authorization` header.

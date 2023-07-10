@@ -92,6 +92,14 @@ class ESAuthorisationService @Inject()(
       request: Request[_]): Future[Boolean] =
     authoriseFor(agentCode, taxIdentifier, "HMRC-PPT-ORG", authDetails)
 
+  def authoriseForCbc(agentCode: AgentCode,
+                      taxIdentifier: TaxIdentifier,
+                      authDetails: AuthDetails)(
+      implicit hc: HeaderCarrier,
+      request: Request[_]): Future[Boolean] =
+    // AAC does not care about regime for non-uk, handled in ACR - it does mean audits will be uk for both
+    authoriseFor(agentCode, taxIdentifier, "HMRC-CBC-ORG", authDetails)
+
   private def authoriseFor(agentCode: AgentCode,
                            taxIdentifier: TaxIdentifier,
                            regime: String,
@@ -100,6 +108,7 @@ class ESAuthorisationService @Inject()(
       request: Request[_]): Future[Boolean] =
     authDetails match {
       case agentAuthDetails @ AuthDetails(_, Some(arn), _, _, userRoleOpt) =>
+        // TODO confirm with stakeholders if we can remove regime for suspension check?
         withSuspensionCheck(arn, getDesRegimeFor(regime)) {
           authoriseBasedOnRelationships(agentCode,
                                         taxIdentifier,
@@ -151,15 +160,16 @@ class ESAuthorisationService @Inject()(
 
   private def getDesRegimeFor(regime: String) = {
     regime match {
-      case "HMRC-MTD-IT"     => "ITSA"
-      case "HMRC-MTD-VAT"    => "VATC"
-      case "HMRC-TERS-ORG"   => "TRS"
-      case "HMRC-TERSNT-ORG" => "TRS" //this is the same with "HMRC-TERS-ORG"
-      case "HMRC-CGT-PD"     => "CGT"
-      case "HMRC-PPT-ORG"    => "PPT"
+      case "HMRC-MTD-IT"                         => "ITSA"
+      case "HMRC-MTD-VAT"                        => "VATC"
+      case "HMRC-TERS-ORG" | "HMRC-TERSNT-ORG"   => "TRS"
+      case "HMRC-CGT-PD"                         => "CGT"
+      case "HMRC-PPT-ORG"                        => "PPT"
+      case "HMRC-CBC-ORG" | "HMRC-CBC-NONUK-ORG" => "CBC"
     }
   }
 
+  //noinspection ScalaStyle
   private def auditDecision(agentCode: AgentCode,
                             agentAuthDetails: AuthDetails,
                             taxIdentifier: TaxIdentifier,
@@ -231,9 +241,10 @@ class ESAuthorisationService @Inject()(
       implicit ec: ExecutionContext,
       hc: HeaderCarrier): Future[Boolean] = {
     val taxGroupsServiceKey = regime match {
-      case "HMRC-TERS-ORG" | "HMRC-TERSNT-ORG" =>
-        "HMRC-TERS" // tax service groups use the nonstandard key "HMRC-TERS" to mean either type of trust
-      case x => x
+      // These tax service groups use a truncated key to indicate either type
+      case "HMRC-TERS-ORG" | "HMRC-TERSNT-ORG"   => "HMRC-TERS"
+      case "HMRC-CBC-ORG" | "HMRC-CBC-NONUK-ORG" => "HMRC-CBC"
+      case x                                     => x
     }
     agentPermissionsConnector
       .getTaxServiceGroups(arn, taxGroupsServiceKey)

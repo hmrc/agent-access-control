@@ -10,9 +10,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
 
-  val arn = Arn("B1111B")
-  implicit val hc = HeaderCarrier()
-  val connector = app.injector.instanceOf[RelationshipsConnector]
+  val arn: Arn = Arn("B1111B")
+  implicit val hc: HeaderCarrier = HeaderCarrier()
+  val connector: RelationshipsConnector = app.injector.instanceOf[RelationshipsConnector]
 
   "relationshipExists for HMRC-MTD-IT" should {
     behave like aCheckEndpoint(MtdItId("C1111C"), "MtdItId")
@@ -38,7 +38,11 @@ class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with M
     behave like aCheckEndpoint(PptRef("XHPPT0006633194"), "PptRef")
   }
 
-  private def aCheckEndpoint(identifier: TaxIdentifier, clientType: String) = {
+  "relationshipExists for HMRC-CBC-ORG or HMRC-CBC-NONUK-ORG" should {
+    behave like aCheckEndpoint(CbcId("XHCBC0006633194"), "CbcId")
+  }
+
+  private def aCheckEndpoint(identifier: TaxIdentifier, clientType: String): Unit = {
     "return true when relationship exists" in {
       given()
         .mtdAgency(arn)

@@ -19,7 +19,6 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
 import play.api.{Environment, Logging}
-import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
@@ -29,7 +28,7 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class AuthorisationController @Inject()(
@@ -37,13 +36,10 @@ class AuthorisationController @Inject()(
     override val authConnector: AuthConnector,
     val esAuthorisationService: ESAuthorisationService,
     override val env: Environment,
-    cc: ControllerComponents)(implicit val ec: ExecutionContext,
-                              appConfig: AppConfig)
+    cc: ControllerComponents)(implicit val ec: ExecutionContext)
     extends BackendController(cc)
     with AuthAction
     with Logging {
-
-  val payeEnabled: Boolean = appConfig.featuresPayeAccess
 
   def isAuthorisedForSa(agentCode: AgentCode,
                         saUtr: SaUtr): Action[AnyContent] =
@@ -95,16 +91,11 @@ class AuthorisationController @Inject()(
     Action.async { implicit request: Request[_] =>
       withAgentAuthorised(agentCode) { authDetails =>
         {
-          if (payeEnabled) {
-            authorisationService.isAuthorisedForPaye(agentCode,
-                                                     empRef,
-                                                     authDetails) map {
-              case true => Ok
-              case _    => Unauthorized
-            }
-          } else {
-            logger.warn(s"paye not enabled in configuration")
-            Future successful Forbidden
+          authorisationService.isAuthorisedForPaye(agentCode,
+                                                   empRef,
+                                                   authDetails) map {
+            case true => Ok
+            case _    => Unauthorized
           }
         }
       }
@@ -167,4 +158,20 @@ class AuthorisationController @Inject()(
         }
       }
     }
+
+  def isAuthorisedForCbc(agentCode: AgentCode,
+                         cbcId: CbcId): Action[AnyContent] =
+    Action.async { implicit request: Request[_] =>
+      withAgentAuthorised(agentCode) { authDetails =>
+        {
+          esAuthorisationService
+            .authoriseForCbc(agentCode, cbcId, authDetails)
+            .map {
+              case authorised if authorised => Ok
+              case _                        => Unauthorized
+            }
+        }
+      }
+    }
+
 }
