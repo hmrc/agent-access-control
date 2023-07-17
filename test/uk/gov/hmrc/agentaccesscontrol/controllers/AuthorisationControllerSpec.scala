@@ -29,22 +29,13 @@ import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
 }
-import uk.gov.hmrc.agentmtdidentifiers.model.{
-  Arn,
-  CbcId,
-  MtdItId,
-  PptRef,
-  TrustTaxIdentifier,
-  Urn,
-  Utr,
-  Vrn
-}
+import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Service}
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
 import uk.gov.hmrc.auth.core.{Nino => _, _}
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -117,7 +108,7 @@ class AuthorisationControllerSpec
         Future successful false)
 
       val response =
-        controller().isAuthorisedForSa(AgentCode(agentCode), SaUtr("utr"))(
+        controller().authorise("sa-auth", AgentCode(agentCode), "utr")(
           fakeRequest)
 
       status(response) shouldBe Status.UNAUTHORIZED
@@ -130,7 +121,7 @@ class AuthorisationControllerSpec
         Future successful true)
 
       val response =
-        controller().isAuthorisedForSa(AgentCode(agentCode), SaUtr("utr"))(
+        controller().authorise("sa-auth", AgentCode(agentCode), "utr")(
           fakeRequest)
 
       status(response) shouldBe Status.OK
@@ -142,10 +133,9 @@ class AuthorisationControllerSpec
       whenAuthorisationServiceIsCalled(mtdAuthDetails).returning(
         Future successful true)
 
-      val response =
-        await(
-          controller().isAuthorisedForSa(AgentCode(agentCode), SaUtr("utr"))(
-            fakeRequest))
+      val response = await(
+        controller().authorise("sa-auth", AgentCode(agentCode), "utr")(
+          fakeRequest))
       status(response) shouldBe Status.OK
     }
     "propagate exception if the AuthorisationService fails" in {
@@ -153,111 +143,8 @@ class AuthorisationControllerSpec
       whenAuthorisationServiceIsCalled(mtdAuthDetails).returning(
         Future failed new IllegalStateException("some error"))
       an[IllegalStateException] shouldBe thrownBy(
-        status(controller().isAuthorisedForSa(AgentCode(agentCode),
-                                              SaUtr("utr"))(fakeRequest)))
-    }
-  }
-
-  private def anMdtItEndpoint(
-      fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
-    "return 401 if the MtdAuthorisationService doesn't permit access" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenMtdItAuthorisationServiceIsCalled.returning(Future successful false)
-
-      val response =
-        controller().isAuthorisedForMtdIt(AgentCode(agentCode),
-                                          MtdItId("mtdItId"))(fakeRequest)
-
-      status(response) shouldBe Status.UNAUTHORIZED
-    }
-
-    "return 200 if the MtdAuthorisationService allows access" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenMtdItAuthorisationServiceIsCalled.returning(Future successful true)
-
-      val response =
-        controller().isAuthorisedForMtdIt(AgentCode(agentCode),
-                                          MtdItId("mtdItId"))(fakeRequest)
-
-      status(response) shouldBe Status.OK
-    }
-
-    "propagate exception if the MtdAuthorisationService fails" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenMtdItAuthorisationServiceIsCalled.returning(
-        Future failed new IllegalStateException("some error"))
-
-      an[IllegalStateException] shouldBe thrownBy(
-        status(
-          controller().isAuthorisedForMtdIt(AgentCode(agentCode),
-                                            MtdItId("mtdItId"))(fakeRequest)))
-    }
-  }
-
-  private def anMtdVatEndpoint(
-      fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
-    "return 401 if the MtdVatAuthorisationService doesn't permit access" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenMtdVatAuthorisationServiceIsCalled.returning(Future successful false)
-
-      val response = controller().isAuthorisedForMtdVat(AgentCode(agentCode),
-                                                        Vrn("vrn"))(fakeRequest)
-
-      status(response) shouldBe Status.UNAUTHORIZED
-    }
-
-    "return 200 if the MtdVatAuthorisationService allows access" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenMtdVatAuthorisationServiceIsCalled.returning(Future successful true)
-
-      val response = controller().isAuthorisedForMtdVat(AgentCode(agentCode),
-                                                        Vrn("vrn"))(fakeRequest)
-
-      status(response) shouldBe Status.OK
-    }
-
-    "propagate exception if the MtdVatAuthorisationService fails" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenMtdVatAuthorisationServiceIsCalled.returning(
-        Future failed new IllegalStateException("some error"))
-
-      an[IllegalStateException] shouldBe thrownBy(
-        status(controller().isAuthorisedForMtdVat(AgentCode(agentCode),
-                                                  Vrn("vrn"))(fakeRequest)))
-    }
-  }
-
-  private def aPptEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
-    "return 401 if the MtdPptAuthorisationService doesn't permit access" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenPptAuthorisationServiceIsCalled.returning(Future successful false)
-
-      val response =
-        controller().isAuthorisedForPpt(AgentCode(agentCode), PptRef("pptRef"))(
-          fakeRequest)
-
-      status(response) shouldBe Status.UNAUTHORIZED
-    }
-
-    "return 200 if the MtdPptAuthorisationService allows access" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenPptAuthorisationServiceIsCalled.returning(Future successful true)
-
-      val response =
-        controller().isAuthorisedForPpt(AgentCode(agentCode), PptRef("pptRef"))(
-          fakeRequest)
-
-      status(response) shouldBe Status.OK
-    }
-
-    "propagate exception if the MtdPptAuthorisationService fails" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenPptAuthorisationServiceIsCalled.returning(
-        Future failed new IllegalStateException("some error"))
-
-      an[IllegalStateException] shouldBe thrownBy(
-        status(controller().isAuthorisedForPpt(AgentCode(agentCode),
-                                               PptRef("pptRef"))(fakeRequest)))
+        status(controller().authorise("sa-auth", AgentCode(agentCode), "utr")(
+          fakeRequest)))
     }
   }
 
@@ -267,8 +154,9 @@ class AuthorisationControllerSpec
       whenPayeAuthorisationServiceIsCalled.returning(Future successful true)
 
       val response =
-        controller().isAuthorisedForPaye(AgentCode(agentCode),
-                                         EmpRef("123", "123456"))(fakeRequest)
+        controller().authorise("epaye-auth",
+                               AgentCode(agentCode),
+                               EmpRef("123", "123456").value)(fakeRequest)
 
       status(response) shouldBe 200
     }
@@ -282,8 +170,8 @@ class AuthorisationControllerSpec
       whenAfiAuthorisationServiceIsCalled.returning(Future successful true)
 
       val response =
-        controller().isAuthorisedForAfi(AgentCode(agentCode),
-                                        Nino("AA123456A"))(fakeRequest)
+        controller().authorise("afi-auth", AgentCode(agentCode), "AA123456A")(
+          fakeRequest)
 
       status(response) shouldBe Status.OK
     }
@@ -293,8 +181,8 @@ class AuthorisationControllerSpec
       whenAfiAuthorisationServiceIsCalled.returning(Future successful false)
 
       val response =
-        controller().isAuthorisedForAfi(AgentCode(agentCode),
-                                        Nino("AA123456A"))(fakeRequest)
+        controller().authorise("afi-auth", AgentCode(agentCode), "AA123456A")(
+          fakeRequest)
 
       status(response) shouldBe Status.UNAUTHORIZED
     }
@@ -305,43 +193,25 @@ class AuthorisationControllerSpec
         Future failed new IllegalStateException("some error"))
 
       an[IllegalStateException] shouldBe thrownBy(
-        status(controller().isAuthorisedForAfi(AgentCode(agentCode),
-                                               Nino("AA123456A"))(fakeRequest)))
+        status(
+          controller().authorise("afi-auth", AgentCode(agentCode), "AA123456A")(
+            fakeRequest)))
     }
 
   }
 
-  private def aTrustEndpoint(
-      fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
+  private def authEndpointBehaviours(authType: String,
+                                     service: Service,
+                                     clientId: String): Unit = {
+    val fakeRequest = FakeRequest()
 
-    "return 200 when the point is called with Utr" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenTrustAuthorisationServiceIsCalled.returning(Future successful true)
-      val response =
-        controller().isAuthorisedForTrust(AgentCode(agentCode),
-                                          Utr("0123456789"))(fakeRequest)
-      status(response) shouldBe 200
-    }
-
-    "return 200 when the point is called with Urn" in {
-      whenAuthIsCalled(authResponseMtdAgent)
-      whenTrustAuthorisationServiceIsCalled.returning(Future successful true)
-      val response =
-        controller().isAuthorisedForTrust(AgentCode(agentCode),
-                                          Urn("urn123456"))(fakeRequest)
-      status(response) shouldBe 200
-    }
-  }
-
-  private def aCbcEndpointFor(
-      regime: String,
-      fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
     s"return 401 if the EsAuthorisationService doesn't permit access" in {
       whenAuthIsCalled(authResponseMtdAgent)
-      whenEsAuthServiceIsCalledForCbc.returning(Future successful false)
+      whenEsAuthorisationServiceIsCalledFor(service)
+        .returning(Future successful false)
 
       val response =
-        controller().isAuthorisedForCbc(AgentCode(agentCode), CbcId("cbcId"))(
+        controller().authorise(authType, AgentCode(agentCode), clientId)(
           fakeRequest)
 
       status(response) shouldBe Status.UNAUTHORIZED
@@ -349,10 +219,11 @@ class AuthorisationControllerSpec
 
     s"return 200 if the EsAuthorisationService allows access" in {
       whenAuthIsCalled(authResponseMtdAgent)
-      whenEsAuthServiceIsCalledForCbc.returning(Future successful true)
+      whenEsAuthorisationServiceIsCalledFor(service)
+        .returning(Future successful true)
 
       val response =
-        controller().isAuthorisedForCbc(AgentCode(agentCode), CbcId("cbcId"))(
+        controller().authorise(authType, AgentCode(agentCode), clientId)(
           fakeRequest)
 
       status(response) shouldBe Status.OK
@@ -360,15 +231,18 @@ class AuthorisationControllerSpec
 
     s"propagate exception if the EsAuthorisationService fails" in {
       whenAuthIsCalled(authResponseMtdAgent)
-      whenEsAuthServiceIsCalledForCbc.returning(
-        Future failed new IllegalStateException("some error"))
+      whenEsAuthorisationServiceIsCalledFor(service)
+        .returning(Future failed new IllegalStateException("some error"))
 
       an[IllegalStateException] shouldBe thrownBy(
-        status(controller().isAuthorisedForCbc(AgentCode(agentCode),
-                                               CbcId("cbcId"))(fakeRequest))
+        status(
+          controller().authorise(authType, AgentCode(agentCode), clientId)(
+            fakeRequest))
       )
     }
   }
+
+  // Services with specific setup required:
 
   "GET isAuthorisedForSa" should {
     behave like anSaEndpoint(
@@ -378,30 +252,6 @@ class AuthorisationControllerSpec
   "POST isAuthorisedForSa" should {
     behave like anSaEndpoint(
       FakeRequest("POST", "/agent-access-control/sa-auth/agent/client/utr")
-        .withJsonBody(Json.parse("{}")))
-  }
-
-  "GET isAuthorisedForMtdIt" should {
-    behave like anMdtItEndpoint(
-      FakeRequest("GET", "/agent-access-control/mtd-it-auth/agent//client/utr"))
-  }
-
-  "POST isAuthorisedForMtdIt" should {
-    behave like anMdtItEndpoint(
-      FakeRequest("POST", "/agent-access-control/mtd-it-auth/agent//client/utr")
-        .withJsonBody(Json.parse("{}")))
-  }
-
-  "GET isAuthorisedForMtdVat" should {
-    behave like anMtdVatEndpoint(
-      FakeRequest("GET",
-                  "/agent-access-control/mtd-vat-auth/agent//client/utr"))
-  }
-
-  "POST isAuthorisedForMtdVat" should {
-    behave like anMtdVatEndpoint(
-      FakeRequest("POST",
-                  "/agent-access-control/mtd-vat-auth/agent//client/utr")
         .withJsonBody(Json.parse("{}")))
   }
 
@@ -427,31 +277,74 @@ class AuthorisationControllerSpec
         .withJsonBody(Json.parse("{}")))
   }
 
-  "GET isAuthorisedForNonTaxableTrust" should {
-    behave like aTrustEndpoint(
-      FakeRequest(
-        "GET",
-        "/agent-access-control/non-taxable-trust-auth/agent//client/urn"))
+  // 'standard' (ES) services:
+
+  "authorise (trust)" should {
+    behave like authEndpointBehaviours("trust-auth",
+                                       Service.Trust,
+                                       "0123456789")
+    // additional check for trust
+    s"not authorise if the relationship is for trust (taxable) but a URN is provided" in {
+      whenAuthIsCalled(authResponseMtdAgent)
+      whenEsAuthorisationServiceIsCalledFor(Service.Trust)
+        .returning(Future successful true)
+        .anyNumberOfTimes
+      whenEsAuthorisationServiceIsCalledFor(Service.TrustNT)
+        .returning(Future successful false)
+        .anyNumberOfTimes
+
+      val response =
+        controller().authorise("trust-auth",
+                               AgentCode(agentCode),
+                               "xxtrust12345678" /* URN */ )(FakeRequest())
+
+      status(response) shouldBe Status.UNAUTHORIZED
+    }
   }
 
-  "POST isAuthorisedForNonTaxableTrust" should {
-    behave like aTrustEndpoint(
-      FakeRequest(
-        "POST",
-        "/agent-access-control/non-taxable-trust-auth/agent//client/urn")
-        .withJsonBody(Json.parse("{}")))
+  "authorise (trust NT)" should {
+    behave like authEndpointBehaviours("trust-auth",
+                                       Service.TrustNT,
+                                       "xxtrust12345678")
+    // additional check for trust
+    s"not authorise if the relationship is for trust (non-taxable) but a UTR is provided" in {
+      whenAuthIsCalled(authResponseMtdAgent)
+      whenEsAuthorisationServiceIsCalledFor(Service.Trust)
+        .returning(Future successful false)
+        .anyNumberOfTimes
+      whenEsAuthorisationServiceIsCalledFor(Service.TrustNT)
+        .returning(Future successful true)
+        .anyNumberOfTimes
+
+      val response =
+        controller().authorise("trust-auth",
+                               AgentCode(agentCode),
+                               "0123456789" /* UTR */ )(FakeRequest())
+
+      status(response) shouldBe Status.UNAUTHORIZED
+    }
   }
 
-  "POST isAuthorisedForPpt" should {
-    behave like aPptEndpoint(
-      FakeRequest("POST", "/agent-access-control/ppt-auth/agent//client/utr")
-        .withJsonBody(Json.parse("{}")))
+  "authorise (MTD IT)" should {
+    behave like authEndpointBehaviours("mtd-it-auth",
+                                       Service.MtdIt,
+                                       "1234567890")
   }
 
-  "GET isAuthorisedForCbc" should {
-    behave like aCbcEndpointFor(
-      "HMRC-CBC-ORG",
-      FakeRequest("GET", "/agent-access-control/cbc-auth/agent//client/cbcId"))
+  "authorise (VAT)" should {
+    behave like authEndpointBehaviours("mtd-vat-auth", Service.Vat, "123456789")
+  }
+
+  "authorise (PPT)" should {
+    behave like authEndpointBehaviours("ppt-auth",
+                                       Service.Ppt,
+                                       "XAPPT0000123456")
+  }
+
+  "authorise (CBC)" should {
+    behave like authEndpointBehaviours("cbc-auth",
+                                       Service.Cbc,
+                                       "XACBC0123456789")
   }
 
   def whenAuthIsCalled(
@@ -487,32 +380,14 @@ class AuthorisationControllerSpec
         _: Request[Any]))
       .expects(*, *, *, *, *, *)
 
-  def whenMtdItAuthorisationServiceIsCalled =
+  def whenEsAuthorisationServiceIsCalledFor(service: Service) =
     (esAuthorisationService
-      .authoriseForMtdIt(_: AgentCode, _: MtdItId, _: AuthDetails)(
-        _: HeaderCarrier,
-        _: Request[Any]))
-      .expects(*, *, *, *, *)
-
-  def whenMtdVatAuthorisationServiceIsCalled =
-    (esAuthorisationService
-      .authoriseForMtdVat(_: AgentCode, _: Vrn, _: AuthDetails)(
-        _: HeaderCarrier,
-        _: Request[Any]))
-      .expects(*, *, *, *, *)
-
-  def whenPptAuthorisationServiceIsCalled =
-    (esAuthorisationService
-      .authoriseForPpt(_: AgentCode, _: PptRef, _: AuthDetails)(
-        _: HeaderCarrier,
-        _: Request[Any]))
-      .expects(*, *, *, *, *)
-
-  def whenEsAuthServiceIsCalledForCbc =
-    (esAuthorisationService
-      .authoriseForCbc(_: AgentCode, _: CbcId, _: AuthDetails)(_: HeaderCarrier,
-                                                               _: Request[Any]))
-      .expects(*, *, *, *, *)
+      .authoriseStandardService(
+        _: AgentCode,
+        _: MtdItId,
+        _: String,
+        _: AuthDetails)(_: HeaderCarrier, _: Request[Any]))
+      .expects(*, *, service.id, *, *, *)
 
   def whenPayeAuthorisationServiceIsCalled =
     (authorisationService
@@ -521,12 +396,4 @@ class AuthorisationControllerSpec
         _: HeaderCarrier,
         _: Request[Any]))
       .expects(*, *, *, *, *, *)
-
-  def whenTrustAuthorisationServiceIsCalled =
-    (esAuthorisationService
-      .authoriseForTrust(_: AgentCode, _: TrustTaxIdentifier, _: AuthDetails)(
-        _: HeaderCarrier,
-        _: Request[Any]))
-      .expects(*, *, *, *, *)
-
 }
