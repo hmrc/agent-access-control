@@ -29,7 +29,6 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.{
   Arn,
-  EnrolmentKey,
   TrustTaxIdentifier,
   Urn,
   Utr
@@ -254,8 +253,7 @@ class ESAuthorisationService @Inject()(
             .map(_.id)
             .contains(userId)
           val isClientExcluded = taxGroup.excludedClients
-            .exists(_.enrolmentKey == EnrolmentKey
-              .enrolmentKey(serviceId = regime, clientId = taxIdentifier.value))
+            .exists(_.enrolmentKey.contains(taxIdentifier.value))
           isUserIdInTaxServiceGroup && !isClientExcluded
         case None => false
       }
