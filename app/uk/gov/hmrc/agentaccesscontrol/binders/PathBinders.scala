@@ -17,57 +17,24 @@
 package uk.gov.hmrc.agentaccesscontrol.binders
 
 import play.api.mvc.PathBindable
-import uk.gov.hmrc.agentmtdidentifiers.model._
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
+import uk.gov.hmrc.domain.AgentCode
+
+class SimpleObjectBinder[T](bind: String => T, unbind: T => String)(
+    implicit m: Manifest[T])
+    extends PathBindable[T] {
+  override def bind(key: String, value: String): Either[String, T] =
+    try {
+      Right(bind(value))
+    } catch {
+      case e: Throwable =>
+        Left(
+          s"Cannot parse parameter '$key' with value '$value' as '${m.runtimeClass.getSimpleName}'")
+    }
+
+  def unbind(key: String, value: T): String = unbind(value)
+}
 
 object PathBinders {
   implicit object AgentCodeBinder
       extends SimpleObjectBinder[AgentCode](AgentCode.apply, _.value)
-
-  implicit object SaUtrBinder
-      extends SimpleObjectBinder[SaUtr](SaUtr.apply, _.value)
-
-  implicit object MtdItIdBinder
-      extends SimpleObjectBinder[MtdItId](MtdItId.apply, _.value)
-
-  implicit object NinoBinder
-      extends SimpleObjectBinder[Nino](Nino.apply, _.value)
-
-  implicit object VrnBinder extends SimpleObjectBinder[Vrn](Vrn.apply, _.value)
-
-  implicit object PptRefBinder
-      extends SimpleObjectBinder[PptRef](PptRef.apply, _.value)
-
-  implicit object CbcIdBinder
-      extends SimpleObjectBinder[CbcId](CbcId.apply, _.value)
-
-  implicit object UtrBinder extends SimpleObjectBinder[Utr](Utr.apply, _.value)
-
-  implicit object TrustTaxIdentifierBinder
-      extends SimpleObjectBinder[TrustTaxIdentifier](trustTax, _.value)
-
-  private val urnPattern = "^((?i)[a-z]{2}trust[0-9]{8})$"
-  private val utrPattern = "^\\d{10}$"
-
-  def trustTax(id: String) = id match {
-    case x if x.matches(utrPattern) => Utr(x)
-    case x if x.matches(urnPattern) => Urn(x)
-    case e                          => throw new Exception(s"invalid trust tax identifier $e")
-  }
-
-  implicit object CgtBinder
-      extends SimpleObjectBinder[CgtRef](CgtRef.apply, _.value)
-
-  implicit object EmpRefBinder extends PathBindable[EmpRef] {
-
-    def bind(key: String, value: String) =
-      try {
-        Right(EmpRef.fromIdentifiers(value))
-      } catch {
-        case e: IllegalArgumentException =>
-          Left(s"Cannot parse parameter '$key' with value '$value' as EmpRef")
-      }
-
-    def unbind(key: String, empRef: EmpRef): String = empRef.encodedValue
-  }
 }

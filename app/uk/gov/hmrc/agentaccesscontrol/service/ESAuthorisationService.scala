@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import javax.inject.{Inject, Singleton}
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{
   AgentAccessControlDecision,
@@ -27,16 +26,12 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
-import uk.gov.hmrc.agentmtdidentifiers.model.{
-  Arn,
-  TrustTaxIdentifier,
-  Urn,
-  Utr
-}
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.CredentialRole
 import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
 import uk.gov.hmrc.http.HeaderCarrier
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -49,69 +44,19 @@ class ESAuthorisationService @Inject()(
     extends LoggingAuthorisationResults
     with AgentSuspensionChecker {
 
-  def authoriseForMtdVat(agentCode: AgentCode,
-                         taxIdentifier: TaxIdentifier,
-                         authDetails: AuthDetails)(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] =
-    authoriseFor(agentCode, taxIdentifier, "HMRC-MTD-VAT", authDetails)
-
-  def authoriseForMtdIt(agentCode: AgentCode,
-                        taxIdentifier: TaxIdentifier,
-                        authDetails: AuthDetails)(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] =
-    authoriseFor(agentCode, taxIdentifier, "HMRC-MTD-IT", authDetails)
-
-  def authoriseForTrust(agentCode: AgentCode,
-                        trustTaxIdentifier: TrustTaxIdentifier,
-                        authDetails: AuthDetails)(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] = {
-    trustTaxIdentifier match {
-      case Utr(v) =>
-        authoriseFor(agentCode, Utr(v), "HMRC-TERS-ORG", authDetails)
-      case Urn(v) =>
-        authoriseFor(agentCode, Urn(v), "HMRC-TERSNT-ORG", authDetails)
-      case e => throw new Exception(s"unhandled TrustTaxIdentifier $e")
-    }
-  }
-
-  def authoriseForCgt(agentCode: AgentCode,
-                      taxIdentifier: TaxIdentifier,
-                      authDetails: AuthDetails)(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] =
-    authoriseFor(agentCode, taxIdentifier, "HMRC-CGT-PD", authDetails)
-
-  def authoriseForPpt(agentCode: AgentCode,
-                      taxIdentifier: TaxIdentifier,
-                      authDetails: AuthDetails)(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] =
-    authoriseFor(agentCode, taxIdentifier, "HMRC-PPT-ORG", authDetails)
-
-  def authoriseForCbc(agentCode: AgentCode,
-                      taxIdentifier: TaxIdentifier,
-                      authDetails: AuthDetails)(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] =
-    // AAC does not care about regime for non-uk, handled in ACR - it does mean audits will be uk for both
-    authoriseFor(agentCode, taxIdentifier, "HMRC-CBC-ORG", authDetails)
-
-  private def authoriseFor(agentCode: AgentCode,
-                           taxIdentifier: TaxIdentifier,
-                           regime: String,
-                           authDetails: AuthDetails)(
+  def authoriseStandardService(agentCode: AgentCode,
+                               taxIdentifier: TaxIdentifier,
+                               serviceId: String,
+                               authDetails: AuthDetails)(
       implicit hc: HeaderCarrier,
       request: Request[_]): Future[Boolean] =
     authDetails match {
       case agentAuthDetails @ AuthDetails(_, Some(arn), _, _, userRoleOpt) =>
         // TODO confirm with stakeholders if we can remove regime for suspension check?
-        withSuspensionCheck(arn, getDesRegimeFor(regime)) {
+        withSuspensionCheck(arn, getDesRegimeFor(serviceId)) {
           authoriseBasedOnRelationships(agentCode,
                                         taxIdentifier,
-                                        regime,
+                                        serviceId,
                                         agentAuthDetails,
                                         arn,
                                         userRoleOpt)
@@ -122,7 +67,7 @@ class ESAuthorisationService @Inject()(
                       authDetails,
                       taxIdentifier,
                       result = false,
-                      regime)
+                      serviceId)
         Future.successful(notAuthorised(
           s"No ARN found in HMRC-AS-AGENT enrolment for agentCode $agentCode"))
     }

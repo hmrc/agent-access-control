@@ -43,7 +43,7 @@ class MicroserviceMonitoringFilter @Inject()(
     extends MonitoringFilter(metrics.defaultRegistry) {
 
   def keyToPatternMapping: Seq[(String, String)] =
-    KeyToPatternMappingFromRoutes(routes, Set())
+    KeyToPatternMappingFromRoutes(routes, Set("authType"))
 }
 
 object KeyToPatternMappingFromRoutes extends Logging {

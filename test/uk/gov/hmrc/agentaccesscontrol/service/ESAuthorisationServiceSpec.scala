@@ -79,11 +79,11 @@ class ESAuthorisationServiceSpec
     .when(*, *, *, *)
     .returns(Future.successful(None))
 
-  val service = new ESAuthorisationService(relationshipsConnector,
-                                           desAgentClientApiConnector,
-                                           agentPermissionsConnector,
-                                           auditService,
-                                           appConfig)
+  val esAuthService = new ESAuthorisationService(relationshipsConnector,
+                                                 desAgentClientApiConnector,
+                                                 agentPermissionsConnector,
+                                                 auditService,
+                                                 appConfig)
 
   val agentCode: AgentCode = AgentCode("agentCode")
   val arn: Arn = Arn("arn")
@@ -99,7 +99,9 @@ class ESAuthorisationServiceSpec
   val agentRecord: AgentRecord = AgentRecord(
     Some(SuspensionDetails(suspensionStatus = false, None)))
 
-  "authoriseForMtdIt" should {
+  def authoriseStandardBehaviours(service: Service,
+                                  clientId: TaxIdentifier,
+                                  regime: String): Unit = {
     "allow access for agent with a client relationship" in {
       givenAuditEvent()
       whenRelationshipsConnectorIsCalled returning Future.successful(true)
@@ -107,18 +109,24 @@ class ESAuthorisationServiceSpec
         Right(agentRecord))
 
       val result =
-        await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
+        await(
+          esAuthService.authoriseStandardService(agentCode,
+                                                 clientId,
+                                                 service.id,
+                                                 mtdAuthDetails))
 
       result shouldBe true
     }
 
     "deny access for a non-mtd agent" in {
       givenAuditEvent()
-//      whenDesAgentClientApiConnectorIsCalled returning Future(
-//        Right(agentRecord))
 
       val result =
-        await(service.authoriseForMtdIt(agentCode, clientId, nonMtdAuthDetails))
+        await(
+          esAuthService.authoriseStandardService(agentCode,
+                                                 clientId,
+                                                 service.id,
+                                                 nonMtdAuthDetails))
 
       result shouldBe false
     }
@@ -130,7 +138,11 @@ class ESAuthorisationServiceSpec
         Right(agentRecord))
 
       val result =
-        await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
+        await(
+          esAuthService.authoriseStandardService(agentCode,
+                                                 clientId,
+                                                 service.id,
+                                                 mtdAuthDetails))
 
       result shouldBe false
     }
@@ -142,7 +154,11 @@ class ESAuthorisationServiceSpec
         whenDesAgentClientApiConnectorIsCalled returning Future(
           Right(agentRecord))
 
-        await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
+        await(
+          esAuthService.authoriseStandardService(agentCode,
+                                                 clientId,
+                                                 service.id,
+                                                 mtdAuthDetails))
       }
 
       "decision is made to deny access" in {
@@ -151,402 +167,67 @@ class ESAuthorisationServiceSpec
         whenDesAgentClientApiConnectorIsCalled returning Future(
           Right(agentRecord))
 
-        await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
-      }
-
-      "no HMRC-AS-AGENT enrolment exists" in {
-
-        givenAuditEvent()
-
-//        whenDesAgentClientApiConnectorIsCalled returning Future(
-//          Right(agentRecord))
-
-        await(service.authoriseForMtdIt(agentCode, clientId, nonMtdAuthDetails))
-      }
-    }
-
-    "handle suspended agents and return false" in {
-
-      val agentRecord =
-        AgentRecord(
-          Some(SuspensionDetails(suspensionStatus = true, Some(Set("ITSA")))))
-
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
-
-      result shouldBe false
-    }
-  }
-
-  "authoriseForMtdVat" should {
-
-    val vrn = Vrn("vrn")
-
-    "allow access for agent with a client relationship" in {
-      givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning Future.successful(true)
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
-
-      result shouldBe true
-    }
-
-    "deny access for a non-mtd agent" in {
-      givenAuditEvent()
-//      whenDesAgentClientApiConnectorIsCalled returning Future(
-//        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForMtdVat(agentCode, vrn, nonMtdAuthDetails))
-
-      result shouldBe false
-    }
-
-    "deny access for a mtd agent without a client relationship" in {
-      givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning Future.successful(false)
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
-
-      result shouldBe false
-    }
-
-    "audit appropriate values" when {
-      "decision is made to allow access" in {
-        givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning Future.successful(true)
-        whenDesAgentClientApiConnectorIsCalled returning Future(
-          Right(agentRecord))
-
-        await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
-      }
-
-      "decision is made to deny access" in {
-        givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning Future.successful(false)
-        whenDesAgentClientApiConnectorIsCalled returning Future(
-          Right(agentRecord))
-
-        await(service.authoriseForMtdVat(agentCode, vrn, mtdAuthDetails))
-      }
-
-      "no HMRC-AS-AGENT enrolment exists" in {
-
-        givenAuditEvent()
-//        whenDesAgentClientApiConnectorIsCalled returning Future(
-//          Right(agentRecord))
-        await(service.authoriseForMtdVat(agentCode, vrn, nonMtdAuthDetails))
-      }
-    }
-
-    "handle suspended agents and return false" in {
-
-      val agentRecord =
-        AgentRecord(
-          Some(SuspensionDetails(suspensionStatus = true, Some(Set("ALL")))))
-
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForMtdIt(agentCode, clientId, mtdAuthDetails))
-
-      result shouldBe false
-    }
-  }
-
-  "authoriseForPpt" should {
-
-    val pptRef = PptRef("pptRef")
-
-    "allow access for agent with a client relationship" in {
-      givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning Future.successful(true)
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForPpt(agentCode, pptRef, mtdAuthDetails))
-
-      result shouldBe true
-    }
-
-    "deny access for a non-mtd agent" in {
-      givenAuditEvent()
-
-      val result =
-        await(service.authoriseForPpt(agentCode, pptRef, nonMtdAuthDetails))
-
-      result shouldBe false
-    }
-
-    "deny access for a mtd agent without a client relationship" in {
-      givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning Future.successful(false)
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForPpt(agentCode, pptRef, mtdAuthDetails))
-
-      result shouldBe false
-    }
-
-    "audit appropriate values" when {
-      "decision is made to allow access" in {
-        givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning Future.successful(true)
-        whenDesAgentClientApiConnectorIsCalled returning Future(
-          Right(agentRecord))
-
-        await(service.authoriseForPpt(agentCode, pptRef, mtdAuthDetails))
-      }
-
-      "decision is made to deny access" in {
-        givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning Future.successful(true)
-        whenDesAgentClientApiConnectorIsCalled returning Future(
-          Right(agentRecord))
-
-        await(service.authoriseForPpt(agentCode, pptRef, mtdAuthDetails))
-      }
-
-      "no HMRC-AS-AGENT enrolment exists" in {
-
-        givenAuditEvent()
-        await(service.authoriseForPpt(agentCode, pptRef, nonMtdAuthDetails))
-      }
-    }
-
-    "handle suspended agents and return false" in {
-
-      val agentRecord =
-        AgentRecord(
-          Some(SuspensionDetails(suspensionStatus = true, Some(Set("AGSV")))))
-
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForPpt(agentCode, pptRef, mtdAuthDetails))
-
-      result shouldBe false
-    }
-  }
-
-  "authoriseForTrust" should {
-
-    val utr = Utr("utr")
-
-    "allow access for agent with a client relationship" in {
-      givenAuditEvent()
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-      whenRelationshipsConnectorIsCalled returning Future.successful(true)
-
-      val result =
-        await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
-
-      result shouldBe true
-    }
-
-    "deny access for a non-mtd agent" in {
-      givenAuditEvent()
-//      whenDesAgentClientApiConnectorIsCalled returning Future(
-//        Right(agentRecord))
-      val result =
-        await(service.authoriseForTrust(agentCode, utr, nonMtdAuthDetails))
-
-      result shouldBe false
-    }
-
-    "deny access for a mtd agent without a client relationship" in {
-      givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning Future.successful(false)
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
-
-      result shouldBe false
-    }
-
-    "audit appropriate values" when {
-      "decision is made to allow access" in {
-        givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning Future.successful(true)
-        whenDesAgentClientApiConnectorIsCalled returning Future(
-          Right(agentRecord))
-        await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
-      }
-
-      "decision is made to deny access" in {
-        givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning Future.successful(false)
-        whenDesAgentClientApiConnectorIsCalled returning Future(
-          Right(agentRecord))
-        await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
-
+        await(
+          esAuthService.authoriseStandardService(agentCode,
+                                                 clientId,
+                                                 service.id,
+                                                 mtdAuthDetails))
       }
 
       "no HMRC-AS-AGENT enrolment exists" in {
         givenAuditEvent()
-//        whenDesAgentClientApiConnectorIsCalled returning Future(
-//          Right(agentRecord))
-        await(service.authoriseForTrust(agentCode, utr, nonMtdAuthDetails))
+
+        await(
+          esAuthService.authoriseStandardService(agentCode,
+                                                 clientId,
+                                                 service.id,
+                                                 nonMtdAuthDetails))
       }
     }
 
     "handle suspended agents and return false" in {
-
       val agentRecord =
         AgentRecord(
-          Some(SuspensionDetails(suspensionStatus = true, Some(Set("TRS")))))
+          Some(SuspensionDetails(suspensionStatus = true, Some(Set(regime)))))
 
       whenDesAgentClientApiConnectorIsCalled returning Future(
         Right(agentRecord))
 
       val result =
-        await(service.authoriseForTrust(agentCode, utr, mtdAuthDetails))
+        await(
+          esAuthService.authoriseStandardService(agentCode,
+                                                 clientId,
+                                                 service.id,
+                                                 mtdAuthDetails))
 
       result shouldBe false
     }
+
   }
 
-  "authoriseForNonTaxableTrust" should {
-
-    val urn = Urn("urn")
-
-    "allow access for agent with a client relationship" in {
-      givenAuditEvent()
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-      whenRelationshipsConnectorIsCalled returning Future.successful(true)
-
-      val result =
-        await(service.authoriseForTrust(agentCode, urn, mtdAuthDetails))
-
-      result shouldBe true
-    }
-
-    "deny access for a non-mtd agent" in {
-      givenAuditEvent()
-      val result =
-        await(service.authoriseForTrust(agentCode, urn, nonMtdAuthDetails))
-      result shouldBe false
-    }
-
-    "deny access for a mtd agent without a client relationship" in {
-      givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning Future.successful(false)
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForTrust(agentCode, urn, mtdAuthDetails))
-
-      result shouldBe false
-    }
-
-    "handle suspended agents and return false" in {
-
-      val agentRecord = AgentRecord(
-        Some(SuspensionDetails(suspensionStatus = true, Some(Set("TRS")))))
-
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForTrust(agentCode, urn, mtdAuthDetails))
-      result shouldBe false
-    }
+  "authorise (MTD IT)" should {
+    behave like authoriseStandardBehaviours(Service.MtdIt,
+                                            MtdItId("clientId"),
+                                            "ITSA")
   }
-
-  "authoriseForCgt" should {
-
-    val cgtRef = CgtRef("XMCGTP123456789")
-
-    "allow access for agent with a client relationship" in {
-      givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning Future.successful(true)
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
-
-      result shouldBe true
-    }
-
-    "deny access for a non-mtd agent" in {
-      givenAuditEvent()
-      val result =
-        await(service.authoriseForCgt(agentCode, cgtRef, nonMtdAuthDetails))
-
-      result shouldBe false
-    }
-
-    "deny access for a mtd agent without a client relationship" in {
-      givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning Future.successful(false)
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
-
-      val result =
-        await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
-
-      result shouldBe false
-    }
-
-    "audit appropriate values" when {
-      "decision is made to allow access" in {
-        givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning Future.successful(true)
-        whenDesAgentClientApiConnectorIsCalled returning Future(
-          Right(agentRecord))
-
-        await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
-      }
-
-      "decision is made to deny access" in {
-        givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning Future.successful(false)
-        whenDesAgentClientApiConnectorIsCalled returning Future(
-          Right(agentRecord))
-
-        await(service.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
-      }
-
-      "no HMRC-AS-AGENT enrolment exists" in {
-        givenAuditEvent()
-        await(service.authoriseForCgt(agentCode, cgtRef, nonMtdAuthDetails))
-      }
-    }
-
-    "handle suspended agents and return false" in {
-
-      val agentRecord =
-        AgentRecord(
-          Some(SuspensionDetails(suspensionStatus = true, Some(Set("CGT")))))
-
-      whenDesAgentClientApiConnectorIsCalled.returning(
-        Future(Right(agentRecord)))
-
-      val result =
-        await(service.authoriseForCgt(agentCode, clientId, mtdAuthDetails))
-
-      result shouldBe false
-    }
+  "authorise (VAT)" should {
+    behave like authoriseStandardBehaviours(Service.Vat, Vrn("vrn"), "ALL")
+  }
+  "authorise (Trust)" should {
+    behave like authoriseStandardBehaviours(Service.Trust, Utr("utr"), "TRS")
+  }
+  "authorise (Trust NT)" should {
+    behave like authoriseStandardBehaviours(Service.TrustNT, Urn("urn"), "TRS")
+  }
+  "authorise (CGT)" should {
+    behave like authoriseStandardBehaviours(Service.CapitalGains,
+                                            CgtRef("XMCGTP123456789"),
+                                            "CGT")
+  }
+  "authorise (PPT)" should {
+    behave like authoriseStandardBehaviours(Service.Ppt,
+                                            PptRef("pptRef"),
+                                            "AGSV")
   }
 
   "granular permissions logic" should {
@@ -581,7 +262,11 @@ class ESAuthorisationServiceSpec
                                                   auditService,
                                                   appConfig)
 
-      await(esaService.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
+      await(
+        esaService.authoriseStandardService(agentCode,
+                                            cgtRef,
+                                            Service.CapitalGains.id,
+                                            mtdAuthDetails))
 
       (stubRelationshipsConnector
         .relationshipExists(_: Arn, _: Option[String], _: TaxIdentifier)(
@@ -616,7 +301,11 @@ class ESAuthorisationServiceSpec
                                                   auditService,
                                                   appConfig)
 
-      await(esaService.authoriseForCgt(agentCode, cgtRef, mtdAuthDetails))
+      await(
+        esaService.authoriseStandardService(agentCode,
+                                            cgtRef,
+                                            Service.CapitalGains.id,
+                                            mtdAuthDetails))
 
       (stubRelationshipsConnector
         .relationshipExists(_: Arn, _: Option[String], _: TaxIdentifier)(

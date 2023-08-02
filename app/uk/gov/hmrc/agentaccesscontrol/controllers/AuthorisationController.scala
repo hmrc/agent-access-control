@@ -25,10 +25,10 @@ import uk.gov.hmrc.agentaccesscontrol.service.{
 }
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr}
+import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr, TaxIdentifier}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class AuthorisationController @Inject()(
@@ -41,137 +41,62 @@ class AuthorisationController @Inject()(
     with AuthAction
     with Logging {
 
-  def isAuthorisedForSa(agentCode: AgentCode,
-                        saUtr: SaUtr): Action[AnyContent] =
-    Action.async { implicit request: Request[_] =>
-      withAgentAuthorised(agentCode) { authDetails =>
-        {
-          authorisationService
-            .isAuthorisedForSa(agentCode, saUtr, authDetails)
-            .map {
-              case true  => Ok
-              case false => Unauthorized
-            }
-        }
-      }
-    }
+  def authorise(authType: String,
+                agentCode: AgentCode,
+                clientId: String): Action[AnyContent] = {
 
-  def isAuthorisedForMtdIt(agentCode: AgentCode,
-                           mtdItId: MtdItId): Action[AnyContent] =
     Action.async { implicit request: Request[_] =>
       withAgentAuthorised(agentCode) { authDetails =>
-        {
-          esAuthorisationService
-            .authoriseForMtdIt(agentCode, mtdItId, authDetails)
-            .map {
-              case true  => Ok
-              case false => Unauthorized
-            }
-        }
-      }
-    }
+        def standardAuth(service: Service,
+                         taxId: TaxIdentifier): Future[Boolean] =
+          esAuthorisationService.authoriseStandardService(agentCode,
+                                                          taxId,
+                                                          service.id,
+                                                          authDetails)
+        val urnPattern = "^((?i)[a-z]{2}trust[0-9]{8})$"
+        val utrPattern = "^\\d{10}$"
 
-  def isAuthorisedForMtdVat(agentCode: AgentCode,
-                            vrn: Vrn): Action[AnyContent] =
-    Action.async { implicit request: Request[_] =>
-      withAgentAuthorised(agentCode) { authDetails =>
-        {
-          esAuthorisationService
-            .authoriseForMtdVat(agentCode, vrn, authDetails)
-            .map {
-              case true  => Ok
-              case false => Unauthorized
-            }
-        }
-      }
-    }
-
-  def isAuthorisedForPaye(agentCode: AgentCode,
-                          empRef: EmpRef): Action[AnyContent] =
-    Action.async { implicit request: Request[_] =>
-      withAgentAuthorised(agentCode) { authDetails =>
-        {
-          authorisationService.isAuthorisedForPaye(agentCode,
-                                                   empRef,
-                                                   authDetails) map {
-            case true => Ok
-            case _    => Unauthorized
+        (authType match {
+          // Special cases
+          case "epaye-auth" =>
+            authorisationService.isAuthorisedForPaye(
+              agentCode,
+              EmpRef.fromIdentifiers(clientId),
+              authDetails)
+          case "sa-auth" =>
+            authorisationService.isAuthorisedForSa(agentCode,
+                                                   SaUtr(clientId),
+                                                   authDetails)
+          case "afi-auth" =>
+            authorisationService.isAuthorisedForAfi(agentCode,
+                                                    Nino(clientId),
+                                                    authDetails)
+          // Standard cases
+          case "mtd-it-auth"  => standardAuth(Service.MtdIt, MtdItId(clientId))
+          case "mtd-vat-auth" => standardAuth(Service.Vat, Vrn(clientId))
+          case "trust-auth" if clientId.matches(utrPattern) =>
+            standardAuth(Service.Trust, Utr(clientId))
+          case "trust-auth" if clientId.matches(urnPattern) =>
+            standardAuth(Service.TrustNT, Urn(clientId))
+          case "trust-auth" =>
+            throw new IllegalArgumentException(
+              s"invalid trust tax identifier $clientId")
+          case "cgt-auth" =>
+            standardAuth(Service.CapitalGains, CgtRef(clientId))
+          case "ppt-auth" => standardAuth(Service.Ppt, PptRef(clientId))
+          case "cbc-auth" =>
+            standardAuth(Service.Cbc, CbcId(clientId)) // AAC does not care about regime for CBC uk or non-uk, handled in ACR - it does mean audits will be uk for both
+          case x =>
+            throw new IllegalArgumentException(s"Unexpected auth type: $x")
+        }).map {
+            case true  => Ok
+            case false => Unauthorized
           }
-        }
-      }
-    }
-
-  def isAuthorisedForAfi(agentCode: AgentCode, nino: Nino): Action[AnyContent] =
-    Action.async { implicit request: Request[_] =>
-      withAgentAuthorised(agentCode) { authDetails =>
-        {
-          authorisationService.isAuthorisedForAfi(agentCode, nino, authDetails) map {
-            isAuthorised =>
-              if (isAuthorised) Ok else Unauthorized
+          .recover {
+            case e: IllegalArgumentException => BadRequest(e.getMessage)
           }
-        }
       }
     }
-
-  def isAuthorisedForTrust(
-      agentCode: AgentCode,
-      trustTaxIdentifier: TrustTaxIdentifier): Action[AnyContent] =
-    Action.async { implicit request: Request[_] =>
-      withAgentAuthorised(agentCode) { authDetails =>
-        {
-          esAuthorisationService
-            .authoriseForTrust(agentCode, trustTaxIdentifier, authDetails)
-            .map {
-              case authorised if authorised => Ok
-              case _                        => Unauthorized
-            }
-        }
-      }
-    }
-
-  def isAuthorisedForCgt(agentCode: AgentCode,
-                         cgtRef: CgtRef): Action[AnyContent] =
-    Action.async { implicit request: Request[_] =>
-      withAgentAuthorised(agentCode) { authDetails =>
-        {
-          esAuthorisationService
-            .authoriseForCgt(agentCode, cgtRef, authDetails)
-            .map {
-              case authorised if authorised => Ok
-              case _                        => Unauthorized
-            }
-        }
-      }
-    }
-
-  def isAuthorisedForPpt(agentCode: AgentCode,
-                         pptRef: PptRef): Action[AnyContent] =
-    Action.async { implicit request: Request[_] =>
-      withAgentAuthorised(agentCode) { authDetails =>
-        {
-          esAuthorisationService
-            .authoriseForPpt(agentCode, pptRef, authDetails)
-            .map {
-              case authorised if authorised => Ok
-              case _                        => Unauthorized
-            }
-        }
-      }
-    }
-
-  def isAuthorisedForCbc(agentCode: AgentCode,
-                         cbcId: CbcId): Action[AnyContent] =
-    Action.async { implicit request: Request[_] =>
-      withAgentAuthorised(agentCode) { authDetails =>
-        {
-          esAuthorisationService
-            .authoriseForCbc(agentCode, cbcId, authDetails)
-            .map {
-              case authorised if authorised => Ok
-              case _                        => Unauthorized
-            }
-        }
-      }
-    }
+  }
 
 }
