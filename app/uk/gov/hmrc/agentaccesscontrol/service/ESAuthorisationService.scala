@@ -24,7 +24,10 @@ import uk.gov.hmrc.agentaccesscontrol.audit.{
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{
+  AgentClientAuthorisationConnector,
+  RelationshipsConnector
+}
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.CredentialRole
@@ -38,6 +41,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class ESAuthorisationService @Inject()(
     relationshipsConnector: RelationshipsConnector,
     val desAgentClientApiConnector: DesAgentClientApiConnector,
+    val agentClientAuthorisationConnector: AgentClientAuthorisationConnector,
     agentPermissionsConnector: AgentPermissionsConnector,
     auditService: AuditService,
     appConfig: AppConfig)(implicit ec: ExecutionContext)

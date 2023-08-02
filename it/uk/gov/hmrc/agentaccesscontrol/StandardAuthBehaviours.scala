@@ -27,7 +27,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, suspended = false, regime = regime)
+          .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
         given()
           .mtdAgency(arn)
@@ -43,7 +43,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           given()
             .agentAdmin(agentCode, providerId, None, Some(arn))
             .isAuthenticated()
-            .givenAgentRecord(arn, suspended = false, regime = regime)
+            .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
           val status = authResponseFor(agentCode, clientId, method).status
 
@@ -54,7 +54,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           given()
             .agentAdmin(agentCode, providerId, None, Some(arn))
             .isAuthenticated()
-            .givenAgentRecord(arn, suspended = false, regime = regime)
+            .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
           given()
             .mtdAgency(arn)
@@ -70,7 +70,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, suspended = false, regime = regime)
+          .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
         given()
           .mtdAgency(arn)
@@ -83,7 +83,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, suspended = false, regime = regime)
+          .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
         given()
           .mtdAgency(arn)
@@ -99,7 +99,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, suspended = true, regime = regime)
+          .givenSuspensionStatus(arn, suspended = true, regime = regime)
 
         given()
           .mtdAgency(arn)
@@ -115,7 +115,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, true, "AGSV")
+          .givenSuspensionStatus(arn, true, "AGSV")
 
         given()
           .mtdAgency(arn)
@@ -134,7 +134,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, suspended = false, regime = regime)
+          .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
         given()
           .mtdAgency(arn)
@@ -150,7 +150,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           given()
             .agentAdmin(agentCode, providerId, None, None)
             .isAuthenticated()
-            .givenAgentRecord(arn, suspended = false, regime = regime)
+            .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
           val status = authResponseFor(agentCode, clientId, method).status
 
@@ -161,7 +161,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           given()
             .agentAdmin(agentCode, providerId, None, Some(arn))
             .isAuthenticated()
-            .givenAgentRecord(arn, suspended = false, regime = regime)
+            .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
           given()
             .mtdAgency(arn)
@@ -177,7 +177,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, suspended = false, regime = regime)
+          .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
         given()
           .mtdAgency(arn)
@@ -190,7 +190,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, suspended = false, regime = regime)
+          .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
         given()
           .mtdAgency(arn)

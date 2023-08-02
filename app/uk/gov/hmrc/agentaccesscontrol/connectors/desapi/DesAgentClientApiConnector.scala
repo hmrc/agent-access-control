@@ -16,25 +16,22 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
-import java.net.URL
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
-
-import javax.inject.{Inject, Singleton}
 import play.api.http.Status._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.model._
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.domain._
-import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.HttpErrorFunctions._
+import uk.gov.hmrc.http._
 
+import java.net.URL
 import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[DesAgentClientApiConnectorImpl])
@@ -47,11 +44,6 @@ trait DesAgentClientApiConnector {
   def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse]
-
-  def getAgentRecord(agentId: TaxIdentifier)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Either[String, AgentRecord]]
-
 }
 
 @Singleton
@@ -128,32 +120,6 @@ class DesAgentClientApiConnectorImpl @Inject()(appConfig: AppConfig,
   private def payeUrlFor(agentCode: AgentCode, empRef: EmpRef): URL =
     new URL(
       s"$desBaseUrlPaye/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}")
-
-  def getAgentRecord(agentId: TaxIdentifier)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Either[String, AgentRecord]] = {
-    import uk.gov.hmrc.http.HttpReads.Implicits._
-    getWithDesHeaders[AgentRecord]("GetAgentRecord",
-                                   new URL(getAgentRecordUrl(agentId)))
-      .map(a => Right(a))
-      .recover {
-        case e: Upstream4xxResponse
-            if e.message contains ("AGENT_TERMINATED") =>
-          Left(e.message)
-      }
-  }
-
-  private def getAgentRecordUrl(agentId: TaxIdentifier) =
-    agentId match {
-      case Arn(arn) =>
-        val encodedArn = UriEncoding.encodePathSegment(arn, "UTF-8")
-        s"$desBaseUrl/registration/personal-details/arn/$encodedArn"
-      case Utr(utr) =>
-        val encodedUtr = UriEncoding.encodePathSegment(utr, "UTF-8")
-        s"$desBaseUrl/registration/personal-details/utr/$encodedUtr"
-      case _ =>
-        throw new Exception(s"The client identifier $agentId is not supported.")
-    }
 
   private def getWithDesHeaders[A: HttpReads](apiName: String, url: URL)(
       implicit hc: HeaderCarrier,

@@ -22,7 +22,7 @@ import uk.gov.hmrc.agentaccesscontrol.audit.{
   AuditService
 }
 import uk.gov.hmrc.agentaccesscontrol.connectors._
-import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.AgentClientAuthorisationConnector
 import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain._
@@ -40,8 +40,7 @@ class AuthorisationService @Inject()(
     auditService: AuditService,
     mappingConnector: MappingConnector,
     afiRelationshipConnector: AfiRelationshipConnector,
-    agentPermissions: AgentPermissionsConnector,
-    val desAgentClientApiConnector: DesAgentClientApiConnector)
+    val agentClientAuthorisationConnector: AgentClientAuthorisationConnector)
     extends LoggingAuthorisationResults
     with AgentSuspensionChecker {
 

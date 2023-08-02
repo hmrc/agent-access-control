@@ -56,7 +56,9 @@ abstract class WireMockISpec extends UnitSpec with StartAndStopWireMock with Stu
     "microservice.services.agent-fi-relationship.host"      -> wiremockHost,
     "microservice.services.agent-fi-relationship.port"      -> wiremockPort,
     "microservice.services.agent-permissions.host"          -> wiremockHost,
-    "microservice.services.agent-permissions.port"          -> wiremockPort
+    "microservice.services.agent-permissions.port"          -> wiremockPort,
+    "microservice.services.agent-client-authorisation.host" -> wiremockHost,
+    "microservice.services.agent-client-authorisation.port" -> wiremockPort
   )
 
   protected def additionalConfiguration: Map[String, String] = Map.empty
@@ -216,13 +218,13 @@ trait StubUtils {
       }
     }
 
-    def  givenAgentRecord(taxId: TaxIdentifier, suspended: Boolean, regime: String): StubMapping = {
+    def givenSuspensionStatus(taxId: TaxIdentifier, suspended: Boolean, regime: String): StubMapping = {
       stubFor(
         get(
           urlPathEqualTo(
-            s"/registration/personal-details/arn/${taxId.value}")
+            s"/agent-client-authorisation/client/suspension-details/${taxId.value}")
         ).willReturn(aResponse().withStatus(200)
-          .withBody(s"""{"suspensionDetails":{"suspensionStatus":$suspended,"regimes":["$regime"]}}"""))
+          .withBody(s"""{"suspensionStatus":$suspended,"regimes":["$regime"]}"""))
       )
     }
   }
