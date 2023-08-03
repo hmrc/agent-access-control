@@ -27,18 +27,21 @@ import uk.gov.hmrc.agentaccesscontrol.audit.{
   AuditService
 }
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.AgentClientAuthorisationConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.{
   AfiRelationshipConnector,
-  AgentPermissionsConnector,
   MappingConnector
 }
-import uk.gov.hmrc.agentaccesscontrol.model.{AgentRecord, AuthDetails}
+import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
 import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, SuspensionDetails}
 import uk.gov.hmrc.auth.core.User
 import uk.gov.hmrc.domain._
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.http.{
+  BadRequestException,
+  HeaderCarrier,
+  UpstreamErrorResponse
+}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.Future
@@ -51,10 +54,6 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val nino: Nino = Nino("AA101010A")
   val providerId = "12345-credId"
   val arn: Arn = Arn("arn")
-  val agentIsSuspended = Option(
-    SuspensionDetails(suspensionStatus = true, Some(Set("AGSV"))))
-  val agentIsNotSuspended = Option(
-    SuspensionDetails(suspensionStatus = false, None))
 
   val nonMtdAuthDetails =
     AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(User))
@@ -352,9 +351,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   "isAuthorisedForAfi" should {
 
     "return false when error encountered fetching agent record from DES" in new Context {
-      // whenAgentSuspensionFeatureFlagIsChecked thenReturn true
-
-      whenDesIsCheckedForAgentRecord thenReturn Future(Left("error"))
+      whenAcaIsCheckedForSuspension() thenReturn Future.failed(
+        UpstreamErrorResponse("boom", 503))
 
       await(
         authorisationService
@@ -362,9 +360,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false when agent is suspended" in new Context {
-
-      whenDesIsCheckedForAgentRecord thenReturn Future(
-        Right(AgentRecord(agentIsSuspended)))
+      whenAcaIsCheckedForSuspension() thenReturn Future.successful(
+        SuspensionDetails(suspensionStatus = true, Some(Set("AGSV"))))
 
       await(
         authorisationService
@@ -372,9 +369,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false when agent is not suspended and relationships do not exist" in new Context {
-
-      whenDesIsCheckedForAgentRecord thenReturn Future(
-        Right(AgentRecord(agentIsNotSuspended)))
+      whenAcaIsCheckedForSuspension() thenReturn Future.successful(
+        SuspensionDetails.notSuspended)
 
       afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(
         false)
@@ -385,9 +381,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return true when agent is not suspended and relationships exist" in new Context {
-
-      whenDesIsCheckedForAgentRecord thenReturn Future(
-        Right(AgentRecord(agentIsNotSuspended)))
+      whenAcaIsCheckedForSuspension() thenReturn Future.successful(
+        SuspensionDetails.notSuspended)
 
       afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(true)
 
@@ -409,9 +404,9 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     val mockAuditService = mock[AuditService]
     val mockAfiRelationshipConnector = mock[AfiRelationshipConnector]
     val mockMappingConnector = mock[MappingConnector]
-    val mockDesAgentClientApiConnector = mock[DesAgentClientApiConnector]
     val servicesConfig = mock[ServicesConfig]
-    val mockAgentPermissionsConnector = mock[AgentPermissionsConnector]
+    val mockAcaConnector: AgentClientAuthorisationConnector =
+      mock[AgentClientAuthorisationConnector]
 
     implicit val appConfig = new AppConfig(servicesConfig)
 
@@ -421,8 +416,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       mockAuditService,
       mockMappingConnector,
       mockAfiRelationshipConnector,
-      mockAgentPermissionsConnector,
-      mockDesAgentClientApiConnector
+      mockAcaConnector
     )
 
     def whenESPIsCheckedForPayeRelationship() =
@@ -443,8 +437,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         mockDesAuthorisationService
           .isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
 
-    def whenDesIsCheckedForAgentRecord() =
-      when(mockDesAgentClientApiConnector.getAgentRecord(arn))
+    def whenAcaIsCheckedForSuspension() =
+      when(mockAcaConnector.getSuspensionDetails(arn))
 
     def afiRelationshipConnectorIsCheckedForRelatioinships =
       when(mockAfiRelationshipConnector.hasRelationship(arn.value, nino.value))

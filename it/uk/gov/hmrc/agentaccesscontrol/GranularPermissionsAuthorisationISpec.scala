@@ -21,7 +21,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "CGT")
+          .givenSuspensionStatus(arn, false, "CGT")
 
         given()
           .mtdAgency(arn)
@@ -39,7 +39,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "CGT")
+          .givenSuspensionStatus(arn, false, "CGT")
 
         given()
           .mtdAgency(arn)
@@ -59,7 +59,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "TRUST")
+          .givenSuspensionStatus(arn, false, "TRUST")
 
         given()
           .mtdAgency(arn)
@@ -75,7 +75,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "TRUST")
+          .givenSuspensionStatus(arn, false, "TRUST")
 
         given()
           .mtdAgency(arn)
@@ -91,7 +91,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "CGT")
+          .givenSuspensionStatus(arn, false, "CGT")
 
         given()
           .mtdAgency(arn)
@@ -109,7 +109,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "CGT")
+          .givenSuspensionStatus(arn, false, "CGT")
 
         given()
           .mtdAgency(arn)
@@ -127,7 +127,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "CGT")
+          .givenSuspensionStatus(arn, false, "CGT")
 
         given()
           .mtdAgency(arn)
@@ -141,7 +141,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "CGT")
+          .givenSuspensionStatus(arn, false, "CGT")
 
         given()
           .mtdAgency(arn)
@@ -160,7 +160,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "CGT")
+          .givenSuspensionStatus(arn, false, "CGT")
 
         given()
           .mtdAgency(arn)
@@ -179,7 +179,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "CGT")
+          .givenSuspensionStatus(arn, false, "CGT")
 
         given()
           .mtdAgency(arn)
@@ -199,7 +199,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         given()
           .agentAdmin(agentCode, providerId, None, Some(arn))
           .isAuthenticated()
-          .givenAgentRecord(arn, false, "CGT")
+          .givenSuspensionStatus(arn, false, "CGT")
 
         given()
           .mtdAgency(arn)

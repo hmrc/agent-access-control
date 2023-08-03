@@ -43,7 +43,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
             .agentAdmin(agentCode, providerId, None, Some(arn))
             .isAuthenticated()
             .andHasRelationship(arn, clientId)
-            .givenAgentRecord(arn, suspended = false, regime)
+            .givenSuspensionStatus(arn, suspended = false, regime)
 
           authResponseFor(GET).status shouldBe 200
         }
@@ -55,7 +55,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
             .agentAdmin(agentCode, providerId, None, Some(arn))
             .isAuthenticated()
             .andHasRelationship(arn, clientId)
-            .givenAgentRecord(arn, suspended = true, regime)
+            .givenSuspensionStatus(arn, suspended = true, regime)
 
           authResponseFor(GET).status shouldBe 401
         }
@@ -67,7 +67,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
             .agentAdmin(agentCode, providerId, None, Some(arn))
             .isAuthenticated()
             .andHasNoRelationship(arn, clientId)
-            .givenAgentRecord(arn, suspended = false, regime)
+            .givenSuspensionStatus(arn, suspended = false, regime)
 
           authResponseFor(GET).status shouldBe 401
         }
@@ -82,7 +82,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
             .agentAdmin(agentCode, providerId, None, Some(arn))
             .isAuthenticated()
             .andHasRelationship(arn, clientId)
-            .givenAgentRecord(arn, suspended = false, regime)
+            .givenSuspensionStatus(arn, suspended = false, regime)
 
           authResponseFor(POST).status shouldBe 200
         }
@@ -94,7 +94,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
             .agentAdmin(agentCode, providerId, None, Some(arn))
             .isAuthenticated()
             .andHasRelationship(arn, clientId)
-            .givenAgentRecord(arn, suspended = true, regime)
+            .givenSuspensionStatus(arn, suspended = true, regime)
 
           authResponseFor(POST).status shouldBe 401
         }
@@ -106,7 +106,7 @@ class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
             .agentAdmin(agentCode, providerId, None, Some(arn))
             .isAuthenticated()
             .andHasNoRelationship(arn, clientId)
-            .givenAgentRecord(arn, suspended = false, regime)
+            .givenSuspensionStatus(arn, suspended = false, regime)
 
           authResponseFor(POST).status shouldBe 401
         }

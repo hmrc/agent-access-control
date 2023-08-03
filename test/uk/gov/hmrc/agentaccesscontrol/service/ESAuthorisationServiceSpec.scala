@@ -24,7 +24,10 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{
+  AgentClientAuthorisationConnector,
+  RelationshipsConnector
+}
 import uk.gov.hmrc.agentaccesscontrol.model.{AgentRecord, AuthDetails}
 import uk.gov.hmrc.agentaccesscontrol.support.AuditSupport
 import uk.gov.hmrc.agentmtdidentifiers.model._
@@ -47,6 +50,8 @@ class ESAuthorisationServiceSpec
   val auditService: AuditService = mock[AuditService]
   val desAgentClientApiConnector: DesAgentClientApiConnector =
     mock[DesAgentClientApiConnector]
+  val mockAcaConnector: AgentClientAuthorisationConnector =
+    mock[AgentClientAuthorisationConnector]
   val agentPermissionsConnector: AgentPermissionsConnector =
     stub[AgentPermissionsConnector]
 
@@ -81,6 +86,7 @@ class ESAuthorisationServiceSpec
 
   val esAuthService = new ESAuthorisationService(relationshipsConnector,
                                                  desAgentClientApiConnector,
+                                                 mockAcaConnector,
                                                  agentPermissionsConnector,
                                                  auditService,
                                                  appConfig)
@@ -105,8 +111,7 @@ class ESAuthorisationServiceSpec
     "allow access for agent with a client relationship" in {
       givenAuditEvent()
       whenRelationshipsConnectorIsCalled returning Future.successful(true)
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
+      whenAcaReturnsAgentNotSuspended()
 
       val result =
         await(
@@ -134,8 +139,7 @@ class ESAuthorisationServiceSpec
     "deny access for a mtd agent without a client relationship" in {
       givenAuditEvent()
       whenRelationshipsConnectorIsCalled returning Future.successful(false)
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
+      whenAcaReturnsAgentNotSuspended()
 
       val result =
         await(
@@ -151,8 +155,7 @@ class ESAuthorisationServiceSpec
       "decision is made to allow access" in {
         givenAuditEvent()
         whenRelationshipsConnectorIsCalled returning Future.successful(true)
-        whenDesAgentClientApiConnectorIsCalled returning Future(
-          Right(agentRecord))
+        whenAcaReturnsAgentNotSuspended()
 
         await(
           esAuthService.authoriseStandardService(agentCode,
@@ -164,8 +167,7 @@ class ESAuthorisationServiceSpec
       "decision is made to deny access" in {
         givenAuditEvent()
         whenRelationshipsConnectorIsCalled returning Future.successful(false)
-        whenDesAgentClientApiConnectorIsCalled returning Future(
-          Right(agentRecord))
+        whenAcaReturnsAgentNotSuspended()
 
         await(
           esAuthService.authoriseStandardService(agentCode,
@@ -186,12 +188,11 @@ class ESAuthorisationServiceSpec
     }
 
     "handle suspended agents and return false" in {
-      val agentRecord =
-        AgentRecord(
-          Some(SuspensionDetails(suspensionStatus = true, Some(Set(regime)))))
-
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
+      (mockAcaConnector
+        .getSuspensionDetails(_: Arn)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(*, *, *)
+        .returning(Future.successful(
+          SuspensionDetails(suspensionStatus = true, Some(Set(regime)))))
 
       val result =
         await(
@@ -234,8 +235,7 @@ class ESAuthorisationServiceSpec
     "when GP enabled and opted in, specify user to check in relationship service call" in {
       val cgtRef = CgtRef("XMCGTP123456789")
       givenAuditEvent()
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
+      whenAcaReturnsAgentNotSuspended()
 
       val agentPermissionsConnector = stub[AgentPermissionsConnector]
       (agentPermissionsConnector
@@ -256,11 +256,13 @@ class ESAuthorisationServiceSpec
           _: HeaderCarrier))
         .when(*, *, *, *, *)
         .returns(Future.successful(true))
-      val esaService = new ESAuthorisationService(stubRelationshipsConnector,
-                                                  desAgentClientApiConnector,
-                                                  agentPermissionsConnector,
-                                                  auditService,
-                                                  appConfig)
+      val esaService =
+        new ESAuthorisationService(stubRelationshipsConnector,
+                                   desAgentClientApiConnector,
+                                   mockAcaConnector,
+                                   agentPermissionsConnector,
+                                   auditService,
+                                   appConfig)
 
       await(
         esaService.authoriseStandardService(agentCode,
@@ -278,8 +280,7 @@ class ESAuthorisationServiceSpec
     "when GP outed out, do NOT specify user to check in relationship service call" in {
       val cgtRef = CgtRef("XMCGTP123456789")
       givenAuditEvent()
-      whenDesAgentClientApiConnectorIsCalled returning Future(
-        Right(agentRecord))
+      whenAcaReturnsAgentNotSuspended()
 
       val agentPermissionsConnector = stub[AgentPermissionsConnector]
       (agentPermissionsConnector
@@ -295,11 +296,13 @@ class ESAuthorisationServiceSpec
           _: HeaderCarrier))
         .when(*, *, *, *, *)
         .returns(Future.successful(true))
-      val esaService = new ESAuthorisationService(stubRelationshipsConnector,
-                                                  desAgentClientApiConnector,
-                                                  agentPermissionsConnector,
-                                                  auditService,
-                                                  appConfig)
+      val esaService =
+        new ESAuthorisationService(stubRelationshipsConnector,
+                                   desAgentClientApiConnector,
+                                   mockAcaConnector,
+                                   agentPermissionsConnector,
+                                   auditService,
+                                   appConfig)
 
       await(
         esaService.authoriseStandardService(agentCode,
@@ -323,8 +326,9 @@ class ESAuthorisationServiceSpec
       .expects(*, *, *, *, *)
       .atLeastOnce()
 
-  def whenDesAgentClientApiConnectorIsCalled =
-    (desAgentClientApiConnector
-      .getAgentRecord(_: TaxIdentifier)(_: HeaderCarrier, _: ExecutionContext))
+  def whenAcaReturnsAgentNotSuspended() =
+    (mockAcaConnector
+      .getSuspensionDetails(_: Arn)(_: HeaderCarrier, _: ExecutionContext))
       .expects(*, *, *)
+      .returning(Future.successful(SuspensionDetails.notSuspended))
 }

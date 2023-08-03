@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.AgentClientAuthorisationConnector
+import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetailsNotFound
 import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -24,26 +25,32 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait AgentSuspensionChecker { this: LoggingAuthorisationResults =>
 
-  val desAgentClientApiConnector: DesAgentClientApiConnector
+  val agentClientAuthorisationConnector: AgentClientAuthorisationConnector
 
   def withSuspensionCheck(agentId: TaxIdentifier, regime: String)(
       proceed: => Future[Boolean])(implicit hc: HeaderCarrier,
                                    ec: ExecutionContext): Future[Boolean] = {
 
-    desAgentClientApiConnector.getAgentRecord(agentId).flatMap {
-      case Right(agentRecord) =>
-        if (agentRecord.isSuspended && agentRecord.suspendedFor(regime)) {
+    agentClientAuthorisationConnector
+      .getSuspensionDetails(agentId)
+      .flatMap {
+        case suspensionDetails =>
+          val isSuspended = suspensionDetails.suspensionStatus && suspensionDetails.suspendedRegimes
+            .contains(regime)
+          if (isSuspended) {
+            logger.warn(
+              s"agent with id : ${agentId.value} is suspended for regime $regime")
+            Future.successful(false)
+          } else proceed
+      }
+      .recover {
+        case _: SuspensionDetailsNotFound =>
+          logger.warn(s"Suspension details not found for $agentId")
+          false
+        case e =>
           logger.warn(
-            s"agent with id : ${agentId.value} is suspended for regime $regime")
-          Future(false)
-        } else {
-          proceed
-        }
-      case Left(message) =>
-        logger.warn(message)
-        Future(false)
-    }
-
+            s"Error retrieving suspension details for $agentId: ${e.getMessage}")
+          false
+      }
   }
-
 }
