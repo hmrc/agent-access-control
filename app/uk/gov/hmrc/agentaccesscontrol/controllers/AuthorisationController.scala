@@ -19,6 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
 import play.api.{Environment, Logging}
+import uk.gov.hmrc.agentaccesscontrol.model.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
@@ -48,7 +49,7 @@ class AuthorisationController @Inject()(
     Action.async { implicit request: Request[_] =>
       withAgentAuthorised(agentCode) { authDetails =>
         def standardAuth(service: Service,
-                         taxId: TaxIdentifier): Future[Boolean] =
+                         taxId: TaxIdentifier): Future[AccessResponse] =
           esAuthorisationService.authoriseStandardService(agentCode,
                                                           taxId,
                                                           service.id,
@@ -89,8 +90,9 @@ class AuthorisationController @Inject()(
           case x =>
             throw new IllegalArgumentException(s"Unexpected auth type: $x")
         }).map {
-            case true  => Ok
-            case false => Unauthorized
+            case AccessResponse.Authorised   => Ok
+            case AccessResponse.NoAssignment => Unauthorized("NO_ASSIGNMENT")
+            case _                           => Unauthorized("NO_RELATIONSHIP")
           }
           .recover {
             case e: IllegalArgumentException => BadRequest(e.getMessage)

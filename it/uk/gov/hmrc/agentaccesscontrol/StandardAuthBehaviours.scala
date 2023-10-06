@@ -11,6 +11,9 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
   private val providerId = "12345-credId"
   private val arn = Arn("AARN0000002")
 
+  private val NoRelationship = "NO_RELATIONSHIP"
+  private val NoAssignment = "NO_ASSIGNMENT"
+
   def standardAuthBehaviour(authType: String, clientId: TaxIdentifier, regime: String): Unit = {
     def authResponseFor(agentCode: AgentCode, clientId: TaxIdentifier, method: String): HttpResponse = {
       val resource =
@@ -45,9 +48,11 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
             .isAuthenticated()
             .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
-          val status = authResponseFor(agentCode, clientId, method).status
+          val response = authResponseFor(agentCode, clientId, method)
 
-          status shouldBe 401
+          response.status shouldBe 401
+          response.body should include (NoRelationship)
+
         }
 
         "there is no relationship between the agency and client" in {
@@ -60,10 +65,31 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
             .mtdAgency(arn)
             .hasNoRelationshipWith(clientId)
 
-          val status = authResponseFor(agentCode, clientId, method).status
+          val response = authResponseFor(agentCode, clientId, method)
 
-          status shouldBe 401
+          response.status shouldBe 401
+          response.body should include (NoRelationship)
+
         }
+
+        "there is a relationship between agency and client but access groups are enabled and user is not assigned to client" in {
+          given()
+            .agentAdmin(agentCode, providerId, None, Some(arn))
+            .isAuthenticated()
+            .givenSuspensionStatus(arn, suspended = false, regime = regime)
+
+          given()
+            .mtdAgency(arn)
+            .isOptedInToGranularPermissions
+            .hasARelationshipWith(clientId)
+            .hasNoAssignedRelationshipToAgentUser(clientId, providerId)
+
+          val response = authResponseFor(agentCode, clientId, method)
+
+          response.status shouldBe 401
+          response.body should include (NoAssignment)
+        }
+
       }
 
       "send an AccessControlDecision audit event" in {
@@ -106,7 +132,10 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           .hasARelationshipWith(clientId)
         givenCleanMetricRegistry()
 
-        authResponseFor(agentCode, clientId, method).status shouldBe 401
+        val response = authResponseFor(agentCode, clientId, method)
+
+        response.status shouldBe 401
+        response.body should include (NoRelationship)
 
         timerShouldExistsAndBeenUpdated(s"API-__${authType}__agent__:__client__:-GET")
       }
@@ -122,7 +151,10 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           .hasARelationshipWith(clientId)
         givenCleanMetricRegistry()
 
-        authResponseFor(agentCode, clientId, method).status shouldBe 401
+        val response = authResponseFor(agentCode, clientId, method)
+
+        response.status shouldBe 401
+        response.body should include (NoRelationship)
 
         timerShouldExistsAndBeenUpdated(s"API-__${authType}__agent__:__client__:-GET")
       }
@@ -152,9 +184,10 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
             .isAuthenticated()
             .givenSuspensionStatus(arn, suspended = false, regime = regime)
 
-          val status = authResponseFor(agentCode, clientId, method).status
+          val response = authResponseFor(agentCode, clientId, method)
 
-          status shouldBe 401
+          response.status shouldBe 401
+          response.body should include (NoRelationship)
         }
 
         "there is no relationship between the agency and client" in {
@@ -167,9 +200,10 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
             .mtdAgency(arn)
             .hasNoRelationshipWith(clientId)
 
-          val status = authResponseFor(agentCode, clientId, method).status
+          val response = authResponseFor(agentCode, clientId, method)
 
-          status shouldBe 401
+          response.status shouldBe 401
+          response.body should include (NoRelationship)
         }
       }
 

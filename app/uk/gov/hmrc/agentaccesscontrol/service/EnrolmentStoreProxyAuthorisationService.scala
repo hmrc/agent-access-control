@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
+import play.api.Logging
+
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.agentaccesscontrol.connectors.EnrolmentStoreProxyConnector
 import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaAgentReference, SaUtr}
@@ -26,7 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class EnrolmentStoreProxyAuthorisationService @Inject()(
     val enrolmentStoreProxyConnector: EnrolmentStoreProxyConnector)
-    extends LoggingAuthorisationResults {
+    extends Logging {
 
   def isAuthorisedForSaInEnrolmentStoreProxy(ggCredentialId: String,
                                              saUtr: SaUtr)(
@@ -43,12 +45,15 @@ class EnrolmentStoreProxyAuthorisationService @Inject()(
     enrolmentStoreProxyConnector.getIRPAYEDelegatedUserIdsFor(empRef) map {
       assignedAgents =>
         val result = assignedAgents.exists(_.value == ggCredentialId)
-        if (result)
-          authorised(
-            s"ES0 returned assigned agent credential: $ggCredentialId for client: $empRef")
-        else
-          notAuthorised(
-            s"ES0 did not return assigned agent credential: $ggCredentialId for client $empRef")
+        if (result) {
+          logger.info(
+            s"Authorised: ES0 returned assigned agent credential: $ggCredentialId for client: $empRef")
+          true
+        } else {
+          logger.info(
+            s"Not authorised: ES0 did not return assigned agent credential: $ggCredentialId for client $empRef")
+          false
+        }
     }
 
   def getDelegatedAgentUserIdsFor(saUtr: SaUtr)(

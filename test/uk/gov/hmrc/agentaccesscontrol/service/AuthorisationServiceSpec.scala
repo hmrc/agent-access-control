@@ -32,7 +32,7 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.{
   AfiRelationshipConnector,
   MappingConnector
 }
-import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
+import uk.gov.hmrc.agentaccesscontrol.model.{AccessResponse, AuthDetails}
 import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, SuspensionDetails}
 import uk.gov.hmrc.auth.core.User
@@ -70,13 +70,15 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientSaUtr")
 
   "isAuthorisedForSa" should {
-    "return false if SA agent reference cannot be found (as CESA cannot be checked)" in new Context {
+    "return Error if SA agent reference cannot be found (as CESA cannot be checked)" in new Context {
 
       await(
         authorisationService.isAuthorisedForSa(
           agentCode,
           clientSaUtr,
-          notEnrolledAuthDetails)) shouldBe false
+          notEnrolledAuthDetails)) should matchPattern {
+        case AccessResponse.Error(_) =>
+      }
       verify(mockAuditService).auditEvent(
         AgentAccessControlDecision,
         "agent access decision",
@@ -100,7 +102,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         authorisationService.isAuthorisedForSa(
           agentCode,
           clientSaUtr,
-          nonMtdAuthDetails)) shouldBe false
+          nonMtdAuthDetails)) shouldBe AccessResponse.NoRelationship
       verify(mockAuditService).auditEvent(
         AgentAccessControlDecision,
         "agent access decision",
@@ -125,9 +127,10 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       whenCesaIsCheckedForSaRelationship thenReturn Future.successful(true)
 
       await(
-        authorisationService.isAuthorisedForSa(agentCode,
-                                               clientSaUtr,
-                                               nonMtdAuthDetails)) shouldBe true
+        authorisationService.isAuthorisedForSa(
+          agentCode,
+          clientSaUtr,
+          nonMtdAuthDetails)) shouldBe AccessResponse.Authorised
       verify(mockAuditService).auditEvent(
         AgentAccessControlDecision,
         "agent access decision",
@@ -154,9 +157,10 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(User))
 
       await(
-        authorisationService.isAuthorisedForSa(agentCode,
-                                               clientSaUtr,
-                                               authDetails)) shouldBe true
+        authorisationService.isAuthorisedForSa(
+          agentCode,
+          clientSaUtr,
+          authDetails)) shouldBe AccessResponse.Authorised
       verify(mockAuditService).auditEvent(
         AgentAccessControlDecision,
         "agent access decision",
@@ -181,9 +185,10 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       whenCesaIsCheckedForSaRelationship thenReturn Future.successful(true)
 
       await(
-        authorisationService.isAuthorisedForSa(agentCode,
-                                               clientSaUtr,
-                                               nonMtdAuthDetails)) shouldBe true
+        authorisationService.isAuthorisedForSa(
+          agentCode,
+          clientSaUtr,
+          nonMtdAuthDetails)) shouldBe AccessResponse.Authorised
       verify(mockAuditService).auditEvent(
         AgentAccessControlDecision,
         "agent access decision",
@@ -211,7 +216,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         authorisationService.isAuthorisedForSa(
           agentCode,
           clientSaUtr,
-          nonMtdAuthDetails)) shouldBe false
+          nonMtdAuthDetails)) shouldBe AccessResponse.NoRelationship
       verify(mockAuditService).auditEvent(
         AgentAccessControlDecision,
         "agent access decision",
@@ -241,7 +246,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         authorisationService.isAuthorisedForPaye(
           agentCode,
           empRef,
-          nonMtdAuthDetails)) shouldBe true
+          nonMtdAuthDetails)) shouldBe AccessResponse.Authorised
 
       verify(mockAuditService).auditEvent(
         AgentAccessControlDecision,
@@ -270,7 +275,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         authorisationService.isAuthorisedForPaye(
           agentCode,
           empRef,
-          nonMtdAuthDetails)) shouldBe false
+          nonMtdAuthDetails)) shouldBe AccessResponse.NoRelationship
 
       verify(mockAuditService).auditEvent(
         AgentAccessControlDecision,
@@ -299,7 +304,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         authorisationService.isAuthorisedForPaye(
           agentCode,
           empRef,
-          nonMtdAuthDetails)) shouldBe false
+          nonMtdAuthDetails)) shouldBe AccessResponse.NoRelationship
 
       verify(mockAuditService).auditEvent(
         AgentAccessControlDecision,
@@ -350,22 +355,22 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   "isAuthorisedForAfi" should {
 
-    "return false when error encountered fetching agent record from DES" in new Context {
+    "return Error when error encountered fetching agent record from DES" in new Context {
       whenAcaIsCheckedForSuspension() thenReturn Future.failed(
         UpstreamErrorResponse("boom", 503))
 
-      await(
-        authorisationService
-          .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
+      await(authorisationService
+        .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) should matchPattern {
+        case AccessResponse.Error(_) =>
+      }
     }
 
-    "return false when agent is suspended" in new Context {
+    "return AgentSuspended when agent is suspended" in new Context {
       whenAcaIsCheckedForSuspension() thenReturn Future.successful(
         SuspensionDetails(suspensionStatus = true, Some(Set("AGSV"))))
 
-      await(
-        authorisationService
-          .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
+      await(authorisationService
+        .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe AccessResponse.AgentSuspended
     }
 
     "return false when agent is not suspended and relationships do not exist" in new Context {
@@ -375,9 +380,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(
         false)
 
-      await(
-        authorisationService
-          .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe false
+      await(authorisationService
+        .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe AccessResponse.NoRelationship
     }
 
     "return true when agent is not suspended and relationships exist" in new Context {
@@ -386,9 +390,8 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
       afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(true)
 
-      await(
-        authorisationService
-          .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe true
+      await(authorisationService
+        .isAuthorisedForAfi(agentCode, nino, afiAuthDetails)) shouldBe AccessResponse.Authorised
     }
   }
 

@@ -16,8 +16,9 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
-import javax.inject.{Inject, Singleton}
+import play.api.Logging
 
+import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
@@ -28,7 +29,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 @Singleton
 class DesAuthorisationService @Inject()(
     desAgentClientApiConnector: DesAgentClientApiConnector)
-    extends LoggingAuthorisationResults {
+    extends Logging {
 
   def isAuthorisedInCesa(agentCode: AgentCode,
                          saAgentReference: SaAgentReference,
@@ -51,14 +52,17 @@ class DesAuthorisationService @Inject()(
       response: SaDesAgentClientFlagsApiResponse): Boolean =
     response match {
       case SaNotFoundResponse =>
-        notAuthorised(
-          s"DES API returned not found for agent $agentCode and client $saUtr")
+        logger.info(
+          s"Not authorised: DES API returned not found for agent $agentCode and client $saUtr")
+        false
       case SaFoundResponse(true, true) =>
-        authorised(
-          s"DES API returned true for both flags for agent $agentCode and client $saUtr")
+        logger.info(
+          s"Authorised: DES API returned true for both flags for agent $agentCode and client $saUtr")
+        true
       case SaFoundResponse(auth64_8, authI64_8) =>
-        notAuthorised(
+        logger.info(
           s"DES API returned false for at least one flag agent $agentCode and client $saUtr. 64-8=$auth64_8, i64-8=$authI64_8")
+        false
     }
 
   private def handleEBSResponse(
@@ -67,14 +71,17 @@ class DesAuthorisationService @Inject()(
       response: PayeDesAgentClientFlagsApiResponse): Boolean =
     response match {
       case PayeNotFoundResponse =>
-        notAuthorised(
-          s"DES API returned not found for agent $agentCode and client $empRef")
+        logger.info(
+          s"Not authorised: DES API returned not found for agent $agentCode and client $empRef")
+        false
       case PayeFoundResponse(true) =>
-        authorised(
-          s"DES API returned true for auth64-8 for agent $agentCode and client $empRef")
+        logger.info(
+          s"Authorised: DES API returned true for auth64-8 for agent $agentCode and client $empRef")
+        true
       case PayeFoundResponse(false) =>
-        notAuthorised(
-          s"DES API returned false for auth64-8 flag agent $agentCode and client $empRef")
+        logger.info(
+          s"Not authorised: DES API returned false for auth64-8 flag agent $agentCode and client $empRef")
+        false
     }
 
 }

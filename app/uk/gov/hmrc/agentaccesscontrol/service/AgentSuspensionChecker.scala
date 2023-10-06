@@ -16,20 +16,23 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
+import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.AgentClientAuthorisationConnector
+import uk.gov.hmrc.agentaccesscontrol.model.AccessResponse
 import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetailsNotFound
 import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait AgentSuspensionChecker { this: LoggingAuthorisationResults =>
+trait AgentSuspensionChecker { this: Logging =>
 
   val agentClientAuthorisationConnector: AgentClientAuthorisationConnector
 
   def withSuspensionCheck(agentId: TaxIdentifier, regime: String)(
-      proceed: => Future[Boolean])(implicit hc: HeaderCarrier,
-                                   ec: ExecutionContext): Future[Boolean] = {
+      proceed: => Future[AccessResponse])(
+      implicit hc: HeaderCarrier,
+      ec: ExecutionContext): Future[AccessResponse] = {
 
     agentClientAuthorisationConnector
       .getSuspensionDetails(agentId)
@@ -40,17 +43,19 @@ trait AgentSuspensionChecker { this: LoggingAuthorisationResults =>
           if (isSuspended) {
             logger.warn(
               s"agent with id : ${agentId.value} is suspended for regime $regime")
-            Future.successful(false)
+            Future.successful(AccessResponse.AgentSuspended)
           } else proceed
       }
       .recover {
         case _: SuspensionDetailsNotFound =>
-          logger.warn(s"Suspension details not found for $agentId")
-          false
+          val message = s"Suspension details not found for $agentId"
+          logger.warn(s"Not authorised: $message")
+          AccessResponse.Error(message)
         case e =>
-          logger.warn(
-            s"Error retrieving suspension details for $agentId: ${e.getMessage}")
-          false
+          val message =
+            s"Error retrieving suspension details for $agentId: ${e.getMessage}"
+          logger.warn(s"Not authorised: $message")
+          AccessResponse.Error(message)
       }
   }
 }
