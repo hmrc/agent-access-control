@@ -28,7 +28,11 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{
   AgentClientAuthorisationConnector,
   RelationshipsConnector
 }
-import uk.gov.hmrc.agentaccesscontrol.model.{AgentRecord, AuthDetails}
+import uk.gov.hmrc.agentaccesscontrol.model.{
+  AccessResponse,
+  AgentRecord,
+  AuthDetails
+}
 import uk.gov.hmrc.agentaccesscontrol.support.AuditSupport
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.auth.core.User
@@ -40,56 +44,78 @@ import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class ESAuthorisationServiceSpec
-    extends UnitSpec
-    with MockFactory
-    with AuditSupport {
+class ESAuthorisationServiceSpec extends UnitSpec with MockFactory {
 
-  val relationshipsConnector: RelationshipsConnector =
-    mock[RelationshipsConnector]
-  val auditService: AuditService = mock[AuditService]
-  val desAgentClientApiConnector: DesAgentClientApiConnector =
-    mock[DesAgentClientApiConnector]
-  val mockAcaConnector: AgentClientAuthorisationConnector =
-    mock[AgentClientAuthorisationConnector]
-  val agentPermissionsConnector: AgentPermissionsConnector =
-    stub[AgentPermissionsConnector]
+  trait TestContext extends AuditSupport {
+    lazy val auditService: AuditService = mock[AuditService]
+    lazy val relationshipsConnector: RelationshipsConnector =
+      mock[RelationshipsConnector]
+    lazy val desAgentClientApiConnector: DesAgentClientApiConnector =
+      mock[DesAgentClientApiConnector]
+    lazy val mockAcaConnector: AgentClientAuthorisationConnector =
+      mock[AgentClientAuthorisationConnector]
+    lazy val agentPermissionsConnector: AgentPermissionsConnector =
+      stub[AgentPermissionsConnector]
 
-  def appConfig: AppConfig = {
-    val theStub = stub[ServicesConfig]
-    (theStub
-      .baseUrl(_: String))
-      .when(*)
-      .returns("blah-url")
-    (theStub
-      .getConfString(_: String, _: String))
-      .when(*, *)
-      .returns("blah-url")
-    (theStub
-      .getBoolean(_: String))
-      .when("features.enable-granular-permissions")
-      .returns(true)
-    new AppConfig(theStub)
+    def appConfig: AppConfig = {
+      val theStub = stub[ServicesConfig]
+      (theStub
+        .baseUrl(_: String))
+        .when(*)
+        .returns("blah-url")
+      (theStub
+        .getConfString(_: String, _: String))
+        .when(*, *)
+        .returns("blah-url")
+      (theStub
+        .getBoolean(_: String))
+        .when("features.enable-granular-permissions")
+        .returns(true)
+      new AppConfig(theStub)
+    }
+
+    (agentPermissionsConnector
+      .granularPermissionsOptinRecordExists(_: Arn)(_: HeaderCarrier,
+                                                    _: ExecutionContext))
+      .when(*, *, *)
+      .returns(Future.successful(true))
+
+    (agentPermissionsConnector
+      .getTaxServiceGroups(_: Arn, _: String)(_: HeaderCarrier,
+                                              _: ExecutionContext))
+      .when(*, *, *, *)
+      .returns(Future.successful(None))
+
+    val esAuthService = new ESAuthorisationService(relationshipsConnector,
+                                                   desAgentClientApiConnector,
+                                                   mockAcaConnector,
+                                                   agentPermissionsConnector,
+                                                   auditService,
+                                                   appConfig)
+
+    def whenAgencyHasARelationshipWithClient =
+      (relationshipsConnector
+        .relationshipExists(_: Arn, _: Option[String], _: MtdItId)(
+          _: ExecutionContext,
+          _: HeaderCarrier))
+        .expects(*, None, *, *, *)
+        .atLeastOnce()
+
+    def whenAgencyHasARelationshipWithClientAndAgentUserIsAssigned(
+        userId: String) =
+      (relationshipsConnector
+        .relationshipExists(_: Arn, _: Option[String], _: MtdItId)(
+          _: ExecutionContext,
+          _: HeaderCarrier))
+        .expects(*, Some(userId), *, *, *)
+        .atLeastOnce()
+
+    def whenAcaReturnsAgentNotSuspended() =
+      (mockAcaConnector
+        .getSuspensionDetails(_: Arn)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(*, *, *)
+        .returning(Future.successful(SuspensionDetails.notSuspended))
   }
-
-  (agentPermissionsConnector
-    .granularPermissionsOptinRecordExists(_: Arn)(_: HeaderCarrier,
-                                                  _: ExecutionContext))
-    .when(*, *, *)
-    .returns(Future.successful(true))
-
-  (agentPermissionsConnector
-    .getTaxServiceGroups(_: Arn, _: String)(_: HeaderCarrier,
-                                            _: ExecutionContext))
-    .when(*, *, *, *)
-    .returns(Future.successful(None))
-
-  val esAuthService = new ESAuthorisationService(relationshipsConnector,
-                                                 desAgentClientApiConnector,
-                                                 mockAcaConnector,
-                                                 agentPermissionsConnector,
-                                                 auditService,
-                                                 appConfig)
 
   val agentCode: AgentCode = AgentCode("agentCode")
   val arn: Arn = Arn("arn")
@@ -108,9 +134,11 @@ class ESAuthorisationServiceSpec
   def authoriseStandardBehaviours(service: Service,
                                   clientId: TaxIdentifier,
                                   regime: String): Unit = {
-    "allow access for agent with a client relationship" in {
+    "allow access for agent with a client relationship" in new TestContext {
       givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning Future.successful(true)
+      whenAgencyHasARelationshipWithClient returning Future.successful(true)
+      whenAgencyHasARelationshipWithClientAndAgentUserIsAssigned(
+        mtdAuthDetails.ggCredentialId) returning Future.successful(true)
       whenAcaReturnsAgentNotSuspended()
 
       val result =
@@ -120,10 +148,10 @@ class ESAuthorisationServiceSpec
                                                  service.id,
                                                  mtdAuthDetails))
 
-      result shouldBe true
+      result shouldBe AccessResponse.Authorised
     }
 
-    "deny access for a non-mtd agent" in {
+    "deny access for a non-mtd agent" in new TestContext {
       givenAuditEvent()
 
       val result =
@@ -133,12 +161,12 @@ class ESAuthorisationServiceSpec
                                                  service.id,
                                                  nonMtdAuthDetails))
 
-      result shouldBe false
+      result shouldBe AccessResponse.NoRelationship
     }
 
-    "deny access for a mtd agent without a client relationship" in {
+    "deny access for a mtd agent without a client relationship" in new TestContext {
       givenAuditEvent()
-      whenRelationshipsConnectorIsCalled returning Future.successful(false)
+      whenAgencyHasARelationshipWithClient returning Future.successful(false)
       whenAcaReturnsAgentNotSuspended()
 
       val result =
@@ -148,13 +176,36 @@ class ESAuthorisationServiceSpec
                                                  service.id,
                                                  mtdAuthDetails))
 
-      result shouldBe false
+      result shouldBe AccessResponse.NoRelationship
+    }
+
+    "deny access for a mtd agent with a client relationship but agent user is unassigned (and access groups turned on)" in new TestContext {
+      givenAuditEvent()
+      whenAgencyHasARelationshipWithClient returning Future.successful(true)
+      whenAgencyHasARelationshipWithClientAndAgentUserIsAssigned(
+        mtdAuthDetails.ggCredentialId) returning Future.successful(false)
+      whenAcaReturnsAgentNotSuspended()
+      (agentPermissionsConnector
+        .granularPermissionsOptinRecordExists(_: Arn)(_: HeaderCarrier,
+                                                      _: ExecutionContext))
+        .when(*, *, *)
+        .returns(Future.successful(true))
+        .anyNumberOfTimes() // user is opted-in to granular permissions
+
+      val result =
+        await(
+          esAuthService.authoriseStandardService(agentCode,
+                                                 clientId,
+                                                 service.id,
+                                                 mtdAuthDetails))
+
+      result shouldBe AccessResponse.NoAssignment
     }
 
     "audit appropriate values" when {
-      "decision is made to allow access" in {
+      "decision is made to allow access" in new TestContext {
         givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning Future.successful(true)
+        whenAgencyHasARelationshipWithClient returning Future.successful(true)
         whenAcaReturnsAgentNotSuspended()
 
         await(
@@ -164,9 +215,9 @@ class ESAuthorisationServiceSpec
                                                  mtdAuthDetails))
       }
 
-      "decision is made to deny access" in {
+      "decision is made to deny access" in new TestContext {
         givenAuditEvent()
-        whenRelationshipsConnectorIsCalled returning Future.successful(false)
+        whenAgencyHasARelationshipWithClient returning Future.successful(false)
         whenAcaReturnsAgentNotSuspended()
 
         await(
@@ -176,7 +227,7 @@ class ESAuthorisationServiceSpec
                                                  mtdAuthDetails))
       }
 
-      "no HMRC-AS-AGENT enrolment exists" in {
+      "no HMRC-AS-AGENT enrolment exists" in new TestContext {
         givenAuditEvent()
 
         await(
@@ -187,7 +238,7 @@ class ESAuthorisationServiceSpec
       }
     }
 
-    "handle suspended agents and return false" in {
+    "handle suspended agents" in new TestContext {
       (mockAcaConnector
         .getSuspensionDetails(_: Arn)(_: HeaderCarrier, _: ExecutionContext))
         .expects(*, *, *)
@@ -201,7 +252,7 @@ class ESAuthorisationServiceSpec
                                                  service.id,
                                                  mtdAuthDetails))
 
-      result shouldBe false
+      result shouldBe AccessResponse.AgentSuspended
     }
 
   }
@@ -232,12 +283,13 @@ class ESAuthorisationServiceSpec
   }
 
   "granular permissions logic" should {
-    "when GP enabled and opted in, specify user to check in relationship service call" in {
+    "when GP enabled and opted in, specify user to check in relationship service call" in new TestContext {
       val cgtRef = CgtRef("XMCGTP123456789")
       givenAuditEvent()
       whenAcaReturnsAgentNotSuspended()
 
-      val agentPermissionsConnector = stub[AgentPermissionsConnector]
+      override lazy val agentPermissionsConnector =
+        stub[AgentPermissionsConnector]
       (agentPermissionsConnector
         .granularPermissionsOptinRecordExists(_: Arn)(_: HeaderCarrier,
                                                       _: ExecutionContext))
@@ -277,12 +329,13 @@ class ESAuthorisationServiceSpec
         .verify(arn, Some("ggId"), cgtRef, *, *) // Check that we have specified the user id
     }
 
-    "when GP outed out, do NOT specify user to check in relationship service call" in {
+    "when GP outed out, do NOT specify user to check in relationship service call" in new TestContext {
       val cgtRef = CgtRef("XMCGTP123456789")
       givenAuditEvent()
       whenAcaReturnsAgentNotSuspended()
 
-      val agentPermissionsConnector = stub[AgentPermissionsConnector]
+      override lazy val agentPermissionsConnector =
+        stub[AgentPermissionsConnector]
       (agentPermissionsConnector
         .granularPermissionsOptinRecordExists(_: Arn)(_: HeaderCarrier,
                                                       _: ExecutionContext))
@@ -318,17 +371,4 @@ class ESAuthorisationServiceSpec
     }
   }
 
-  def whenRelationshipsConnectorIsCalled =
-    (relationshipsConnector
-      .relationshipExists(_: Arn, _: Option[String], _: MtdItId)(
-        _: ExecutionContext,
-        _: HeaderCarrier))
-      .expects(*, *, *, *, *)
-      .atLeastOnce()
-
-  def whenAcaReturnsAgentNotSuspended() =
-    (mockAcaConnector
-      .getSuspensionDetails(_: Arn)(_: HeaderCarrier, _: ExecutionContext))
-      .expects(*, *, *)
-      .returning(Future.successful(SuspensionDetails.notSuspended))
 }

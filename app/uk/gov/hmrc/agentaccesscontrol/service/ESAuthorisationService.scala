@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.service
 
+import play.api.Logging
 import play.api.mvc.Request
 import uk.gov.hmrc.agentaccesscontrol.audit.{
   AgentAccessControlDecision,
@@ -28,7 +29,7 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{
   AgentClientAuthorisationConnector,
   RelationshipsConnector
 }
-import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
+import uk.gov.hmrc.agentaccesscontrol.model.{AccessResponse, AuthDetails}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.CredentialRole
 import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
@@ -45,15 +46,15 @@ class ESAuthorisationService @Inject()(
     agentPermissionsConnector: AgentPermissionsConnector,
     auditService: AuditService,
     appConfig: AppConfig)(implicit ec: ExecutionContext)
-    extends LoggingAuthorisationResults
-    with AgentSuspensionChecker {
+    extends AgentSuspensionChecker
+    with Logging {
 
   def authoriseStandardService(agentCode: AgentCode,
                                taxIdentifier: TaxIdentifier,
                                serviceId: String,
                                authDetails: AuthDetails)(
       implicit hc: HeaderCarrier,
-      request: Request[_]): Future[Boolean] =
+      request: Request[_]): Future[AccessResponse] =
     authDetails match {
       case agentAuthDetails @ AuthDetails(_, Some(arn), _, _, userRoleOpt) =>
         // TODO confirm with stakeholders if we can remove regime for suspension check?
@@ -72,8 +73,9 @@ class ESAuthorisationService @Inject()(
                       taxIdentifier,
                       result = false,
                       serviceId)
-        Future.successful(notAuthorised(
-          s"No ARN found in HMRC-AS-AGENT enrolment for agentCode $agentCode"))
+        logger.info(
+          s"Not authorised: No ARN found in HMRC-AS-AGENT enrolment for agentCode $agentCode")
+        Future.successful(AccessResponse.NoRelationship)
     }
 
   private def authoriseBasedOnRelationships(
@@ -82,27 +84,33 @@ class ESAuthorisationService @Inject()(
       regime: String,
       agentAuthDetails: AuthDetails,
       arn: Arn,
-      userRoleOpt: Option[CredentialRole])(implicit hc: HeaderCarrier,
-                                           request: Request[_]) = {
+      userRoleOpt: Option[CredentialRole])(
+      implicit hc: HeaderCarrier,
+      request: Request[_]): Future[AccessResponse] = {
     checkForRelationship(arn,
                          Some(agentAuthDetails.ggCredentialId),
                          regime,
                          taxIdentifier)
       .map { result =>
-        auditDecision(agentCode,
-                      agentAuthDetails,
-                      taxIdentifier,
-                      result,
-                      regime,
-                      "arn" -> arn.value)
-        if (result)
-          authorised(
-            s"Access allowed for agentCode=$agentCode arn=${arn.value} client=${taxIdentifier.value} userRole: ${userRoleOpt
-              .getOrElse("None found")}")
-        else
-          notAuthorised(
-            s"Access not allowed for agentCode=$agentCode arn=${arn.value} client=${taxIdentifier.value} userRole: ${userRoleOpt
-              .getOrElse("None found")}")
+        auditDecision(
+          agentCode,
+          agentAuthDetails,
+          taxIdentifier,
+          result == AccessResponse.Authorised, // TODO should we audit the specific type of non authorised (no relationship/no assignment) or only true/false?
+          regime,
+          "arn" -> arn.value
+        )
+        result match {
+          case AccessResponse.Authorised =>
+            logger.info(
+              s"Access allowed for agentCode=$agentCode arn=${arn.value} client=${taxIdentifier.value} userRole: ${userRoleOpt
+                .getOrElse("None found")}")
+          case otherResponse =>
+            logger.info(
+              s"Not authorised: Access not allowed for agentCode=$agentCode arn=${arn.value} client=${taxIdentifier.value} userRole: ${userRoleOpt
+                .getOrElse("None found")}. Response: $otherResponse")
+        }
+        result
       }
   }
 
@@ -142,7 +150,7 @@ class ESAuthorisationService @Inject()(
                            regime: String,
                            taxIdentifier: TaxIdentifier)(
       implicit ec: ExecutionContext,
-      hc: HeaderCarrier): Future[Boolean] = {
+      hc: HeaderCarrier): Future[AccessResponse] = {
 
     for {
       // Does a relationship exist between agency (ARN) and client?
@@ -160,20 +168,23 @@ class ESAuthorisationService @Inject()(
 
       result <- (agencyHasRelationship, granPermsEnabled, maybeUserId) match {
         // The agency hasn't got a relationship at all with the client: deny access
-        case (false, _, _) => Future.successful(false)
+        case (false, _, _) => Future.successful(AccessResponse.NoRelationship)
         // The agency has a relationship and granular permissions are off: grant access
-        case (true, false, _) => Future.successful(true)
+        case (true, false, _) => Future.successful(AccessResponse.Authorised)
         // Granular permissions are enabled. Grant access if either:
         //  - the user is part of the tax service group for the given tax service, (no user relationship needed), or
         //  - the user has a relationship with the specific agent user
         case (true, true, Some(userId)) =>
           isAuthorisedBasedOnTaxServiceGroup(arn, userId, regime, taxIdentifier)
             .flatMap {
-              case true => Future.successful(true)
+              case true => Future.successful(AccessResponse.Authorised)
               case false =>
-                relationshipsConnector.relationshipExists(arn,
-                                                          Some(userId),
-                                                          taxIdentifier)
+                relationshipsConnector
+                  .relationshipExists(arn, Some(userId), taxIdentifier)
+                  .map {
+                    case true  => AccessResponse.Authorised
+                    case false => AccessResponse.NoAssignment
+                  }
             }
         case (true, true, None) =>
           throw new IllegalArgumentException(

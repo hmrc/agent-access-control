@@ -24,7 +24,7 @@ import play.api.mvc.{AnyContent, ControllerComponents, Request}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.mvc.Http.Status
-import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
+import uk.gov.hmrc.agentaccesscontrol.model.{AccessResponse, AuthDetails}
 import uk.gov.hmrc.agentaccesscontrol.service.{
   AuthorisationService,
   ESAuthorisationService
@@ -105,7 +105,7 @@ class AuthorisationControllerSpec
 
       whenAuthIsCalled(authResponseMtdAgent)
       whenAuthorisationServiceIsCalled(mtdAuthDetails).returning(
-        Future successful false)
+        Future.successful(AccessResponse.NoRelationship))
 
       val response =
         controller().authorise("sa-auth", AgentCode(agentCode), "utr")(
@@ -118,7 +118,7 @@ class AuthorisationControllerSpec
 
       whenAuthIsCalled(authResponseMtdAgent)
       whenAuthorisationServiceIsCalled(mtdAuthDetails).returning(
-        Future successful true)
+        Future.successful(AccessResponse.Authorised))
 
       val response =
         controller().authorise("sa-auth", AgentCode(agentCode), "utr")(
@@ -131,7 +131,7 @@ class AuthorisationControllerSpec
 
       whenAuthIsCalled(authResponseMtdAgent)
       whenAuthorisationServiceIsCalled(mtdAuthDetails).returning(
-        Future successful true)
+        Future.successful(AccessResponse.Authorised))
 
       val response = await(
         controller().authorise("sa-auth", AgentCode(agentCode), "utr")(
@@ -151,7 +151,8 @@ class AuthorisationControllerSpec
   private def aPayeEndpoint(fakeRequest: FakeRequest[_ <: AnyContent]): Unit = {
     "return 200 when Paye is enabled" in {
       whenAuthIsCalled(authResponseMtdAgent)
-      whenPayeAuthorisationServiceIsCalled.returning(Future successful true)
+      whenPayeAuthorisationServiceIsCalled.returning(
+        Future.successful(AccessResponse.Authorised))
 
       val response =
         controller().authorise("epaye-auth",
@@ -167,7 +168,8 @@ class AuthorisationControllerSpec
     "return 200 if the AuthorisationService allows access" in {
 
       whenAuthIsCalled(authResponseMtdAgent)
-      whenAfiAuthorisationServiceIsCalled.returning(Future successful true)
+      whenAfiAuthorisationServiceIsCalled.returning(
+        Future.successful(AccessResponse.Authorised))
 
       val response =
         controller().authorise("afi-auth", AgentCode(agentCode), "AA123456A")(
@@ -178,7 +180,8 @@ class AuthorisationControllerSpec
 
     "return 401 if the AuthorisationService does not allow access" in {
       whenAuthIsCalled(authResponseMtdAgent)
-      whenAfiAuthorisationServiceIsCalled.returning(Future successful false)
+      whenAfiAuthorisationServiceIsCalled.returning(
+        Future.successful(AccessResponse.NoRelationship))
 
       val response =
         controller().authorise("afi-auth", AgentCode(agentCode), "AA123456A")(
@@ -208,7 +211,7 @@ class AuthorisationControllerSpec
     s"return 401 if the EsAuthorisationService doesn't permit access" in {
       whenAuthIsCalled(authResponseMtdAgent)
       whenEsAuthorisationServiceIsCalledFor(service)
-        .returning(Future successful false)
+        .returning(Future.successful(AccessResponse.NoRelationship))
 
       val response =
         controller().authorise(authType, AgentCode(agentCode), clientId)(
@@ -220,7 +223,7 @@ class AuthorisationControllerSpec
     s"return 200 if the EsAuthorisationService allows access" in {
       whenAuthIsCalled(authResponseMtdAgent)
       whenEsAuthorisationServiceIsCalledFor(service)
-        .returning(Future successful true)
+        .returning(Future.successful(AccessResponse.Authorised))
 
       val response =
         controller().authorise(authType, AgentCode(agentCode), clientId)(
@@ -287,10 +290,10 @@ class AuthorisationControllerSpec
     s"not authorise if the relationship is for trust (taxable) but a URN is provided" in {
       whenAuthIsCalled(authResponseMtdAgent)
       whenEsAuthorisationServiceIsCalledFor(Service.Trust)
-        .returning(Future successful true)
+        .returning(Future.successful(AccessResponse.Authorised))
         .anyNumberOfTimes
       whenEsAuthorisationServiceIsCalledFor(Service.TrustNT)
-        .returning(Future successful false)
+        .returning(Future.successful(AccessResponse.NoRelationship))
         .anyNumberOfTimes
 
       val response =
@@ -310,10 +313,10 @@ class AuthorisationControllerSpec
     s"not authorise if the relationship is for trust (non-taxable) but a UTR is provided" in {
       whenAuthIsCalled(authResponseMtdAgent)
       whenEsAuthorisationServiceIsCalledFor(Service.Trust)
-        .returning(Future successful false)
+        .returning(Future.successful(AccessResponse.NoRelationship))
         .anyNumberOfTimes
       whenEsAuthorisationServiceIsCalledFor(Service.TrustNT)
-        .returning(Future successful true)
+        .returning(Future.successful(AccessResponse.Authorised))
         .anyNumberOfTimes
 
       val response =
