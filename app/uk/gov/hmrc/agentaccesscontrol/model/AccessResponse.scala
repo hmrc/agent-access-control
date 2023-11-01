@@ -45,4 +45,11 @@ object AccessResponse {
     * Represents a response where the agent user cannot act for a given client because we cannot verify it for some other reason.
     */
   case class Error(message: String) extends AccessResponse
+
+  def toReason(accessResponse: AccessResponse): Seq[(String, Any)] =
+    accessResponse match {
+      case AccessResponse.Authorised   => Seq.empty[(String, Any)]
+      case AccessResponse.NoAssignment => Seq(("reason", "NoAssignment"))
+      case _                           => Seq(("reason", "NoRelationship"))
+    }
 }

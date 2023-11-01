@@ -67,10 +67,16 @@ class AuthorisationService @Inject()(
       case mtdAgentAuthDetails @ AuthDetails(_, Some(arn), _, _, _) =>
         authoriseMtdAgentForIRSA(agentCode, saUtr, mtdAgentAuthDetails, arn)
       case agentAuthDetails @ AuthDetails(None, _, _, _, _) =>
-        auditDecision(agentCode, agentAuthDetails, "sa", saUtr, result = false)
         val message = s"No 6 digit agent reference found for agent $agentCode"
+        val accessResponse = AccessResponse.Error(message)
         logger.info(s"Not authorised: $message")
-        Future.successful(AccessResponse.Error(message))
+        auditDecision(agentCode,
+                      agentAuthDetails,
+                      "sa",
+                      saUtr,
+                      result = false,
+                      AccessResponse.toReason(accessResponse))
+        Future.successful(accessResponse)
       case _ =>
         val message = "agent did not have valid set of auth details to proceed"
         logger.info(s"Not authorised: $message")
@@ -98,24 +104,33 @@ class AuthorisationService @Inject()(
       val result = isAuthorisedInESP && maybeCesa.get
 
       val cesaDescription = desResultDescription(maybeCesa)
-      auditDecision(agentCode,
-                    agentAuthDetails,
-                    "sa",
-                    saUtr,
-                    result,
-                    "cesaResult" -> cesaDescription,
-                    "enrolmentStoreResult" -> isAuthorisedInESP)
 
-      if (result)
-        authorised(agentCode,
-                   saUtr,
-                   agentAuthDetails.ggCredentialId,
-                   Some(saAgentReference))
-      else
-        notAuthorised(agentCode,
-                      saUtr,
-                      agentAuthDetails.ggCredentialId,
-                      Some(saAgentReference))
+      val authorization: (AccessResponse => Future[Unit]) => AccessResponse =
+        if (result) {
+          authorised(agentCode,
+                     saUtr,
+                     agentAuthDetails.ggCredentialId,
+                     Some(saAgentReference))
+        } else {
+          notAuthorised(agentCode,
+                        saUtr,
+                        agentAuthDetails.ggCredentialId,
+                        Some(saAgentReference))
+        }
+
+      authorization { accessResponse =>
+        auditDecision(
+          agentCode,
+          agentAuthDetails,
+          "sa",
+          saUtr,
+          result,
+          Seq("cesaResult" -> cesaDescription,
+              "enrolmentStoreResult" -> isAuthorisedInESP)
+            ++ AccessResponse.toReason(accessResponse)
+        )
+      }
+
     }
 
   //noinspection ScalaStyle
@@ -128,37 +143,29 @@ class AuthorisationService @Inject()(
       request: Request[Any]): Future[AccessResponse] = {
     espAuthorisationService.getDelegatedAgentUserIdsFor(saUtr).flatMap {
       case delegatedAgentUserIds if delegatedAgentUserIds.isEmpty =>
-        auditDecision(agentCode,
-                      agentAuthDetails,
-                      "sa",
-                      saUtr,
-                      result = false,
-                      extraDetails = "cesaResult" -> desResultDescription(None),
-                      "enrolmentStoreResult" -> false)
         Future.successful(
           notAuthorised(agentCode,
                         saUtr,
                         agentAuthDetails.ggCredentialId,
                         Some(arn),
-                        Some(false)))
-      case delegatedAgentUserIds if delegatedAgentUserIds.nonEmpty =>
-        authoriseMtdAgentForIRSA(delegatedAgentUserIds,
-                                 agentCode,
-                                 saUtr,
-                                 agentAuthDetails,
-                                 arn).map {
-          case (accessResponse, maybeCesa) =>
+                        Some(false)) { accessResponse =>
             auditDecision(
               agentCode,
               agentAuthDetails,
               "sa",
               saUtr,
-              accessResponse == AccessResponse.Authorised,
-              "cesaResult" -> desResultDescription(maybeCesa),
-              "enrolmentStoreResult" -> true
+              result = false,
+              extraDetails = Seq("cesaResult" -> desResultDescription(None),
+                                 "enrolmentStoreResult" -> false)
+                ++ AccessResponse.toReason(accessResponse)
             )
-            accessResponse
-        }
+          })
+      case delegatedAgentUserIds if delegatedAgentUserIds.nonEmpty =>
+        authoriseMtdAgentForIRSA(delegatedAgentUserIds,
+                                 agentCode,
+                                 saUtr,
+                                 agentAuthDetails,
+                                 arn)
     }
   }
 
@@ -173,7 +180,8 @@ class AuthorisationService @Inject()(
                                agentAuthDetails: AuthDetails,
                                arn: Arn)(
       implicit ec: ExecutionContext,
-      hc: HeaderCarrier): Future[(AccessResponse, Option[Boolean])] =
+      hc: HeaderCarrier,
+      request: Request[Any]): Future[AccessResponse] =
     for {
       saAgentReferences <- mappingConnector
         .getAgentMappings("sa", arn)
@@ -212,16 +220,35 @@ class AuthorisationService @Inject()(
             .collectFirst { case (true, c) => (true, c) }
             .getOrElse(
               (false, results.collectFirst { case (_, Some(b)) => b })))
-    } yield
-      (if (found) {
-        authorised(agentCode, saUtr, agentAuthDetails.ggCredentialId, Some(arn))
-      } else {
-        notAuthorised(agentCode,
-                      saUtr,
-                      agentAuthDetails.ggCredentialId,
-                      Some(arn),
-                      Some(true))
-      }, maybeCesa)
+    } yield {
+      val authorization: (AccessResponse => Future[Unit]) => AccessResponse =
+        if (found) {
+          authorised(agentCode,
+                     saUtr,
+                     agentAuthDetails.ggCredentialId,
+                     Some(arn))
+        } else {
+          notAuthorised(agentCode,
+                        saUtr,
+                        agentAuthDetails.ggCredentialId,
+                        Some(arn),
+                        Some(true))
+        }
+
+      authorization { accessResponse =>
+        auditDecision(
+          agentCode,
+          agentAuthDetails,
+          "sa",
+          saUtr,
+          accessResponse == AccessResponse.Authorised,
+          Seq("cesaResult" -> desResultDescription(maybeCesa),
+              "enrolmentStoreResult" -> true) ++
+            AccessResponse.toReason(accessResponse)
+        )
+      }
+
+    }
 
   def isAuthorisedForPaye(agentCode: AgentCode,
                           empRef: EmpRef,
@@ -243,17 +270,26 @@ class AuthorisationService @Inject()(
           val result = isAuthorisedInESP && maybeEbs.contains(true)
 
           val ebsDescription = desResultDescription(maybeEbs)
-          auditDecision(agentCode,
-                        agentAuthDetails,
-                        "paye",
-                        empRef,
-                        result,
-                        "ebsResult" -> ebsDescription,
-                        "enrolmentStoreResult" -> isAuthorisedInESP)
 
-          if (result)
-            authorised(agentCode, empRef, agentAuthDetails.ggCredentialId)
-          else notAuthorised(agentCode, empRef, agentAuthDetails.ggCredentialId)
+          val authorization
+            : (AccessResponse => Future[Unit]) => AccessResponse =
+            if (result)
+              authorised(agentCode, empRef, agentAuthDetails.ggCredentialId)
+            else
+              notAuthorised(agentCode, empRef, agentAuthDetails.ggCredentialId)
+
+          authorization { accessResponse =>
+            auditDecision(
+              agentCode,
+              agentAuthDetails,
+              "paye",
+              empRef,
+              result,
+              Seq("ebsResult" -> ebsDescription,
+                  "enrolmentStoreResult" -> isAuthorisedInESP) ++
+                AccessResponse.toReason(accessResponse)
+            )
+          }
         }
       case _ =>
         logger.info("Not authorised: No user is logged in")
@@ -289,23 +325,25 @@ class AuthorisationService @Inject()(
     afiRelationshipConnector.hasRelationship(arn.value, nino.value) map {
       hasRelationship =>
         if (hasRelationship) {
+          val accessResponse = AccessResponse.Authorised
           auditDecision(agentCode,
                         authDetails,
                         "afi",
                         nino,
                         accessGranted,
-                        "" -> "")
+                        ("", "") +: AccessResponse.toReason(accessResponse))
           logger.info(s"Found: Relationship Found")
-          AccessResponse.Authorised
+          accessResponse
         } else {
+          val accessResponse = AccessResponse.NoRelationship
           auditDecision(agentCode,
                         authDetails,
                         "afi",
                         nino,
                         accessDenied,
-                        "" -> "")
+                        ("", "") +: AccessResponse.toReason(accessResponse))
           logger.info(s"notFound: No relationship found")
-          AccessResponse.NoRelationship
+          accessResponse
         }
     }
   }
@@ -315,7 +353,7 @@ class AuthorisationService @Inject()(
                             regime: String,
                             taxIdentifier: TaxIdentifier,
                             result: Boolean,
-                            extraDetails: (String, Any)*)(
+                            extraDetails: Seq[(String, Any)])(
       implicit hc: HeaderCarrier,
       request: Request[Any],
       ec: ExecutionContext): Future[Unit] = {
@@ -339,27 +377,31 @@ class AuthorisationService @Inject()(
     )
   }
 
-  protected def notAuthorised(
-      agentCode: AgentCode,
-      clientTaxIdentifier: TaxIdentifier,
-      agentUserId: String,
-      agentReference: Option[TaxIdentifier] = None,
-      hasAgents: Option[Boolean] = None): AccessResponse = {
+  protected def notAuthorised(agentCode: AgentCode,
+                              clientTaxIdentifier: TaxIdentifier,
+                              agentUserId: String,
+                              agentReference: Option[TaxIdentifier] = None,
+                              hasAgents: Option[Boolean] = None)(
+      audit: AccessResponse => Future[Unit]): AccessResponse = {
     logger.info(s"Not authorised: Access not allowed for ${agentReference
       .map(ar => s"agent=$ar")
       .getOrElse("")} agentCode=${agentCode.value} agentUserId=$agentUserId client=$clientTaxIdentifier ${hasAgents
       .map(ha => s"clientHasAgents=$ha")
       .getOrElse("")}")
-    AccessResponse.NoRelationship
+    val accessResponse = AccessResponse.NoRelationship
+    audit(accessResponse)
+    accessResponse
   }
 
-  protected def authorised(
-      agentCode: AgentCode,
-      clientTaxIdentifier: TaxIdentifier,
-      agentUserId: String,
-      agentReference: Option[TaxIdentifier] = None): AccessResponse = {
+  protected def authorised(agentCode: AgentCode,
+                           clientTaxIdentifier: TaxIdentifier,
+                           agentUserId: String,
+                           agentReference: Option[TaxIdentifier] = None)(
+      audit: AccessResponse => Future[Unit]): AccessResponse = {
     logger.info(
       s"Authorised: Access allowed for agent=$agentReference agentCode=${agentCode.value} agentUserId=$agentUserId client=$clientTaxIdentifier")
-    AccessResponse.Authorised
+    val accessResponse = AccessResponse.Authorised
+    audit(accessResponse)
+    accessResponse
   }
 }
