@@ -87,6 +87,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
         clientSaUtr,
         Seq("credId" -> "ggId",
             "accessGranted" -> false,
+            "reason" -> "NoRelationship",
             "affinityGroup" -> "Agent",
             "agentUserRole" -> User)
       )(hc, fakeRequest, ec)
@@ -114,6 +115,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "accessGranted" -> false,
           "cesaResult" -> false,
           "enrolmentStoreResult" -> true,
+          "reason" -> "NoRelationship",
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
           "agentUserRole" -> User
@@ -228,6 +230,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "accessGranted" -> false,
           "cesaResult" -> "notChecked",
           "enrolmentStoreResult" -> false,
+          "reason" -> "NoRelationship",
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
           "agentUserRole" -> User
@@ -288,6 +291,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "accessGranted" -> false,
           "ebsResult" -> false,
           "enrolmentStoreResult" -> true,
+          "reason" -> "NoRelationship",
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
           "agentUserRole" -> User
@@ -317,6 +321,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
           "accessGranted" -> false,
           "ebsResult" -> "notChecked",
           "enrolmentStoreResult" -> false,
+          "reason" -> "NoRelationship",
           "saAgentReference" -> saAgentRef,
           "affinityGroup" -> "Agent",
           "agentUserRole" -> User

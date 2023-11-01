@@ -68,14 +68,16 @@ class ESAuthorisationService @Inject()(
         }
 
       case _ =>
+        val accessResponse = AccessResponse.NoRelationship
         auditDecision(agentCode,
                       authDetails,
                       taxIdentifier,
                       result = false,
-                      serviceId)
+                      serviceId,
+                      AccessResponse.toReason(accessResponse))
         logger.info(
           s"Not authorised: No ARN found in HMRC-AS-AGENT enrolment for agentCode $agentCode")
-        Future.successful(AccessResponse.NoRelationship)
+        Future.successful(accessResponse)
     }
 
   private def authoriseBasedOnRelationships(
@@ -92,14 +94,12 @@ class ESAuthorisationService @Inject()(
                          regime,
                          taxIdentifier)
       .map { result =>
-        auditDecision(
-          agentCode,
-          agentAuthDetails,
-          taxIdentifier,
-          result == AccessResponse.Authorised, // TODO should we audit the specific type of non authorised (no relationship/no assignment) or only true/false?
-          regime,
-          "arn" -> arn.value
-        )
+        auditDecision(agentCode,
+                      agentAuthDetails,
+                      taxIdentifier,
+                      result == AccessResponse.Authorised,
+                      regime,
+                      ("arn" -> arn.value) +: AccessResponse.toReason(result))
         result match {
           case AccessResponse.Authorised =>
             logger.info(
@@ -131,7 +131,7 @@ class ESAuthorisationService @Inject()(
                             taxIdentifier: TaxIdentifier,
                             result: Boolean,
                             regime: String,
-                            extraDetails: (String, Any)*)(
+                            extraDetails: Seq[(String, Any)])(
       implicit hc: HeaderCarrier,
       request: Request[Any],
       ec: ExecutionContext): Future[Unit] =
