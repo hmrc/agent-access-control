@@ -17,10 +17,10 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
 import java.net.URL
-
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
+
 import javax.inject.{Inject, Singleton}
 import play.api.http.Status.NOT_FOUND
 import play.api.libs.json._
@@ -68,22 +68,23 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
                          identifier: TaxIdentifier)(
       implicit ec: ExecutionContext,
       hc: HeaderCarrier): Future[Boolean] = {
-    val (serviceName, clientType, clientId) = identifier match {
-      case _ @MtdItId(mtdItId) => ("HMRC-MTD-IT", "MTDITID", mtdItId)
-      case _ @Vrn(vrn)         => ("HMRC-MTD-VAT", "VRN", vrn)
-      case _ @Utr(utr)         => ("HMRC-TERS-ORG", "SAUTR", utr)
-      case _ @CgtRef(cgtRef)   => ("HMRC-CGT-PD", "CGTPDRef", cgtRef)
-      case _ @Urn(urn)         => ("HMRC-TERSNT-ORG", "URN", urn)
-      case _ @PptRef(pptRef) =>
-        ("HMRC-PPT-ORG", "EtmpRegistrationNumber", pptRef)
-      case _ @CbcId(cbcId) =>
-        ("HMRC-CBC-ORG", "cbcId", cbcId) // treat both types as UK for ACR to determine
-    }
+    /* TODO - Trying to deduce the service from the identifier type alone is discouraged - it is done here
+       for legacy reasons but should be avoided. Consider changing the API to explicitly pass the intended service */
+    val identifierTypeId = ClientIdentifier(identifier).enrolmentId
+    val service = Service.supportedServices
+      .find(_.supportedClientIdType.enrolmentId == identifierTypeId)
+      .map {
+        case Service.CbcNonUk =>
+          Service.Cbc // treat both CBC types the same, leave it for ACR to determine which
+        case s => s
+      }
+      .getOrElse(throw new IllegalArgumentException(
+        s"Tax identifier not supported by any service: $identifier"))
 
     val urlParam = maybeUserId.fold("")(userId => s"?userId=$userId")
     val relationshipUrl =
       new URL(
-        s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/$serviceName/client/$clientType/$clientId" + urlParam).toString
+        s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/${service.id}/client/$identifierTypeId/${identifier.value}" + urlParam).toString
 
     monitor(
       s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {

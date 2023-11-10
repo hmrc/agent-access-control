@@ -66,7 +66,7 @@ trait AuthAction extends AuthorisedFunctions with Results with Logging {
         case err => throw new Exception(s"Authoisation retrieval error: $err")
       }
       .recover {
-        handleException
+        handleException()
       }
   }
 

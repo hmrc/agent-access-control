@@ -62,7 +62,7 @@ class EnrolmentStoreProxyAuthorisationServiceSpec
   private def aGovernmentGatewayAssignmentCheck(
       whenEnrolmentStoreProxyIsCalled: => OngoingStubbing[
         Future[Set[AgentUserId]]],
-      assignmentCheck: (AgentCode, String) => Future[Boolean]) {
+      assignmentCheck: (AgentCode, String) => Future[Boolean]) = {
     "return true if the client is assigned to the agent credential" in {
       whenEnrolmentStoreProxyIsCalled thenReturn (Future successful Set(
         AgentUserId("000111333")))

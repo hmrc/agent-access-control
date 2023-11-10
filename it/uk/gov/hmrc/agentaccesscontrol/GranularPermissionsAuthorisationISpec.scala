@@ -227,6 +227,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
       case _: CgtRef => "cgt-auth"
       case _: Utr => "trust-auth"
       case _: Urn => "trust-auth"
+      case _ => throw new IllegalArgumentException
     }
     val resource =
       new Resource(s"/agent-access-control/$taxUrlPart/agent/${agentCode.value}/client/${taxRef.value}")(port)

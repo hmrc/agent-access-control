@@ -361,7 +361,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   "isAuthorisedForAfi" should {
 
     "return Error when error encountered fetching agent record from DES" in new Context {
-      whenAcaIsCheckedForSuspension() thenReturn Future.failed(
+      whenAcaIsCheckedForSuspension thenReturn Future.failed(
         UpstreamErrorResponse("boom", 503))
 
       await(authorisationService
@@ -371,7 +371,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return AgentSuspended when agent is suspended" in new Context {
-      whenAcaIsCheckedForSuspension() thenReturn Future.successful(
+      whenAcaIsCheckedForSuspension thenReturn Future.successful(
         SuspensionDetails(suspensionStatus = true, Some(Set("AGSV"))))
 
       await(authorisationService
@@ -379,7 +379,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return false when agent is not suspended and relationships do not exist" in new Context {
-      whenAcaIsCheckedForSuspension() thenReturn Future.successful(
+      whenAcaIsCheckedForSuspension thenReturn Future.successful(
         SuspensionDetails.notSuspended)
 
       afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(
@@ -390,7 +390,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     }
 
     "return true when agent is not suspended and relationships exist" in new Context {
-      whenAcaIsCheckedForSuspension() thenReturn Future.successful(
+      whenAcaIsCheckedForSuspension thenReturn Future.successful(
         SuspensionDetails.notSuspended)
 
       afiRelationshipConnectorIsCheckedForRelatioinships thenReturn Future(true)
@@ -427,25 +427,25 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
       mockAcaConnector
     )
 
-    def whenESPIsCheckedForPayeRelationship() =
+    def whenESPIsCheckedForPayeRelationship =
       when(
         mockESPAuthorisationService
           .isAuthorisedForPayeInEnrolmentStoreProxy("ggId", empRef))
 
-    def whenESPIsCheckedForSaRelationship() =
+    def whenESPIsCheckedForSaRelationship =
       when(
         mockESPAuthorisationService
           .isAuthorisedForSaInEnrolmentStoreProxy("ggId", clientSaUtr))
 
-    def whenEBSIsCheckedForPayeRelationship() =
+    def whenEBSIsCheckedForPayeRelationship =
       when(mockDesAuthorisationService.isAuthorisedInEbs(agentCode, empRef))
 
-    def whenCesaIsCheckedForSaRelationship() =
+    def whenCesaIsCheckedForSaRelationship =
       when(
         mockDesAuthorisationService
           .isAuthorisedInCesa(agentCode, saAgentRef, clientSaUtr))
 
-    def whenAcaIsCheckedForSuspension() =
+    def whenAcaIsCheckedForSuspension =
       when(mockAcaConnector.getSuspensionDetails(arn))
 
     def afiRelationshipConnectorIsCheckedForRelatioinships =

@@ -291,10 +291,10 @@ class AuthorisationControllerSpec
       whenAuthIsCalled(authResponseMtdAgent)
       whenEsAuthorisationServiceIsCalledFor(Service.Trust)
         .returning(Future.successful(AccessResponse.Authorised))
-        .anyNumberOfTimes
+        .anyNumberOfTimes()
       whenEsAuthorisationServiceIsCalledFor(Service.TrustNT)
         .returning(Future.successful(AccessResponse.NoRelationship))
-        .anyNumberOfTimes
+        .anyNumberOfTimes()
 
       val response =
         controller().authorise("trust-auth",
@@ -314,10 +314,10 @@ class AuthorisationControllerSpec
       whenAuthIsCalled(authResponseMtdAgent)
       whenEsAuthorisationServiceIsCalledFor(Service.Trust)
         .returning(Future.successful(AccessResponse.NoRelationship))
-        .anyNumberOfTimes
+        .anyNumberOfTimes()
       whenEsAuthorisationServiceIsCalledFor(Service.TrustNT)
         .returning(Future.successful(AccessResponse.Authorised))
-        .anyNumberOfTimes
+        .anyNumberOfTimes()
 
       val response =
         controller().authorise("trust-auth",
