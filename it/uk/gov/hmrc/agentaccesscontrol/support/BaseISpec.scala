@@ -87,7 +87,7 @@ trait StubUtils {
       new MtdAgency(arn)
   }
 
-  def given() =
+  def `given`() =
     new PreconditionBuilder()
 
   class AgentAdmin(
@@ -312,6 +312,7 @@ trait StubUtils {
         case utr: SaUtr => s"IR-SA~UTR~$utr"
         case empRef: EmpRef =>
           s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
+        case _ => throw new IllegalArgumentException
       }
 
       get(urlEqualTo(pathDelegated(enrolmentKey)))
@@ -320,6 +321,7 @@ trait StubUtils {
     private def getES0Principal(id: TaxIdentifier) = {
       val enrolmentKey = id match {
         case saAgentRef: SaAgentReference => s"IR-SA-AGENT~IRAgentReference~${saAgentRef.value}"
+        case _ => throw new IllegalArgumentException
       }
       get(urlEqualTo(pathPrincipal(enrolmentKey)))
     }
@@ -550,6 +552,7 @@ trait StubUtils {
       this
     }
 
+    // TODO can we rewrite this pattern match block to avoid manually checking each service?
     private def acrUrl(identifier: TaxIdentifier): String = identifier match {
       case _ @MtdItId(mtdItId) =>
         s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
@@ -559,6 +562,8 @@ trait StubUtils {
       case _ @Urn(urn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-TERSNT-ORG/client/URN/$urn"
       case _ @PptRef(pptRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PPT-ORG/client/EtmpRegistrationNumber/$pptRef"
       case _ @CbcId(cbcId) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CBC-ORG/client/cbcId/$cbcId"
+      case _ @PlrId(plrId) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PILLAR2-ORG/client/PLRID/$plrId"
+      case _ => throw new IllegalArgumentException
     }
 
     def statusReturnedForRelationship(identifier: TaxIdentifier, status: Int): A = {

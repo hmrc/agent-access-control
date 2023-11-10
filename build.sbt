@@ -3,12 +3,11 @@ lazy val root = (project in file("."))
   .settings(
     name := "agent-access-control",
     organization := "uk.gov.hmrc",
-    scalaVersion := "2.12.15",
+    scalaVersion := "2.13.10",
     majorVersion := 1,
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
       "-Xlint:-missing-interpolator,_",
-      "-Yno-adapted-args",
       "-Ywarn-value-discard",
       "-Ywarn-dead-code",
       "-deprecation",
@@ -33,7 +32,9 @@ lazy val root = (project in file("."))
     IntegrationTest / Keys.fork := false,
     Defaults.itSettings,
     IntegrationTest / unmanagedSourceDirectories += baseDirectory(_ / "it").value,
-    IntegrationTest / parallelExecution := false
+    IntegrationTest / parallelExecution := false,
+    //fix for scoverage compile errors for scala 2.13.10
+    libraryDependencySchemes ++= Seq("org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always)
   )
   .enablePlugins(PlayScala, SbtDistributablesPlugin)
 

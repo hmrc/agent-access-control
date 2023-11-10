@@ -27,7 +27,12 @@ import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agents.accessgroups.TaxGroup
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
+import uk.gov.hmrc.http.{
+  HeaderCarrier,
+  HttpClient,
+  HttpResponse,
+  UpstreamErrorResponse
+}
 
 import java.net.URL
 import javax.inject.{Inject, Singleton}
@@ -93,6 +98,10 @@ class AgentPermissionsConnectorImpl @Inject()(
                 throw new RuntimeException(
                   s"getTaxServiceGroups returned invalid Json for $arn $service: ${response.body}")
               )
+          case x =>
+            throw UpstreamErrorResponse(
+              s"getTaxServiceGroups returned unexpected response $x",
+              x)
         }
       }
     }

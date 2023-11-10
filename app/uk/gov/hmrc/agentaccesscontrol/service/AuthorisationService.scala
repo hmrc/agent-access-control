@@ -160,7 +160,7 @@ class AuthorisationService @Inject()(
                 ++ AccessResponse.toReason(accessResponse)
             )
           })
-      case delegatedAgentUserIds if delegatedAgentUserIds.nonEmpty =>
+      case delegatedAgentUserIds /* (if delegatedAgentUserIds.nonEmpty) */ =>
         authoriseMtdAgentForIRSA(delegatedAgentUserIds,
                                  agentCode,
                                  saUtr,

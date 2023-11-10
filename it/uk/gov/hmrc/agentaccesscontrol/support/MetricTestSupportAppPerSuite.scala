@@ -7,7 +7,7 @@ import org.scalatest.Assertion
 import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneServerPerTest}
 import play.api.Application
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 trait MetricTestSupport extends Matchers {
   protected var metricsRegistry: MetricRegistry = _
