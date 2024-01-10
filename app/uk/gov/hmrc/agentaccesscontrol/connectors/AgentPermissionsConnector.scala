@@ -16,13 +16,11 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import play.api.Logging
 import play.api.http.Status
 import play.api.libs.json.Json
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agents.accessgroups.TaxGroup
@@ -54,28 +52,31 @@ class AgentPermissionsConnectorImpl @Inject()(
     http: HttpClient,
     metrics: Metrics)(implicit appConfig: AppConfig)
     extends AgentPermissionsConnector
-    with HttpAPIMonitor
     with Logging {
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   val agentPermissionsBaseUrl = new URL(appConfig.agentPermissionsUrl)
 
   def granularPermissionsOptinRecordExists(arn: Arn)(
       implicit hc: HeaderCarrier,
       executionContext: ExecutionContext): Future[Boolean] = {
-    val url =
-      new URL(agentPermissionsBaseUrl,
-              s"/agent-permissions/arn/${arn.value}/optin-record-exists")
-    monitor(s"ConsumedAPI-AP-granularPermissionsOptinRecordExists-GET") {
-      http.GET[HttpResponse](url.toString).map { response =>
-        response.status match {
-          case Status.NO_CONTENT => true
-          case Status.NOT_FOUND  => false
-          case other =>
-            logger.warn(
-              s"Got $other when checking for optin record exists. Response message: '${response.body}''")
-            false
-        }
+
+    val url = new URL(
+      agentPermissionsBaseUrl,
+      s"/agent-permissions/arn/${arn.value}/optin-record-exists")
+
+    val timer = metrics.defaultRegistry.timer(
+      s"Timer-ConsumedAPI-AP-granularPermissionsOptinRecordExists-GET")
+
+    timer.time()
+    http.GET[HttpResponse](url.toString).map { response =>
+      timer.time().stop()
+      response.status match {
+        case Status.NO_CONTENT => true
+        case Status.NOT_FOUND  => false
+        case _ =>
+          logger.warn(
+            s"Got ${response.status} when checking for optin record exists. Response message: '${response.body}'")
+          false
       }
     }
   }
@@ -83,26 +84,29 @@ class AgentPermissionsConnectorImpl @Inject()(
   def getTaxServiceGroups(arn: Arn, service: String)(
       implicit hc: HeaderCarrier,
       executionContext: ExecutionContext): Future[Option[TaxGroup]] = {
-    val url =
-      new URL(agentPermissionsBaseUrl,
-              s"/agent-permissions/arn/${arn.value}/tax-group/$service")
-    monitor(s"ConsumedAPI-AP-getTaxServiceGroups-GET") {
-      http.GET[HttpResponse](url.toString).map { response =>
-        response.status match {
-          case Status.NOT_FOUND => None
-          case Status.OK =>
-            Json
-              .parse(response.body)
-              .asOpt[TaxGroup]
-              .orElse(
-                throw new RuntimeException(
-                  s"getTaxServiceGroups returned invalid Json for $arn $service: ${response.body}")
-              )
-          case x =>
-            throw UpstreamErrorResponse(
-              s"getTaxServiceGroups returned unexpected response $x",
-              x)
-        }
+
+    val url = new URL(agentPermissionsBaseUrl,
+                      s"/agent-permissions/arn/${arn.value}/tax-group/$service")
+
+    val timer =
+      metrics.defaultRegistry.timer(
+        s"Timer-ConsumedAPI-AP-getTaxServiceGroups-GET")
+
+    timer.time()
+    http.GET[HttpResponse](url.toString).map { response =>
+      timer.time().stop
+      response.status match {
+        case Status.NOT_FOUND => None
+        case Status.OK =>
+          Json
+            .parse(response.body)
+            .asOpt[TaxGroup]
+            .orElse(throw new RuntimeException(
+              s"getTaxServiceGroups returned invalid Json for $arn $service: ${response.body}"))
+        case _ =>
+          throw UpstreamErrorResponse(
+            s"getTaxServiceGroups returned unexpected response ${response.status}",
+            response.status)
       }
     }
   }

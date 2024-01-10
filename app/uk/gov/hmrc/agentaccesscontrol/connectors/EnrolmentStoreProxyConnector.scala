@@ -16,14 +16,9 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import java.net.URL
-
-import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{Inject, Singleton}
 import play.api.http.Status._
 import play.api.libs.json.JsValue
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -34,15 +29,14 @@ import uk.gov.hmrc.http.{
   UpstreamErrorResponse
 }
 
+import java.net.URL
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class EnrolmentStoreProxyConnector @Inject()(appConfig: AppConfig,
                                              httpClient: HttpClient,
-                                             metrics: Metrics)
-    extends HttpAPIMonitor {
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
-
+                                             metrics: Metrics) {
   private def pathES0(enrolmentKey: String, usersType: String): String =
     new URL(
       s"${appConfig.esProxyBaseUrl}/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=$usersType").toString
@@ -63,16 +57,23 @@ class EnrolmentStoreProxyConnector @Inject()(appConfig: AppConfig,
       ec: ExecutionContext): Future[Set[AgentUserId]] = {
     val enrolmentKey =
       s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
+
     getES0(enrolmentKey, "delegated")
   }
 
   private def getES0(enrolmentKey: String, usersType: String)(
       implicit hc: HeaderCarrier,
       ec: ExecutionContext): Future[Set[AgentUserId]] = {
+
     val url = pathES0(enrolmentKey, usersType)
-    monitor("ConsumedAPI-EnrolmentStoreProxy-ES0-GET") {
-      httpClient.GET[HttpResponse](url)
-    }.map(response =>
+
+    val timer =
+      metrics.defaultRegistry.timer(
+        "Timer-ConsumedAPI-EnrolmentStoreProxy-ES0-GET")
+
+    timer.time()
+    httpClient.GET[HttpResponse](url).map { response =>
+      timer.time().stop()
       response.status match {
         case OK =>
           usersType match {
@@ -80,12 +81,14 @@ class EnrolmentStoreProxyConnector @Inject()(appConfig: AppConfig,
             case "principal" => parseResponsePrincipal(response.json)
           }
         case NO_CONTENT | BAD_REQUEST => Set.empty[AgentUserId]
-        case s =>
+        case _ =>
           throw UpstreamErrorResponse(
             s"Error calling in getSaAgentClientRelationship at: $url",
-            s,
-            if (s == INTERNAL_SERVER_ERROR) BAD_GATEWAY else s)
-    })
+            response.status,
+            if (response.status == INTERNAL_SERVER_ERROR) BAD_GATEWAY
+            else response.status)
+      }
+    }
   }
 
   private def parseResponseDelegated(json: JsValue): Set[AgentUserId] =

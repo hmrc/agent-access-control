@@ -16,12 +16,10 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
-import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import play.api.http.Status._
 import play.api.libs.json.Json
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model.{
   SuspensionDetails,
@@ -49,28 +47,31 @@ trait AgentClientAuthorisationConnector {
 class AgentClientAuthorisationConnectorImpl @Inject()(http: HttpClient)(
     implicit val metrics: Metrics,
     appConfig: AppConfig)
-    extends AgentClientAuthorisationConnector
-    with HttpAPIMonitor {
-
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+    extends AgentClientAuthorisationConnector {
 
   def getSuspensionDetails(agentId: TaxIdentifier)(
       implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[SuspensionDetails] =
-    monitor("ConsumerAPI-Get-AgencySuspensionDetails-GET") {
-      http
-        .GET[HttpResponse](
-          s"${appConfig.acaBaseUrl}/agent-client-authorisation/client/suspension-details/${agentId.value}")
-        .map(response =>
-          response.status match {
-            case OK         => Json.parse(response.body).as[SuspensionDetails]
-            case NO_CONTENT => SuspensionDetails(suspensionStatus = false, None)
-            case NOT_FOUND =>
-              throw SuspensionDetailsNotFound("No record found for this agent")
-            case e =>
-              throw UpstreamErrorResponse(
-                s"Error $e unable to get suspension details",
-                e)
-        })
+      ec: ExecutionContext): Future[SuspensionDetails] = {
+
+    val url =
+      s"${appConfig.acaBaseUrl}/agent-client-authorisation/client/suspension-details/${agentId.value}"
+
+    val timer = metrics.defaultRegistry.timer(
+      "Timer-ConsumerAPI-Get-AgencySuspensionDetails-GET")
+
+    timer.time()
+    http.GET[HttpResponse](url).map { response =>
+      timer.time().stop()
+      response.status match {
+        case OK         => Json.parse(response.body).as[SuspensionDetails]
+        case NO_CONTENT => SuspensionDetails(suspensionStatus = false, None)
+        case NOT_FOUND =>
+          throw SuspensionDetailsNotFound("No record found for this agent")
+        case _ =>
+          throw UpstreamErrorResponse(
+            s"Error ${response.status} unable to get suspension details",
+            response.status)
+      }
     }
+  }
 }

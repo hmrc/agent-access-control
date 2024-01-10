@@ -16,15 +16,10 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
-import java.net.URL
-import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
-
-import javax.inject.{Inject, Singleton}
 import play.api.http.Status.NOT_FOUND
 import play.api.libs.json._
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.domain.TaxIdentifier
@@ -37,6 +32,8 @@ import uk.gov.hmrc.http.{
   UpstreamErrorResponse
 }
 
+import java.net.URL
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class Relationship(arn: String, clientId: String)
@@ -52,15 +49,14 @@ trait RelationshipsConnector {
                          identifier: TaxIdentifier)(
       implicit ec: ExecutionContext,
       hc: HeaderCarrier): Future[Boolean]
+
 }
 
 @Singleton
 class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
                                            httpClient: HttpClient,
                                            metrics: Metrics)
-    extends RelationshipsConnector
-    with HttpAPIMonitor {
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+    extends RelationshipsConnector {
 
   //noinspection ScalaStyle
   def relationshipExists(arn: Arn,
@@ -86,14 +82,19 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
       new URL(
         s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/${service.id}/client/$identifierTypeId/${identifier.value}" + urlParam).toString
 
-    monitor(
-      s"ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET") {
-      httpClient.GET[HttpResponse](relationshipUrl)
-    } map (_.status match {
-      case o if is2xx(o) => true
-      case NOT_FOUND     => false
-      case s =>
-        throw UpstreamErrorResponse(s"Error calling: $relationshipUrl", s)
-    })
+    val timer = metrics.defaultRegistry.timer(
+      s"Timer-ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET")
+
+    timer.time()
+    httpClient.GET[HttpResponse](relationshipUrl).map { response =>
+      timer.time().stop()
+      response.status match {
+        case status if is2xx(status) => true
+        case NOT_FOUND               => false
+        case _ =>
+          throw UpstreamErrorResponse(s"Error calling: $relationshipUrl",
+                                      response.status)
+      }
+    }
   }
 }
