@@ -17,7 +17,6 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import com.google.inject.ImplementedBy
-import com.kenshoo.play.metrics.Metrics
 import play.api.Logging
 import play.api.http.Status
 import play.api.libs.json.Json
@@ -31,6 +30,7 @@ import uk.gov.hmrc.http.{
   HttpResponse,
   UpstreamErrorResponse
 }
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.net.URL
 import javax.inject.{Inject, Singleton}

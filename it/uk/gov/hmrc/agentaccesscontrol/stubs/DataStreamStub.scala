@@ -22,7 +22,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
 
 object DataStreamStub extends Eventually {
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
+  override implicit val patienceConfig: DataStreamStub.PatienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
 
   private def auditUrl = "/write/audit"
 

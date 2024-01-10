@@ -15,7 +15,7 @@ class MappingConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricT
 
   val saAgentReference = SaAgentReference("enrol-123")
   val arn = Arn("AARN0000002")
-  implicit val hc = HeaderCarrier()
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "MappingConnector" should {
     "return 200 for finding one SA mapping for a particular ARN" in {

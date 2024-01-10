@@ -17,7 +17,6 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
 import com.google.inject.ImplementedBy
-import com.kenshoo.play.metrics.Metrics
 import play.api.http.Status._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -26,6 +25,7 @@ import uk.gov.hmrc.agentaccesscontrol.model._
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.net.URL
 import java.util.UUID

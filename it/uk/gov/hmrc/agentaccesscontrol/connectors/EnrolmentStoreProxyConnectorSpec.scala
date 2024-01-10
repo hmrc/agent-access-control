@@ -1,12 +1,12 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import com.fasterxml.jackson.core.JsonParseException
-import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.support.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

@@ -17,7 +17,6 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
 import com.google.inject.ImplementedBy
-import com.kenshoo.play.metrics.Metrics
 import play.api.http.Status.NOT_FOUND
 import play.api.libs.json._
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
@@ -31,6 +30,7 @@ import uk.gov.hmrc.http.{
   HttpResponse,
   UpstreamErrorResponse
 }
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.net.URL
 import javax.inject.{Inject, Singleton}
@@ -39,7 +39,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class Relationship(arn: String, clientId: String)
 
 object Relationship {
-  implicit val jsonReads = Json.reads[Relationship]
+  implicit val jsonReads: Reads[Relationship] = Json.reads[Relationship]
 }
 
 @ImplementedBy(classOf[RelationshipsConnectorImpl])

@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import com.kenshoo.play.metrics.Metrics
 import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.http.HttpErrorFunctions._
@@ -27,6 +26,7 @@ import uk.gov.hmrc.http.{
   HttpResponse,
   UpstreamErrorResponse
 }
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.net.URL
 import javax.inject.Inject
