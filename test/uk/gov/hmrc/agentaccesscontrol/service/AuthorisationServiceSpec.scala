@@ -20,6 +20,7 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.audit.{
@@ -44,7 +45,7 @@ import uk.gov.hmrc.http.{
 }
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val agentCode = AgentCode("ABCDEF123456")
@@ -63,9 +64,10 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
 
   val afiAuthDetails = AuthDetails(None, Some(arn), "ggId", None, None)
 
-  implicit val hc = HeaderCarrier()
-  implicit val ec = concurrent.ExecutionContext.Implicits.global
-  implicit val fakeRequest = FakeRequest(
+  implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val ec: ExecutionContext =
+    concurrent.ExecutionContext.Implicits.global
+  implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest(
     "GET",
     s"/agent-access-control/sa-auth/agent/$agentCode/client/$clientSaUtr")
 
@@ -416,7 +418,7 @@ class AuthorisationServiceSpec extends UnitSpec with MockitoSugar {
     val mockAcaConnector: AgentClientAuthorisationConnector =
       mock[AgentClientAuthorisationConnector]
 
-    implicit val appConfig = new AppConfig(servicesConfig)
+    implicit val appConfig: AppConfig = new AppConfig(servicesConfig)
 
     val authorisationService = new AuthorisationService(
       mockDesAuthorisationService,

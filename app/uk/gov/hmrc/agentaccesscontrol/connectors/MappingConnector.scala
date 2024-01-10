@@ -16,19 +16,16 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import java.net.URL
-
-import com.codahale.metrics.MetricRegistry
-import com.kenshoo.play.metrics.Metrics
-import javax.inject.{Inject, Singleton}
 import play.api.Logging
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.model.AgentReferenceMappings
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
+
+import java.net.URL
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
@@ -36,20 +33,30 @@ import scala.util.control.NonFatal
 class MappingConnector @Inject()(appConfig: AppConfig,
                                  httpClient: HttpClient,
                                  metrics: Metrics)
-    extends HttpAPIMonitor
-    with Logging {
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+    extends Logging {
 
   def getAgentMappings(key: String, arn: Arn)(
       implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[AgentReferenceMappings] =
-    monitor(s"ConsumedAPI-AgentMapping-Check-$key-GET") {
-      httpClient.GET[AgentReferenceMappings](genMappingUrl(key, arn).toString)
-    }.recover {
-      case NonFatal(_) =>
-        logger.warn("Something went wrong")
-        AgentReferenceMappings.apply(List.empty)
-    }
+      ec: ExecutionContext): Future[AgentReferenceMappings] = {
+
+    val timer =
+      metrics.defaultRegistry.timer(
+        s"Timer-ConsumedAPI-AgentMapping-Check-$key-GET")
+
+    timer.time()
+    httpClient
+      .GET[AgentReferenceMappings](genMappingUrl(key, arn).toString)
+      .map { response =>
+        timer.time().stop()
+        response
+      }
+      .recover {
+        case NonFatal(_) =>
+          timer.time().stop()
+          logger.warn("Something went wrong")
+          AgentReferenceMappings.apply(List.empty)
+      }
+  }
 
   def genMappingUrl(key: String, arn: Arn): URL =
     new URL(

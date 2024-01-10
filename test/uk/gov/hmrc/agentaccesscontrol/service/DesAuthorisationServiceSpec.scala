@@ -34,7 +34,7 @@ class DesAuthorisationServiceSpec extends UnitSpec with MockitoSugar {
   val clientSaUtr = SaUtr("CLIENTSAUTR456")
   val empRef = EmpRef("123", "45676890")
 
-  implicit val headerCarrier = HeaderCarrier()
+  implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
   "isAuthorisedInCesa" should {
     "return false if the Agent or the relationship between the Agent and Client was not found in DES" in new Context {

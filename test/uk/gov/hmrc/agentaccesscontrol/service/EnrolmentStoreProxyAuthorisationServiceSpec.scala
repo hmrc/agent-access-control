@@ -27,7 +27,7 @@ import uk.gov.hmrc.domain.{AgentCode, AgentUserId, EmpRef, SaUtr}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class EnrolmentStoreProxyAuthorisationServiceSpec
     extends UnitSpec
@@ -40,8 +40,9 @@ class EnrolmentStoreProxyAuthorisationServiceSpec
   val agentCode2 = AgentCode("23BBBBB4B567")
   val saUtr = SaUtr("S123456789")
   val empRef = EmpRef("123", "43567890")
-  implicit val hc = new HeaderCarrier()
-  implicit val ec = concurrent.ExecutionContext.Implicits.global
+  implicit val hc: HeaderCarrier = new HeaderCarrier()
+  implicit val ec: ExecutionContext =
+    concurrent.ExecutionContext.Implicits.global
 
   "isAuthorisedForSaInGovernmentGateway" should {
     behave like aGovernmentGatewayAssignmentCheck(

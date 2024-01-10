@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.model
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 
@@ -29,8 +29,9 @@ case class AuthEnrolment(key: String,
 }
 
 object AuthEnrolment {
-  implicit val idformat = Json.format[EnrolmentIdentifier]
-  implicit val format = Json.format[AuthEnrolment]
+  implicit val idformat: OFormat[EnrolmentIdentifier] =
+    Json.format[EnrolmentIdentifier]
+  implicit val format: OFormat[AuthEnrolment] = Json.format[AuthEnrolment]
 }
 
 case class Enrolments(enrolments: Set[AuthEnrolment]) {
@@ -55,5 +56,5 @@ case class Enrolments(enrolments: Set[AuthEnrolment]) {
 }
 
 object Enrolments {
-  implicit val formats = Json.format[Enrolments]
+  implicit val formats: OFormat[Enrolments] = Json.format[Enrolments]
 }
