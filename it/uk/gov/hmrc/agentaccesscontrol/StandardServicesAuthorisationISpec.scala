@@ -1,6 +1,6 @@
 package uk.gov.hmrc.agentaccesscontrol
 
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, WireMockWithOneServerPerTestISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportServerPerTest, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.{CgtRef, MtdItId, PptRef, Urn, Utr, Vrn}
 
 class StandardServicesAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest with StandardAuthBehaviours {

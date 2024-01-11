@@ -58,7 +58,6 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
                                            metrics: Metrics)
     extends RelationshipsConnector {
 
-  //noinspection ScalaStyle
   def relationshipExists(arn: Arn,
                          maybeUserId: Option[String],
                          identifier: TaxIdentifier)(
@@ -80,7 +79,8 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
     val urlParam = maybeUserId.fold("")(userId => s"?userId=$userId")
     val relationshipUrl =
       new URL(
-        s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/${service.id}/client/$identifierTypeId/${identifier.value}" + urlParam).toString
+        s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/${service.id}/client/$identifierTypeId/${identifier.value}$urlParam"
+      ).toString
 
     val timer = metrics.defaultRegistry.timer(
       s"Timer-ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET")

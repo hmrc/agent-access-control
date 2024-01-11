@@ -18,8 +18,8 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentaccesscontrol.model._
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.models.{PayeFoundResponse, PayeNotFoundResponse, SaFoundResponse, SaNotFoundResponse}
 import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
 import uk.gov.hmrc.http.HeaderCarrier
 

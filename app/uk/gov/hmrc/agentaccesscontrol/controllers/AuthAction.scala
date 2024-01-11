@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 
 import play.api.mvc.{Result, Results}
 import play.api.{Environment, Logging}
-import uk.gov.hmrc.agentaccesscontrol.model.AuthDetails
+import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core._
@@ -63,7 +63,7 @@ trait AuthAction extends AuthorisedFunctions with Results with Logging {
                 s"no agent code found in auth details for agent code $ac")
               Future(Forbidden)
           }
-        case err => throw new Exception(s"Authoisation retrieval error: $err")
+        case err => throw new Exception(s"Authorisation retrieval error: $err")
       }
       .recover {
         handleException()
@@ -71,7 +71,6 @@ trait AuthAction extends AuthorisedFunctions with Results with Logging {
   }
 
   private def handleException(): PartialFunction[Throwable, Result] = {
-
     case e: UnsupportedAffinityGroup =>
       logger.warn(s"user did not have the Agent Affinity Group ${e.getMessage}")
       Forbidden
@@ -82,10 +81,10 @@ trait AuthAction extends AuthorisedFunctions with Results with Logging {
       Forbidden
   }
 
-  val AsAgentServiceKey = "HMRC-AS-AGENT" // The main Enrolment for MTD Agent Services
-  val ArnEnrolmentKey = "AgentReferenceNumber"
-  val IRSAServiceKey = "IR-SA-AGENT"
-  val IREnrolmentKey = "IRAgentReference"
+  private val AsAgentServiceKey = "HMRC-AS-AGENT" // The main Enrolment for MTD Agent Services
+  private val ArnEnrolmentKey = "AgentReferenceNumber"
+  private val IRSAServiceKey = "IR-SA-AGENT"
+  private val IREnrolmentKey = "IRAgentReference"
 
   private def getArn(enrolments: Enrolments) =
     for {

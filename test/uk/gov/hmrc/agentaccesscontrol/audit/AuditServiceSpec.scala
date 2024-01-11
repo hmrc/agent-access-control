@@ -16,32 +16,62 @@
 
 package uk.gov.hmrc.agentaccesscontrol.audit
 
-import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.verify
-import org.scalatest.concurrent.Eventually
-import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.FakeRequest
+import uk.gov.hmrc.agentaccesscontrol.helpers.UnitTest
+import uk.gov.hmrc.agentaccesscontrol.mocks.connectors.MockAuditConnector
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, RequestId, SessionId}
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.DataEvent
-import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
+import uk.gov.hmrc.play.audit.http.connector.AuditResult.{
+  Success,
+  Failure,
+  Disabled
+}
 
-import scala.concurrent.ExecutionContext
+class AuditServiceSpec extends UnitTest with MockAuditConnector {
 
-class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
-  "auditEvent" should {
-    "send an event with the correct fields" in {
-      val mockConnector = mock[AuditConnector]
-      val service = new AuditService(mockConnector)
+  "createAuditEvent" should {
+    "create an event with the correct fields" in {
+      val service = new AuditService(mockAuditConnector)
 
       val hc = HeaderCarrier(authorization =
                                Some(Authorization("dummy bearer token")),
                              sessionId = Some(SessionId("dummy session id")),
                              requestId = Some(RequestId("dummy request id")))
 
-      service.auditEvent(
+      val result = service.createAuditEvent(
+        event = AgentAccessControlDecision,
+        transactionName = "transaction name",
+        agentCode = AgentCode("TESTAGENTCODE"),
+        regime = "sa",
+        regimeId = "TESTSAUTR",
+        details = "extra1" -> "first extra detail",
+        "extra2" -> "second extra detail"
+      )(hc, FakeRequest("GET", "/path"))
+
+      result.auditType shouldBe "AgentAccessControlDecision"
+      result.detail("agentCode") shouldBe "TESTAGENTCODE"
+      result.detail("regime") shouldBe "sa"
+      result.detail("regimeId") shouldBe "TESTSAUTR"
+      result.detail("extra1") shouldBe "first extra detail"
+      result.detail("extra2") shouldBe "second extra detail"
+      result.tags("transactionName") shouldBe "transaction name"
+      result.tags("path") shouldBe "/path"
+      result.tags("X-Session-ID") shouldBe "dummy session id"
+      result.tags("X-Request-ID") shouldBe "dummy request id"
+    }
+  }
+
+  "sendAuditEvent" should {
+    "handle a success response from the audit connector" in {
+      val service = new AuditService(mockAuditConnector)
+      mockSendEvent(Success)
+
+      val hc = HeaderCarrier(authorization =
+                               Some(Authorization("dummy bearer token")),
+                             sessionId = Some(SessionId("dummy session id")),
+                             requestId = Some(RequestId("dummy request id")))
+
+      val result = service.sendAuditEvent(
         AgentAccessControlDecision,
         "transaction name",
         AgentCode("TESTAGENTCODE"),
@@ -52,24 +82,53 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         FakeRequest("GET", "/path"),
         concurrent.ExecutionContext.Implicits.global)
 
-      eventually {
-        val captor = ArgumentCaptor.forClass(classOf[DataEvent])
-        verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier],
-                                                          any[ExecutionContext])
+      await(result) shouldBe Success
+    }
 
-        val sentEvent = captor.getValue.asInstanceOf[DataEvent]
+    "handle a failure response from the audit connector" in {
+      val service = new AuditService(mockAuditConnector)
+      mockSendEvent(Failure("error"))
 
-        sentEvent.auditType shouldBe "AgentAccessControlDecision"
-        sentEvent.detail("agentCode") shouldBe "TESTAGENTCODE"
-        sentEvent.detail("regime") shouldBe "sa"
-        sentEvent.detail("regimeId") shouldBe "TESTSAUTR"
-        sentEvent.detail("extra1") shouldBe "first extra detail"
-        sentEvent.detail("extra2") shouldBe "second extra detail"
-        sentEvent.tags("transactionName") shouldBe "transaction name"
-        sentEvent.tags("path") shouldBe "/path"
-        sentEvent.tags("X-Session-ID") shouldBe "dummy session id"
-        sentEvent.tags("X-Request-ID") shouldBe "dummy request id"
-      }
+      val hc = HeaderCarrier(authorization =
+                               Some(Authorization("dummy bearer token")),
+                             sessionId = Some(SessionId("dummy session id")),
+                             requestId = Some(RequestId("dummy request id")))
+
+      val result = service.sendAuditEvent(
+        AgentAccessControlDecision,
+        "transaction name",
+        AgentCode("TESTAGENTCODE"),
+        "sa",
+        SaUtr("TESTSAUTR"),
+        Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
+      )(hc,
+        FakeRequest("GET", "/path"),
+        concurrent.ExecutionContext.Implicits.global)
+
+      await(result) shouldBe Failure("error")
+    }
+
+    "handle a disabled response from the audit connector" in {
+      val service = new AuditService(mockAuditConnector)
+      mockSendEvent(Disabled)
+
+      val hc = HeaderCarrier(authorization =
+                               Some(Authorization("dummy bearer token")),
+                             sessionId = Some(SessionId("dummy session id")),
+                             requestId = Some(RequestId("dummy request id")))
+
+      val result = service.sendAuditEvent(
+        AgentAccessControlDecision,
+        "transaction name",
+        AgentCode("TESTAGENTCODE"),
+        "sa",
+        SaUtr("TESTSAUTR"),
+        Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
+      )(hc,
+        FakeRequest("GET", "/path"),
+        concurrent.ExecutionContext.Implicits.global)
+
+      await(result) shouldBe Disabled
     }
   }
 

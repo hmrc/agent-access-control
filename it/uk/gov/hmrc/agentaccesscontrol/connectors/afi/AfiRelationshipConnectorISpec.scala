@@ -2,7 +2,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.afi
 
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.connectors.AfiRelationshipConnector
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.{AgentCode, Nino}
 import uk.gov.hmrc.http.HeaderCarrier

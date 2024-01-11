@@ -19,8 +19,8 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
 import play.api.{Environment, Logging}
-import uk.gov.hmrc.agentaccesscontrol.model.AccessResponse
-import uk.gov.hmrc.agentaccesscontrol.service.{
+import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
+import uk.gov.hmrc.agentaccesscontrol.services.{
   AuthorisationService,
   ESAuthorisationService
 }
@@ -43,14 +43,14 @@ class AuthorisationController @Inject()(
     with Logging {
 
   def authorise(authType: String,
-                agentCode: AgentCode,
+                agentCode: String,
                 clientId: String): Action[AnyContent] = {
 
     Action.async { implicit request: Request[_] =>
-      withAgentAuthorised(agentCode) { authDetails =>
+      withAgentAuthorised(AgentCode(agentCode)) { authDetails =>
         def standardAuth(service: Service,
                          taxId: TaxIdentifier): Future[AccessResponse] =
-          esAuthorisationService.authoriseStandardService(agentCode,
+          esAuthorisationService.authoriseStandardService(AgentCode(agentCode),
                                                           taxId,
                                                           service.id,
                                                           authDetails)
@@ -61,15 +61,15 @@ class AuthorisationController @Inject()(
           // Special cases
           case "epaye-auth" =>
             authorisationService.isAuthorisedForPaye(
-              agentCode,
+              AgentCode(agentCode),
               EmpRef.fromIdentifiers(clientId),
               authDetails)
           case "sa-auth" =>
-            authorisationService.isAuthorisedForSa(agentCode,
+            authorisationService.isAuthorisedForSa(AgentCode(agentCode),
                                                    SaUtr(clientId),
                                                    authDetails)
           case "afi-auth" =>
-            authorisationService.isAuthorisedForAfi(agentCode,
+            authorisationService.isAuthorisedForAfi(AgentCode(agentCode),
                                                     Nino(clientId),
                                                     authDetails)
           // Standard cases
@@ -86,13 +86,14 @@ class AuthorisationController @Inject()(
             standardAuth(Service.CapitalGains, CgtRef(clientId))
           case "ppt-auth" => standardAuth(Service.Ppt, PptRef(clientId))
           case "cbc-auth" =>
-            standardAuth(Service.Cbc, CbcId(clientId)) // AAC does not care about regime for CBC uk or non-uk, handled in ACR - it does mean audits will be uk for both
+            standardAuth(Service.Cbc, CbcId(clientId)) // AAC does not care about regime for CBC uk or non-uk, handled in ACR - audits will be uk for both
           case x =>
-            throw new IllegalArgumentException(s"Unexpected auth type: $x")
+            throw new IllegalArgumentException(s"Unexpected auth type: $x") //TODO this is not caught by the recover
         }).map {
             case AccessResponse.Authorised   => Ok
             case AccessResponse.NoAssignment => Unauthorized("NO_ASSIGNMENT")
-            case _                           => Unauthorized("NO_RELATIONSHIP")
+            case _ =>
+              Unauthorized("NO_RELATIONSHIP")
           }
           .recover {
             case e: IllegalArgumentException => BadRequest(e.getMessage)
