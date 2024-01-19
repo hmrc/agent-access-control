@@ -72,7 +72,9 @@ class AuditServiceSpec extends UnitSpec with ArgumentMatchersSugar {
 
   "sendAuditEvent" should {
     "handle a success response from the audit connector" in new Setup {
-      mockAuditConnector.sendEvent(any[DataEvent])(*[HeaderCarrier], *[ExecutionContext]) returns Future
+      mockAuditConnector.sendEvent(*[DataEvent])(
+        *[HeaderCarrier],
+        *[ExecutionContext]) returns Future
         .successful(Success)
 
       val hc: HeaderCarrier =
