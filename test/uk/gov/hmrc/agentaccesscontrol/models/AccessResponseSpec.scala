@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.models
 
-import uk.gov.hmrc.agentaccesscontrol.helpers.UnitTest
+import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse.{
   AgentSuspended,
   Authorised,
@@ -26,23 +26,23 @@ import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse.{
   toReason
 }
 
-class AccessResponseSpec extends UnitTest {
+class AccessResponseSpec extends UnitSpec {
 
   "AccessResponse.toReason" should {
     "convert an 'Authorised' AccessResponse to no reason" in {
-      toReason(Authorised) shouldBe Seq.empty
+      toReason(Authorised) mustBe Seq.empty
     }
     "convert a 'NoRelationship' AccessResponse to a 'NoRelationship' reason" in {
-      toReason(NoRelationship) shouldBe Seq(("reason", "NoRelationship"))
+      toReason(NoRelationship) mustBe Seq(("reason", "NoRelationship"))
     }
     "convert a 'NoAssignment' AccessResponse to a 'NoAssignment' reason" in {
-      toReason(NoAssignment) shouldBe Seq(("reason", "NoAssignment"))
+      toReason(NoAssignment) mustBe Seq(("reason", "NoAssignment"))
     }
     "convert an 'AgentSuspended' AccessResponse to a 'NoRelationship' reason" in {
-      toReason(AgentSuspended) shouldBe Seq(("reason", "NoRelationship"))
+      toReason(AgentSuspended) mustBe Seq(("reason", "NoRelationship"))
     }
     "convert an 'Error' AccessResponse to a 'NoRelationship' reason" in {
-      toReason(Error("error")) shouldBe Seq(("reason", "NoRelationship"))
+      toReason(Error("error")) mustBe Seq(("reason", "NoRelationship"))
     }
   }
 

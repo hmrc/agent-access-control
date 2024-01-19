@@ -16,20 +16,20 @@
 
 package uk.gov.hmrc.agentaccesscontrol.models
 
-import uk.gov.hmrc.agentaccesscontrol.helpers.UnitTest
+import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 
-class AuthEnrolmentSpec extends UnitTest {
+class AuthEnrolmentSpec extends UnitSpec {
 
   "saAgentReferenceOption" should {
     "return None" when {
       "no IR-SA-AGENT enrolment is found" in {
-        Enrolments(Set()).saAgentReferenceOption shouldBe None
+        Enrolments(Set()).saAgentReferenceOption mustBe None
       }
 
       "there's no IRAgentReference in IR-SA-AGENT enrolment" in {
-        Enrolments(Set(AuthEnrolment("IR-SA-AGENT", Seq(), "Pending"))).saAgentReferenceOption shouldBe None
+        Enrolments(Set(AuthEnrolment("IR-SA-AGENT", Seq(), "Pending"))).saAgentReferenceOption mustBe None
       }
     }
 
@@ -39,7 +39,7 @@ class AuthEnrolmentSpec extends UnitTest {
           AuthEnrolment("IR-SA-AGENT",
                         Seq(EnrolmentIdentifier("IRAgentReference", "123456")),
                         "Activated")
-        Enrolments(Set(authEnrolment)).saAgentReferenceOption shouldBe Some(
+        Enrolments(Set(authEnrolment)).saAgentReferenceOption mustBe Some(
           SaAgentReference("123456"))
       }
 
@@ -48,7 +48,7 @@ class AuthEnrolmentSpec extends UnitTest {
           AuthEnrolment("IR-SA-AGENT",
                         Seq(EnrolmentIdentifier("IRAgentReference", "123456")),
                         "Pending")
-        Enrolments(Set(authEnrolment)).saAgentReferenceOption shouldBe Some(
+        Enrolments(Set(authEnrolment)).saAgentReferenceOption mustBe Some(
           SaAgentReference("123456"))
       }
     }
@@ -57,11 +57,11 @@ class AuthEnrolmentSpec extends UnitTest {
   "arnOption" should {
     "return None" when {
       "no HMRC-AS-AGENT enrolment is found" in {
-        Enrolments(Set()).arnOption shouldBe None
+        Enrolments(Set()).arnOption mustBe None
       }
 
       "there's no AgentReferenceNumber in HMRC-AS-AGENT enrolment" in {
-        Enrolments(Set(AuthEnrolment("HMRC-AS-AGENT", Seq(), "Pending"))).arnOption shouldBe None
+        Enrolments(Set(AuthEnrolment("HMRC-AS-AGENT", Seq(), "Pending"))).arnOption mustBe None
       }
     }
 
@@ -72,8 +72,7 @@ class AuthEnrolmentSpec extends UnitTest {
             "HMRC-AS-AGENT",
             Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")),
             "Activated")
-        Enrolments(Set(authEnrolment)).arnOption shouldBe Some(
-          Arn("TARN0000001"))
+        Enrolments(Set(authEnrolment)).arnOption mustBe Some(Arn("TARN0000001"))
       }
 
       "there is AgentReferenceNumber in HMRC-AS-AGENT enrolment, but the enrolment is pending" in {
@@ -82,8 +81,7 @@ class AuthEnrolmentSpec extends UnitTest {
             "HMRC-AS-AGENT",
             Seq(EnrolmentIdentifier("AgentReferenceNumber", "TARN0000001")),
             "Pending")
-        Enrolments(Set(authEnrolment)).arnOption shouldBe Some(
-          Arn("TARN0000001"))
+        Enrolments(Set(authEnrolment)).arnOption mustBe Some(Arn("TARN0000001"))
       }
     }
   }

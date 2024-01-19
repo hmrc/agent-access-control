@@ -16,17 +16,17 @@
 
 package uk.gov.hmrc.agentaccesscontrol.config
 
-import uk.gov.hmrc.agentaccesscontrol.helpers.UnitTest
+import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
 import uk.gov.hmrc.agentaccesscontrol.mocks.config.MockAppConfig
 
-class AppConfigSpec extends UnitTest {
+class AppConfigSpec extends UnitSpec {
 
   private val appConfig = MockAppConfig.mockAppConfig
 
   "getConfString" should {
     "return a value" when {
       "it has been set in config" in {
-        appConfig.getConfString("des.authorization-token") shouldBe "secret"
+        appConfig.getConfString("des.authorization-token") mustBe "secret"
       }
     }
 

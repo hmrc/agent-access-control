@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
-import play.api.{Environment, Logging}
+import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.services.{
   AuthorisationService,
@@ -36,7 +36,6 @@ class AuthorisationController @Inject()(
     val authorisationService: AuthorisationService,
     override val authConnector: AuthConnector,
     val esAuthorisationService: ESAuthorisationService,
-    override val env: Environment,
     cc: ControllerComponents)(implicit val ec: ExecutionContext)
     extends BackendController(cc)
     with AuthAction
@@ -81,7 +80,7 @@ class AuthorisationController @Inject()(
             standardAuth(Service.TrustNT, Urn(clientId))
           case "trust-auth" =>
             throw new IllegalArgumentException(
-              s"invalid trust tax identifier $clientId")
+              s"invalid trust tax identifier $clientId") //TODO this is not caught by the recover
           case "cgt-auth" =>
             standardAuth(Service.CapitalGains, CgtRef(clientId))
           case "ppt-auth" => standardAuth(Service.Ppt, PptRef(clientId))

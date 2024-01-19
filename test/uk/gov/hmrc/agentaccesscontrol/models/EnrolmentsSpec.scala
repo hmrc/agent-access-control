@@ -16,34 +16,29 @@
 
 package uk.gov.hmrc.agentaccesscontrol.models
 
-import uk.gov.hmrc.agentaccesscontrol.helpers.UnitTest
-import uk.gov.hmrc.agentaccesscontrol.models.{
-  AuthEnrolment,
-  EnrolmentIdentifier,
-  Enrolments
-}
+import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 
-class EnrolmentsSpec extends UnitTest {
+class EnrolmentsSpec extends UnitSpec {
 
   "AuthEnrolment.identifier" should {
     "return None" when {
       "the list of identifiers is empty" in {
         AuthEnrolment("key", Seq.empty, "state")
-          .identifier("empty") shouldBe None
+          .identifier("empty") mustBe None
       }
       "the provided identifier key does not match an identifier in the list" in {
         AuthEnrolment("key",
                       Seq(EnrolmentIdentifier("UTR", "1234567890")),
-                      "state").identifier("TaxOfficeNo") shouldBe None
+                      "state").identifier("TaxOfficeNo") mustBe None
       }
     }
     "return Some(identifier)" when {
       "the identifier key matches an identifier in the list" in {
         AuthEnrolment("key",
                       Seq(EnrolmentIdentifier("UTR", "1234567890")),
-                      "state").identifier("UTR") shouldBe Some("1234567890")
+                      "state").identifier("UTR") mustBe Some("1234567890")
       }
     }
   }
@@ -51,13 +46,13 @@ class EnrolmentsSpec extends UnitTest {
   "Enrolments.saAgentReferenceOption" should {
     "return None" when {
       "no enrolments exist" in {
-        Enrolments(Set.empty).saAgentReferenceOption shouldBe None
+        Enrolments(Set.empty).saAgentReferenceOption mustBe None
       }
       "no IR-SA-AGENT enrolment exists" in {
         Enrolments(Set(
           AuthEnrolment("HMRC-AS-AGENT",
                         Seq(EnrolmentIdentifier("AgentReferenceNumber", "arn")),
-                        "State"))).saAgentReferenceOption shouldBe None
+                        "State"))).saAgentReferenceOption mustBe None
       }
     }
     "return Some(SaAgentReference)" when {
@@ -67,7 +62,7 @@ class EnrolmentsSpec extends UnitTest {
             AuthEnrolment(
               "IR-SA-AGENT",
               Seq(EnrolmentIdentifier("IRAgentReference", "enrol-123")),
-              "State"))).saAgentReferenceOption shouldBe Some(
+              "State"))).saAgentReferenceOption mustBe Some(
           SaAgentReference("enrol-123"))
       }
     }
@@ -76,7 +71,7 @@ class EnrolmentsSpec extends UnitTest {
   "Enrolments.arnOption" should {
     "return None" when {
       "no enrolments exist" in {
-        Enrolments(Set.empty).arnOption shouldBe None
+        Enrolments(Set.empty).arnOption mustBe None
       }
       "no HMRC-AS-AGENT enrolment exists" in {
         Enrolments(
@@ -84,7 +79,7 @@ class EnrolmentsSpec extends UnitTest {
             AuthEnrolment(
               "IR-SA-AGENT",
               Seq(EnrolmentIdentifier("IRAgentReference", "enrol-123")),
-              "State"))).arnOption shouldBe None
+              "State"))).arnOption mustBe None
       }
     }
     "return Some(AgentReferenceNumber)" when {
@@ -92,7 +87,7 @@ class EnrolmentsSpec extends UnitTest {
         Enrolments(Set(
           AuthEnrolment("HMRC-AS-AGENT",
                         Seq(EnrolmentIdentifier("AgentReferenceNumber", "arn")),
-                        "State"))).arnOption shouldBe Some(Arn("arn"))
+                        "State"))).arnOption mustBe Some(Arn("arn"))
       }
     }
   }

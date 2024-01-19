@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
 import play.api.mvc.{Result, Results}
-import play.api.{Environment, Logging}
+import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
@@ -35,8 +35,6 @@ import uk.gov.hmrc.http.HeaderCarrier
 import scala.concurrent.{ExecutionContext, Future}
 
 trait AuthAction extends AuthorisedFunctions with Results with Logging {
-
-  def env: Environment
 
   def withAgentAuthorised[A](ac: AgentCode)(
       body: AuthDetails => Future[Result])(

@@ -16,13 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.helpers
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.play.PlaySpec
+import play.api.test.DefaultAwaitTimeout
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Awaitable}
-
-trait UnitTest extends AnyWordSpec with Matchers {
-  def await[T](awaitable: Awaitable[T]): T =
-    Await.result(awaitable, Duration.Inf)
-}
+trait UnitSpec extends PlaySpec with DefaultAwaitTimeout with Mocks
