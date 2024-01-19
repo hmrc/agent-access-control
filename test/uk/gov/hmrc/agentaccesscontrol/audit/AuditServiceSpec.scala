@@ -23,7 +23,11 @@ import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, RequestId, SessionId}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.audit.http.connector.AuditResult.{Disabled, Failure, Success}
+import uk.gov.hmrc.play.audit.http.connector.AuditResult.{
+  Disabled,
+  Failure,
+  Success
+}
 import uk.gov.hmrc.play.audit.model.DataEvent
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -68,7 +72,8 @@ class AuditServiceSpec extends UnitSpec with ArgumentMatchersSugar {
 
   "sendAuditEvent" should {
     "handle a success response from the audit connector" in new Setup {
-      mockAuditConnector.sendEvent(any[DataEvent])(*, *) returns Future.successful(Success)
+      mockAuditConnector.sendEvent(any[DataEvent])(*[HeaderCarrier], *[ExecutionContext]) returns Future
+        .successful(Success)
 
       val hc: HeaderCarrier =
         HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
