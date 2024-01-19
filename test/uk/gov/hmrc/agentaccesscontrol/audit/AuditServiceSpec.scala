@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.audit
 
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchersSugar
 import play.api.test.FakeRequest
 import play.api.test.Helpers.await
 import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
@@ -28,7 +28,7 @@ import uk.gov.hmrc.play.audit.model.DataEvent
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuditServiceSpec extends UnitSpec {
+class AuditServiceSpec extends UnitSpec with ArgumentMatchersSugar {
 
   trait Setup {
     protected val mockAuditConnector: AuditConnector = mock[AuditConnector]
@@ -38,10 +38,10 @@ class AuditServiceSpec extends UnitSpec {
 
   "createAuditEvent" should {
     "create an event with the correct fields" in new Setup {
-      val hc: HeaderCarrier = HeaderCarrier(authorization =
-                               Some(Authorization("dummy bearer token")),
-                             sessionId = Some(SessionId("dummy session id")),
-                             requestId = Some(RequestId("dummy request id")))
+      val hc: HeaderCarrier =
+        HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
+                      sessionId = Some(SessionId("dummy session id")),
+                      requestId = Some(RequestId("dummy request id")))
 
       val result: DataEvent = TestService.createAuditEvent(
         event = AgentAccessControlDecision,
@@ -68,14 +68,12 @@ class AuditServiceSpec extends UnitSpec {
 
   "sendAuditEvent" should {
     "handle a success response from the audit connector" in new Setup {
-      mockAuditConnector.sendEvent(any[DataEvent])(
-        any[HeaderCarrier],
-        any[ExecutionContext]) returns Future.successful(Success)
+      mockAuditConnector.sendEvent(any[DataEvent])(*, *) returns Future.successful(Success)
 
-      val hc: HeaderCarrier = HeaderCarrier(authorization =
-                               Some(Authorization("dummy bearer token")),
-                             sessionId = Some(SessionId("dummy session id")),
-                             requestId = Some(RequestId("dummy request id")))
+      val hc: HeaderCarrier =
+        HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
+                      sessionId = Some(SessionId("dummy session id")),
+                      requestId = Some(RequestId("dummy request id")))
 
       val result: Future[AuditResult] = TestService.sendAuditEvent(
         AgentAccessControlDecision,
@@ -96,10 +94,10 @@ class AuditServiceSpec extends UnitSpec {
         any[HeaderCarrier],
         any[ExecutionContext]) returns Future.successful(Failure("error"))
 
-      val hc: HeaderCarrier = HeaderCarrier(authorization =
-                               Some(Authorization("dummy bearer token")),
-                             sessionId = Some(SessionId("dummy session id")),
-                             requestId = Some(RequestId("dummy request id")))
+      val hc: HeaderCarrier =
+        HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
+                      sessionId = Some(SessionId("dummy session id")),
+                      requestId = Some(RequestId("dummy request id")))
 
       val result: Future[AuditResult] = TestService.sendAuditEvent(
         AgentAccessControlDecision,
@@ -116,14 +114,14 @@ class AuditServiceSpec extends UnitSpec {
     }
 
     "handle a disabled response from the audit connector" in new Setup {
-    mockAuditConnector.sendEvent(any[DataEvent])(
-      any[HeaderCarrier],
-      any[ExecutionContext]) returns Future.successful(Disabled)
+      mockAuditConnector.sendEvent(any[DataEvent])(
+        any[HeaderCarrier],
+        any[ExecutionContext]) returns Future.successful(Disabled)
 
-      val hc: HeaderCarrier = HeaderCarrier(authorization =
-                               Some(Authorization("dummy bearer token")),
-                             sessionId = Some(SessionId("dummy session id")),
-                             requestId = Some(RequestId("dummy request id")))
+      val hc: HeaderCarrier =
+        HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
+                      sessionId = Some(SessionId("dummy session id")),
+                      requestId = Some(RequestId("dummy request id")))
 
       val result: Future[AuditResult] = TestService.sendAuditEvent(
         AgentAccessControlDecision,
