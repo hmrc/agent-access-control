@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol.audit
 
-import org.mockito.ArgumentMatchersSugar
 import play.api.test.FakeRequest
 import play.api.test.Helpers.await
 import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
@@ -32,7 +31,7 @@ import uk.gov.hmrc.play.audit.model.DataEvent
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuditServiceSpec extends UnitSpec with ArgumentMatchersSugar {
+class AuditServiceSpec extends UnitSpec {
 
   trait Setup {
     protected val mockAuditConnector: AuditConnector = mock[AuditConnector]
@@ -40,13 +39,18 @@ class AuditServiceSpec extends UnitSpec with ArgumentMatchersSugar {
     object TestService extends AuditService(mockAuditConnector)
   }
 
+  private implicit val hc: HeaderCarrier =
+    HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
+                  sessionId = Some(SessionId("dummy session id")),
+                  requestId = Some(RequestId("dummy request id")))
+
+  private implicit val ec: ExecutionContext =
+    concurrent.ExecutionContext.Implicits.global
+
+  private implicit val request: FakeRequest[Any] = FakeRequest("GET", "/path")
+
   "createAuditEvent" should {
     "create an event with the correct fields" in new Setup {
-      val hc: HeaderCarrier =
-        HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
-                      sessionId = Some(SessionId("dummy session id")),
-                      requestId = Some(RequestId("dummy request id")))
-
       val result: DataEvent = TestService.createAuditEvent(
         event = AgentAccessControlDecision,
         transactionName = "transaction name",
@@ -55,7 +59,7 @@ class AuditServiceSpec extends UnitSpec with ArgumentMatchersSugar {
         regimeId = "TESTSAUTR",
         details = "extra1" -> "first extra detail",
         "extra2" -> "second extra detail"
-      )(hc, FakeRequest("GET", "/path"))
+      )
 
       result.auditType mustBe "AgentAccessControlDecision"
       result.detail("agentCode") mustBe "TESTAGENTCODE"
@@ -72,15 +76,8 @@ class AuditServiceSpec extends UnitSpec with ArgumentMatchersSugar {
 
   "sendAuditEvent" should {
     "handle a success response from the audit connector" in new Setup {
-      mockAuditConnector.sendEvent(*[DataEvent])(
-        *[HeaderCarrier],
-        *[ExecutionContext]) returns Future
-        .successful(Success)
-
-      val hc: HeaderCarrier =
-        HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
-                      sessionId = Some(SessionId("dummy session id")),
-                      requestId = Some(RequestId("dummy request id")))
+      mockAuditConnector.sendEvent(*[DataEvent]) returns Future.successful(
+        Success)
 
       val result: Future[AuditResult] = TestService.sendAuditEvent(
         AgentAccessControlDecision,
@@ -89,22 +86,14 @@ class AuditServiceSpec extends UnitSpec with ArgumentMatchersSugar {
         "sa",
         SaUtr("TESTSAUTR"),
         Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
-      )(hc,
-        FakeRequest("GET", "/path"),
-        concurrent.ExecutionContext.Implicits.global)
+      )
 
       await(result) mustBe Success
     }
 
     "handle a failure response from the audit connector" in new Setup {
-      mockAuditConnector.sendEvent(any[DataEvent])(
-        any[HeaderCarrier],
-        any[ExecutionContext]) returns Future.successful(Failure("error"))
-
-      val hc: HeaderCarrier =
-        HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
-                      sessionId = Some(SessionId("dummy session id")),
-                      requestId = Some(RequestId("dummy request id")))
+      mockAuditConnector.sendEvent(*[DataEvent]) returns Future.successful(
+        Failure("error"))
 
       val result: Future[AuditResult] = TestService.sendAuditEvent(
         AgentAccessControlDecision,
@@ -113,22 +102,14 @@ class AuditServiceSpec extends UnitSpec with ArgumentMatchersSugar {
         "sa",
         SaUtr("TESTSAUTR"),
         Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
-      )(hc,
-        FakeRequest("GET", "/path"),
-        concurrent.ExecutionContext.Implicits.global)
+      )
 
       await(result) mustBe Failure("error")
     }
 
     "handle a disabled response from the audit connector" in new Setup {
-      mockAuditConnector.sendEvent(any[DataEvent])(
-        any[HeaderCarrier],
-        any[ExecutionContext]) returns Future.successful(Disabled)
-
-      val hc: HeaderCarrier =
-        HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
-                      sessionId = Some(SessionId("dummy session id")),
-                      requestId = Some(RequestId("dummy request id")))
+      mockAuditConnector.sendEvent(*[DataEvent]) returns Future.successful(
+        Disabled)
 
       val result: Future[AuditResult] = TestService.sendAuditEvent(
         AgentAccessControlDecision,
@@ -137,9 +118,7 @@ class AuditServiceSpec extends UnitSpec with ArgumentMatchersSugar {
         "sa",
         SaUtr("TESTSAUTR"),
         Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
-      )(hc,
-        FakeRequest("GET", "/path"),
-        concurrent.ExecutionContext.Implicits.global)
+      )
 
       await(result) mustBe Disabled
     }

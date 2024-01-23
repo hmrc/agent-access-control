@@ -16,24 +16,69 @@
 
 package uk.gov.hmrc.agentaccesscontrol.config
 
+import play.api.Configuration
 import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
-import uk.gov.hmrc.agentaccesscontrol.mocks.config.MockAppConfig
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 class AppConfigSpec extends UnitSpec {
 
-  private val appConfig = MockAppConfig.mockAppConfig
+  trait Setup {
+    private val configuration: Map[String, Any] = Map(
+      "microservice.services.des.authorization-token" -> "secret",
+      "microservice.services.auth.host" -> "localhost",
+      "microservice.services.auth.port" -> "0000",
+      "features.enable-granular-permissions" -> true
+    )
+    val stubbedAppConfig: AppConfig = new AppConfig(
+      new ServicesConfig(Configuration.from(configuration)))
 
-  "getConfString" should {
+    val emptyAppConfig: AppConfig = new AppConfig(
+      new ServicesConfig(Configuration.from(Map.empty)))
+  }
+
+  "baseUrl" should {
     "return a value" when {
-      "it has been set in config" in {
-        appConfig.getConfString("des.authorization-token") mustBe "secret"
+      "it has been set in config" in new Setup {
+        stubbedAppConfig.baseUrl("auth") mustBe "http://localhost:0"
       }
     }
 
     "throw an exception" when {
-      "the value has not been set in config" in {
+      "the value has not been set in config" in new Setup {
         an[RuntimeException] shouldBe thrownBy(
-          appConfig.getConfString("key-does-not-exist")
+          emptyAppConfig.baseUrl("serviceName-does-not-exist")
+        )
+      }
+    }
+  }
+
+  "enableGranularPermissions" should {
+    "return a value" when {
+      "it has been set in config" in new Setup {
+        stubbedAppConfig.enableGranularPermissions mustBe true
+      }
+    }
+
+    "throw an exception" when {
+      "the value has not been set in config" in new Setup {
+        an[RuntimeException] shouldBe thrownBy(
+          emptyAppConfig.enableGranularPermissions
+        )
+      }
+    }
+  }
+
+  "getConfString" should {
+    "return a value" when {
+      "it has been set in config" in new Setup {
+        stubbedAppConfig.getConfString("des.authorization-token") mustBe "secret"
+      }
+    }
+
+    "throw an exception" when {
+      "the value has not been set in config" in new Setup {
+        an[RuntimeException] shouldBe thrownBy(
+          emptyAppConfig.getConfString("key-does-not-exist")
         )
       }
     }

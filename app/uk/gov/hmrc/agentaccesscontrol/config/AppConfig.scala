@@ -31,29 +31,30 @@ class AppConfig @Inject()(servicesConfig: ServicesConfig) {
 
   def baseUrl(serviceName: String): String = servicesConfig.baseUrl(serviceName)
 
-  val authBaseUrl: String = baseUrl("auth")
+  lazy val authBaseUrl: String = baseUrl("auth")
 
-  val acrBaseUrl: String = baseUrl("agent-client-relationships")
+  lazy val acrBaseUrl: String = baseUrl("agent-client-relationships")
 
-  val agentPermissionsUrl: String = servicesConfig.baseUrl("agent-permissions")
+  lazy val agentPermissionsUrl: String =
+    servicesConfig.baseUrl("agent-permissions")
 
-  val desUrl: String = baseUrl("des")
+  lazy val desUrl: String = baseUrl("des")
 
-  val desToken: String = getConfString("des.authorization-token")
+  lazy val desToken: String = getConfString("des.authorization-token")
 
-  val desEnv: String = getConfString("des.environment")
+  lazy val desEnv: String = getConfString("des.environment")
 
-  val desPayeUrl: String = baseUrl("des-paye")
+  lazy val desPayeUrl: String = baseUrl("des-paye")
 
-  val desSAUrl: String = baseUrl("des-sa")
+  lazy val desSAUrl: String = baseUrl("des-sa")
 
-  val esProxyBaseUrl: String = baseUrl("enrolment-store-proxy")
+  lazy val esProxyBaseUrl: String = baseUrl("enrolment-store-proxy")
 
-  val afiBaseUrl: String = baseUrl("agent-fi-relationship")
+  lazy val afiBaseUrl: String = baseUrl("agent-fi-relationship")
 
-  val agentMappingBaseUrl: String = baseUrl("agent-mapping")
+  lazy val agentMappingBaseUrl: String = baseUrl("agent-mapping")
 
-  val acaBaseUrl: String = baseUrl("agent-client-authorisation")
+  lazy val acaBaseUrl: String = baseUrl("agent-client-authorisation")
 
   def enableGranularPermissions: Boolean =
     servicesConfig.getBoolean("features.enable-granular-permissions")
