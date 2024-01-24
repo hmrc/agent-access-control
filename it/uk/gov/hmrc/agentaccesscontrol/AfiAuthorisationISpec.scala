@@ -16,7 +16,7 @@ package uk.gov.hmrc.agentaccesscontrol
  * limitations under the License.
  */
 
-import uk.gov.hmrc.agentaccesscontrol.support.{Resource, WireMockWithOneServerPerTestISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.{Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.{AgentCode, Nino}
 import uk.gov.hmrc.http.HttpResponse

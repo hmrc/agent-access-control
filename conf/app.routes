@@ -1,5 +1,5 @@
 # microservice specific routes
-GET        /:authType/agent/:agentCode/client/:clientId                        @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.authorise(authType: String, agentCode: uk.gov.hmrc.domain.AgentCode, clientId: String)
+GET        /:authType/agent/:agentCode/client/:clientId                        @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.authorise(authType: String, agentCode: String, clientId: String)
 
 # TODO why do we also have a POST version that does the same thing?
-POST       /:authType/agent/:agentCode/client/:clientId                        @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.authorise(authType: String, agentCode: uk.gov.hmrc.domain.AgentCode, clientId: String)
+POST       /:authType/agent/:agentCode/client/:clientId                        @uk.gov.hmrc.agentaccesscontrol.controllers.AuthorisationController.authorise(authType: String, agentCode: String, clientId: String)

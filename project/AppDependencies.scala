@@ -11,10 +11,13 @@ object AppDependencies {
 
   val test = Seq(
     "uk.gov.hmrc"            %% "bootstrap-test-play-28"  % bootstrapVer % "test, it",
+    "org.scalatest"          %% "scalatest"               % "3.2.5"      % "test, it",
     "org.scalatestplus.play" %% "scalatestplus-play"      % "5.1.0"      % "test, it",
+    "org.mockito"            %% "mockito-scala"           % "1.16.55"    % "test, it",
+    "org.mockito"            %% "mockito-scala-scalatest" % "1.16.55"    % "test, it",
     "org.scalatestplus"      %% "mockito-3-12"            % "3.2.10.0"   % "test, it",
     "com.github.tomakehurst"  % "wiremock-jre8"           % "2.26.1"     % "test, it",
     "org.scalamock"          %% "scalamock"               % "5.2.0"      % "test, it",
-    "com.vladsch.flexmark"    % "flexmark-all"            % "0.35.10"    % "test, it"
+    "com.vladsch.flexmark"    % "flexmark-all"            % "0.64.8"     % "test, it"
   )
 }

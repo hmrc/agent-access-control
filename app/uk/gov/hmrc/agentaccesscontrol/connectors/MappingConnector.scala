@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentaccesscontrol.model.AgentReferenceMappings
+import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMappings
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}

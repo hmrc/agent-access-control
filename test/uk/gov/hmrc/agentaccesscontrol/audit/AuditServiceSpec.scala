@@ -16,60 +16,111 @@
 
 package uk.gov.hmrc.agentaccesscontrol.audit
 
-import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.verify
-import org.scalatest.concurrent.Eventually
-import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.FakeRequest
+import play.api.test.Helpers.await
+import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
 import uk.gov.hmrc.domain.{AgentCode, SaUtr}
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, RequestId, SessionId}
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
+import uk.gov.hmrc.play.audit.http.connector.AuditResult.{
+  Disabled,
+  Failure,
+  Success
+}
 import uk.gov.hmrc.play.audit.model.DataEvent
-import uk.gov.hmrc.agentaccesscontrol.support.UnitSpec
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
-class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
-  "auditEvent" should {
-    "send an event with the correct fields" in {
-      val mockConnector = mock[AuditConnector]
-      val service = new AuditService(mockConnector)
+class AuditServiceSpec extends UnitSpec {
 
-      val hc = HeaderCarrier(authorization =
-                               Some(Authorization("dummy bearer token")),
-                             sessionId = Some(SessionId("dummy session id")),
-                             requestId = Some(RequestId("dummy request id")))
+  trait Setup {
+    protected val mockAuditConnector: AuditConnector = mock[AuditConnector]
 
-      service.auditEvent(
+    object TestService extends AuditService(mockAuditConnector)
+  }
+
+  private implicit val hc: HeaderCarrier =
+    HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
+                  sessionId = Some(SessionId("dummy session id")),
+                  requestId = Some(RequestId("dummy request id")))
+
+  private implicit val ec: ExecutionContext =
+    concurrent.ExecutionContext.Implicits.global
+
+  private implicit val request: FakeRequest[Any] = FakeRequest("GET", "/path")
+
+  "createAuditEvent" should {
+    "create an event with the correct fields" in new Setup {
+      val result: DataEvent = TestService.createAuditEvent(
+        event = AgentAccessControlDecision,
+        transactionName = "transaction name",
+        agentCode = AgentCode("TESTAGENTCODE"),
+        regime = "sa",
+        regimeId = "TESTSAUTR",
+        details = "extra1" -> "first extra detail",
+        "extra2" -> "second extra detail"
+      )
+
+      result.auditType mustBe "AgentAccessControlDecision"
+      result.detail("agentCode") mustBe "TESTAGENTCODE"
+      result.detail("regime") mustBe "sa"
+      result.detail("regimeId") mustBe "TESTSAUTR"
+      result.detail("extra1") mustBe "first extra detail"
+      result.detail("extra2") mustBe "second extra detail"
+      result.tags("transactionName") mustBe "transaction name"
+      result.tags("path") mustBe "/path"
+      result.tags("X-Session-ID") mustBe "dummy session id"
+      result.tags("X-Request-ID") mustBe "dummy request id"
+    }
+  }
+
+  "sendAuditEvent" should {
+    "handle a success response from the audit connector" in new Setup {
+      mockAuditConnector.sendEvent(*[DataEvent]) returns Future.successful(
+        Success)
+
+      val result: Future[AuditResult] = TestService.sendAuditEvent(
         AgentAccessControlDecision,
         "transaction name",
         AgentCode("TESTAGENTCODE"),
         "sa",
         SaUtr("TESTSAUTR"),
         Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
-      )(hc,
-        FakeRequest("GET", "/path"),
-        concurrent.ExecutionContext.Implicits.global)
+      )
 
-      eventually {
-        val captor = ArgumentCaptor.forClass(classOf[DataEvent])
-        verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier],
-                                                          any[ExecutionContext])
+      await(result) mustBe Success
+    }
 
-        val sentEvent = captor.getValue.asInstanceOf[DataEvent]
+    "handle a failure response from the audit connector" in new Setup {
+      mockAuditConnector.sendEvent(*[DataEvent]) returns Future.successful(
+        Failure("error"))
 
-        sentEvent.auditType shouldBe "AgentAccessControlDecision"
-        sentEvent.detail("agentCode") shouldBe "TESTAGENTCODE"
-        sentEvent.detail("regime") shouldBe "sa"
-        sentEvent.detail("regimeId") shouldBe "TESTSAUTR"
-        sentEvent.detail("extra1") shouldBe "first extra detail"
-        sentEvent.detail("extra2") shouldBe "second extra detail"
-        sentEvent.tags("transactionName") shouldBe "transaction name"
-        sentEvent.tags("path") shouldBe "/path"
-        sentEvent.tags("X-Session-ID") shouldBe "dummy session id"
-        sentEvent.tags("X-Request-ID") shouldBe "dummy request id"
-      }
+      val result: Future[AuditResult] = TestService.sendAuditEvent(
+        AgentAccessControlDecision,
+        "transaction name",
+        AgentCode("TESTAGENTCODE"),
+        "sa",
+        SaUtr("TESTSAUTR"),
+        Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
+      )
+
+      await(result) mustBe Failure("error")
+    }
+
+    "handle a disabled response from the audit connector" in new Setup {
+      mockAuditConnector.sendEvent(*[DataEvent]) returns Future.successful(
+        Disabled)
+
+      val result: Future[AuditResult] = TestService.sendAuditEvent(
+        AgentAccessControlDecision,
+        "transaction name",
+        AgentCode("TESTAGENTCODE"),
+        "sa",
+        SaUtr("TESTSAUTR"),
+        Seq("extra1" -> "first extra detail", "extra2" -> "second extra detail")
+      )
+
+      await(result) mustBe Disabled
     }
   }
 

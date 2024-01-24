@@ -1,11 +1,11 @@
 package uk.gov.hmrc.agentaccesscontrol
 
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, CgtRef, Urn, Utr}
 import uk.gov.hmrc.agents.accessgroups.Client
 import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
 import uk.gov.hmrc.http.HttpResponse
 import com.github.tomakehurst.wiremock.client.WireMock
+import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
 
 class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
   val agentCode = AgentCode("A11112222A")

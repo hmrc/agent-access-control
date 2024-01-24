@@ -17,43 +17,41 @@
 package uk.gov.hmrc.agentaccesscontrol.audit
 
 import javax.inject.{Inject, Singleton}
-
 import play.api.mvc.Request
 import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.DataEvent
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class AuditService @Inject()(val auditConnector: AuditConnector) {
 
-  def auditEvent(event: AgentAccessControlEvent,
-                 transactionName: String,
-                 agentCode: AgentCode,
-                 regime: String,
-                 regimeId: TaxIdentifier,
-                 details: Seq[(String, Any)] = Seq.empty)(
+  def sendAuditEvent(event: AgentAccessControlEvent,
+                     transactionName: String,
+                     agentCode: AgentCode,
+                     regime: String,
+                     regimeId: TaxIdentifier,
+                     details: Seq[(String, Any)] = Seq.empty)(
       implicit hc: HeaderCarrier,
       request: Request[Any],
-      ec: ExecutionContext): Future[Unit] =
-    send(
-      createEvent(event,
-                  transactionName,
-                  agentCode,
-                  regime,
-                  regimeId.value,
-                  details: _*))
+      ec: ExecutionContext): Future[AuditResult] =
+    auditConnector.sendEvent(
+      createAuditEvent(event,
+                       transactionName,
+                       agentCode,
+                       regime,
+                       regimeId.value,
+                       details: _*))
 
-  private def createEvent(event: AgentAccessControlEvent,
-                          transactionName: String,
-                          agentCode: AgentCode,
-                          regime: String,
-                          regimeId: String,
-                          details: (String, Any)*)(
+  def createAuditEvent(event: AgentAccessControlEvent,
+                       transactionName: String,
+                       agentCode: AgentCode,
+                       regime: String,
+                       regimeId: String,
+                       details: (String, Any)*)(
       implicit hc: HeaderCarrier,
       request: Request[Any]): DataEvent =
     DataEvent(
@@ -65,14 +63,6 @@ class AuditService @Inject()(val auditConnector: AuditConnector) {
                                  "regimeId" -> regimeId)
         ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
     )
-
-  private def send(events: DataEvent*)(implicit hc: HeaderCarrier,
-                                       ec: ExecutionContext): Future[Unit] =
-    Future {
-      events.foreach { event =>
-        Try(auditConnector.sendEvent(event))
-      }
-    }
 }
 
 sealed trait AgentAccessControlEvent

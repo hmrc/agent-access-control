@@ -21,7 +21,6 @@ lazy val root = (project in file("."))
     resolvers ++= Seq(Resolver.typesafeRepo("releases")),
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
-    routesImport += "uk.gov.hmrc.agentaccesscontrol.binders.PathBinders._",
     Compile / scalafmtOnCompile := true,
     Test / scalafmtOnCompile := true
   )

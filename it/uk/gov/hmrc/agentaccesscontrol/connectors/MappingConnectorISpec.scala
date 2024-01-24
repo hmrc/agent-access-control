@@ -1,8 +1,8 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentaccesscontrol.model.{AgentReferenceMapping, AgentReferenceMappings}
-import uk.gov.hmrc.agentaccesscontrol.support.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.models.{AgentReferenceMapping, AgentReferenceMappings}
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.http.HeaderCarrier
