@@ -1,5 +1,7 @@
 
 lazy val root = (project in file("."))
+  .enablePlugins(PlayScala, SbtDistributablesPlugin)
+  .disablePlugins(JUnitXmlReportPlugin)
   .settings(
     name := "agent-access-control",
     organization := "uk.gov.hmrc",
@@ -35,4 +37,4 @@ lazy val root = (project in file("."))
     //fix for scoverage compile errors for scala 2.13.10
     libraryDependencySchemes ++= Seq("org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always)
   )
-  .enablePlugins(PlayScala, SbtDistributablesPlugin)
+
