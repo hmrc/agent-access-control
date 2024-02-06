@@ -17,12 +17,10 @@
 package uk.gov.hmrc.agentaccesscontrol.models
 
 sealed trait SaDesAgentClientFlagsApiResponse
-case class SaFoundResponse(auth64_8: Boolean, authI64_8: Boolean)
-    extends SaDesAgentClientFlagsApiResponse
-object SaNotFoundResponse extends SaDesAgentClientFlagsApiResponse
+case class SaFoundResponse(auth64_8: Boolean, authI64_8: Boolean) extends SaDesAgentClientFlagsApiResponse
+object SaNotFoundResponse                                         extends SaDesAgentClientFlagsApiResponse
 
 sealed trait PayeDesAgentClientFlagsApiResponse
 
-case class PayeFoundResponse(auth64_8: Boolean)
-    extends PayeDesAgentClientFlagsApiResponse
-object PayeNotFoundResponse extends PayeDesAgentClientFlagsApiResponse
+case class PayeFoundResponse(auth64_8: Boolean) extends PayeDesAgentClientFlagsApiResponse
+object PayeNotFoundResponse                     extends PayeDesAgentClientFlagsApiResponse

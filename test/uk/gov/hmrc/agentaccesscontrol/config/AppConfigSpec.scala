@@ -25,15 +25,13 @@ class AppConfigSpec extends UnitSpec {
   trait Setup {
     private val configuration: Map[String, Any] = Map(
       "microservice.services.des.authorization-token" -> "secret",
-      "microservice.services.auth.host" -> "localhost",
-      "microservice.services.auth.port" -> "0000",
-      "features.enable-granular-permissions" -> true
+      "microservice.services.auth.host"               -> "localhost",
+      "microservice.services.auth.port"               -> "0000",
+      "features.enable-granular-permissions"          -> true
     )
-    val stubbedAppConfig: AppConfig = new AppConfig(
-      new ServicesConfig(Configuration.from(configuration)))
+    val stubbedAppConfig: AppConfig = new AppConfig(new ServicesConfig(Configuration.from(configuration)))
 
-    val emptyAppConfig: AppConfig = new AppConfig(
-      new ServicesConfig(Configuration.from(Map.empty)))
+    val emptyAppConfig: AppConfig = new AppConfig(new ServicesConfig(Configuration.from(Map.empty)))
   }
 
   "baseUrl" should {

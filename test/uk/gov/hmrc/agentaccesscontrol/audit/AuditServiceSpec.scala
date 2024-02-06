@@ -16,20 +16,24 @@
 
 package uk.gov.hmrc.agentaccesscontrol.audit
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
 import play.api.test.FakeRequest
 import play.api.test.Helpers.await
 import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
-import uk.gov.hmrc.domain.{AgentCode, SaUtr}
-import uk.gov.hmrc.http.{Authorization, HeaderCarrier, RequestId, SessionId}
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.audit.http.connector.AuditResult.{
-  Disabled,
-  Failure,
-  Success
-}
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.SaUtr
+import uk.gov.hmrc.http.Authorization
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.RequestId
+import uk.gov.hmrc.http.SessionId
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.http.connector.AuditResult
+import uk.gov.hmrc.play.audit.http.connector.AuditResult.Disabled
+import uk.gov.hmrc.play.audit.http.connector.AuditResult.Failure
+import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.audit.model.DataEvent
-
-import scala.concurrent.{ExecutionContext, Future}
 
 class AuditServiceSpec extends UnitSpec {
 
@@ -40,9 +44,11 @@ class AuditServiceSpec extends UnitSpec {
   }
 
   private implicit val hc: HeaderCarrier =
-    HeaderCarrier(authorization = Some(Authorization("dummy bearer token")),
-                  sessionId = Some(SessionId("dummy session id")),
-                  requestId = Some(RequestId("dummy request id")))
+    HeaderCarrier(
+      authorization = Some(Authorization("dummy bearer token")),
+      sessionId = Some(SessionId("dummy session id")),
+      requestId = Some(RequestId("dummy request id"))
+    )
 
   private implicit val ec: ExecutionContext =
     concurrent.ExecutionContext.Implicits.global
@@ -76,8 +82,7 @@ class AuditServiceSpec extends UnitSpec {
 
   "sendAuditEvent" should {
     "handle a success response from the audit connector" in new Setup {
-      mockAuditConnector.sendEvent(*[DataEvent]) returns Future.successful(
-        Success)
+      mockAuditConnector.sendEvent(*[DataEvent]).returns(Future.successful(Success))
 
       val result: Future[AuditResult] = TestService.sendAuditEvent(
         AgentAccessControlDecision,
@@ -92,8 +97,7 @@ class AuditServiceSpec extends UnitSpec {
     }
 
     "handle a failure response from the audit connector" in new Setup {
-      mockAuditConnector.sendEvent(*[DataEvent]) returns Future.successful(
-        Failure("error"))
+      mockAuditConnector.sendEvent(*[DataEvent]).returns(Future.successful(Failure("error")))
 
       val result: Future[AuditResult] = TestService.sendAuditEvent(
         AgentAccessControlDecision,
@@ -108,8 +112,7 @@ class AuditServiceSpec extends UnitSpec {
     }
 
     "handle a disabled response from the audit connector" in new Setup {
-      mockAuditConnector.sendEvent(*[DataEvent]) returns Future.successful(
-        Disabled)
+      mockAuditConnector.sendEvent(*[DataEvent]).returns(Future.successful(Disabled))
 
       val result: Future[AuditResult] = TestService.sendAuditEvent(
         AgentAccessControlDecision,

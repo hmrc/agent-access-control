@@ -36,5 +36,3 @@ lazy val root = (project in file("."))
     libraryDependencySchemes ++= Seq("org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always)
   )
   .enablePlugins(PlayScala, SbtDistributablesPlugin)
-
-inConfig(IntegrationTest)(scalafmtCoreSettings)

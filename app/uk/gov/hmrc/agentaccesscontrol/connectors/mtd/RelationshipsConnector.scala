@@ -16,25 +16,26 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
+import java.net.URL
+import javax.inject.Inject
+import javax.inject.Singleton
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
 import com.google.inject.ImplementedBy
 import play.api.http.Status.NOT_FOUND
 import play.api.libs.json._
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.domain.TaxIdentifier
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{
-  HeaderCarrier,
-  HttpClient,
-  HttpResponse,
-  UpstreamErrorResponse
-}
+import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
-
-import java.net.URL
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
 
 case class Relationship(arn: String, clientId: String)
 
@@ -44,25 +45,21 @@ object Relationship {
 
 @ImplementedBy(classOf[RelationshipsConnectorImpl])
 trait RelationshipsConnector {
-  def relationshipExists(arn: Arn,
-                         maybeUserId: Option[String],
-                         identifier: TaxIdentifier)(
+  def relationshipExists(arn: Arn, maybeUserId: Option[String], identifier: TaxIdentifier)(
       implicit ec: ExecutionContext,
-      hc: HeaderCarrier): Future[Boolean]
+      hc: HeaderCarrier
+  ): Future[Boolean]
 
 }
 
 @Singleton
-class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
-                                           httpClient: HttpClient,
-                                           metrics: Metrics)
+class RelationshipsConnectorImpl @Inject() (appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics)
     extends RelationshipsConnector {
 
-  def relationshipExists(arn: Arn,
-                         maybeUserId: Option[String],
-                         identifier: TaxIdentifier)(
+  def relationshipExists(arn: Arn, maybeUserId: Option[String], identifier: TaxIdentifier)(
       implicit ec: ExecutionContext,
-      hc: HeaderCarrier): Future[Boolean] = {
+      hc: HeaderCarrier
+  ): Future[Boolean] = {
     /* TODO - Trying to deduce the service from the identifier type alone is discouraged - it is done here
        for legacy reasons but should be avoided. Consider changing the API to explicitly pass the intended service */
     val identifierTypeId = ClientIdentifier(identifier).enrolmentId
@@ -73,8 +70,7 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
           Service.Cbc // treat both CBC types the same, leave it for ACR to determine which
         case s => s
       }
-      .getOrElse(throw new IllegalArgumentException(
-        s"Tax identifier not supported by any service: $identifier"))
+      .getOrElse(throw new IllegalArgumentException(s"Tax identifier not supported by any service: $identifier"))
 
     val urlParam = maybeUserId.fold("")(userId => s"?userId=$userId")
     val relationshipUrl =
@@ -83,7 +79,8 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
       ).toString
 
     val timer = metrics.defaultRegistry.timer(
-      s"Timer-ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET")
+      s"Timer-ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET"
+    )
 
     timer.time()
     httpClient.GET[HttpResponse](relationshipUrl).map { response =>
@@ -92,8 +89,7 @@ class RelationshipsConnectorImpl @Inject()(appConfig: AppConfig,
         case status if is2xx(status) => true
         case NOT_FOUND               => false
         case _ =>
-          throw UpstreamErrorResponse(s"Error calling: $relationshipUrl",
-                                      response.status)
+          throw UpstreamErrorResponse(s"Error calling: $relationshipUrl", response.status)
       }
     }
   }

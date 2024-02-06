@@ -16,43 +16,46 @@
 
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
-import javax.inject.{Inject, Singleton}
-import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
+import javax.inject.Inject
+import javax.inject.Singleton
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
+import play.api.mvc.Action
+import play.api.mvc.AnyContent
+import play.api.mvc.ControllerComponents
+import play.api.mvc.Request
 import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
-import uk.gov.hmrc.agentaccesscontrol.services.{
-  AuthorisationService,
-  ESAuthorisationService
-}
+import uk.gov.hmrc.agentaccesscontrol.services.AuthorisationService
+import uk.gov.hmrc.agentaccesscontrol.services.ESAuthorisationService
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, Nino, SaUtr, TaxIdentifier}
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.EmpRef
+import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.domain.SaUtr
+import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.{ExecutionContext, Future}
-
 @Singleton
-class AuthorisationController @Inject()(
+class AuthorisationController @Inject() (
     val authorisationService: AuthorisationService,
     override val authConnector: AuthConnector,
     val esAuthorisationService: ESAuthorisationService,
-    cc: ControllerComponents)(implicit val ec: ExecutionContext)
+    cc: ControllerComponents
+)(implicit val ec: ExecutionContext)
     extends BackendController(cc)
     with AuthAction
     with Logging {
 
-  def authorise(authType: String,
-                agentCode: String,
-                clientId: String): Action[AnyContent] = {
+  def authorise(authType: String, agentCode: String, clientId: String): Action[AnyContent] = {
 
     Action.async { implicit request: Request[_] =>
       withAgentAuthorised(AgentCode(agentCode)) { authDetails =>
-        def standardAuth(service: Service,
-                         taxId: TaxIdentifier): Future[AccessResponse] =
-          esAuthorisationService.authoriseStandardService(AgentCode(agentCode),
-                                                          taxId,
-                                                          service.id,
-                                                          authDetails)
+        def standardAuth(service: Service, taxId: TaxIdentifier): Future[AccessResponse] =
+          esAuthorisationService.authoriseStandardService(AgentCode(agentCode), taxId, service.id, authDetails)
         val urnPattern = "^((?i)[a-z]{2}trust[0-9]{8})$"
         val utrPattern = "^\\d{10}$"
 
@@ -62,15 +65,12 @@ class AuthorisationController @Inject()(
             authorisationService.isAuthorisedForPaye(
               AgentCode(agentCode),
               EmpRef.fromIdentifiers(clientId),
-              authDetails)
+              authDetails
+            )
           case "sa-auth" =>
-            authorisationService.isAuthorisedForSa(AgentCode(agentCode),
-                                                   SaUtr(clientId),
-                                                   authDetails)
+            authorisationService.isAuthorisedForSa(AgentCode(agentCode), SaUtr(clientId), authDetails)
           case "afi-auth" =>
-            authorisationService.isAuthorisedForAfi(AgentCode(agentCode),
-                                                    Nino(clientId),
-                                                    authDetails)
+            authorisationService.isAuthorisedForAfi(AgentCode(agentCode), Nino(clientId), authDetails)
           // Standard cases
           case "mtd-it-auth"  => standardAuth(Service.MtdIt, MtdItId(clientId))
           case "mtd-vat-auth" => standardAuth(Service.Vat, Vrn(clientId))
@@ -80,23 +80,26 @@ class AuthorisationController @Inject()(
             standardAuth(Service.TrustNT, Urn(clientId))
           case "trust-auth" =>
             throw new IllegalArgumentException(
-              s"invalid trust tax identifier $clientId") //TODO this is not caught by the recover
+              s"invalid trust tax identifier $clientId"
+            ) // TODO this is not caught by the recover
           case "cgt-auth" =>
             standardAuth(Service.CapitalGains, CgtRef(clientId))
           case "ppt-auth" => standardAuth(Service.Ppt, PptRef(clientId))
           case "cbc-auth" =>
-            standardAuth(Service.Cbc, CbcId(clientId)) // AAC does not care about regime for CBC uk or non-uk, handled in ACR - audits will be uk for both
+            standardAuth(
+              Service.Cbc,
+              CbcId(clientId)
+            ) // AAC does not care about regime for CBC uk or non-uk, handled in ACR - audits will be uk for both
           case x =>
-            throw new IllegalArgumentException(s"Unexpected auth type: $x") //TODO this is not caught by the recover
+            throw new IllegalArgumentException(s"Unexpected auth type: $x") // TODO this is not caught by the recover
         }).map {
-            case AccessResponse.Authorised   => Ok
-            case AccessResponse.NoAssignment => Unauthorized("NO_ASSIGNMENT")
-            case _ =>
-              Unauthorized("NO_RELATIONSHIP")
-          }
-          .recover {
-            case e: IllegalArgumentException => BadRequest(e.getMessage)
-          }
+          case AccessResponse.Authorised   => Ok
+          case AccessResponse.NoAssignment => Unauthorized("NO_ASSIGNMENT")
+          case _ =>
+            Unauthorized("NO_RELATIONSHIP")
+        }.recover {
+          case e: IllegalArgumentException => BadRequest(e.getMessage)
+        }
       }
     }
   }

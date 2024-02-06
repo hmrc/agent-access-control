@@ -1,19 +1,20 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 import com.fasterxml.jackson.core.JsonParseException
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.domain._
-import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec with MockitoSugar {
 
-  val agentCode = AgentCode("A1234567890A")
+  val agentCode  = AgentCode("A1234567890A")
   val providerId = "12345-credId"
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -23,16 +24,17 @@ class EnrolmentStoreProxyConnectorSpec extends WireMockWithOneAppPerSuiteISpec w
   "EnrolmentStoreProxy" when {
 
     "assignedSaAgents is called" should {
-      behave like anES0Call(connector.getIRSADelegatedUserIdsFor, SaUtr("1234567890"))
+      behave.like(anES0Call(connector.getIRSADelegatedUserIdsFor, SaUtr("1234567890")))
     }
 
     "assignedPayeAgents is called" should {
-      behave like anES0Call(connector.getIRPAYEDelegatedUserIdsFor, EmpRef("123", "4567890"))
+      behave.like(anES0Call(connector.getIRPAYEDelegatedUserIdsFor, EmpRef("123", "4567890")))
     }
 
     def anES0Call[ClientId <: TaxIdentifier](
-      connectorFn: ClientId => Future[Set[AgentUserId]],
-      clientId: ClientId): Unit = {
+        connectorFn: ClientId => Future[Set[AgentUserId]],
+        clientId: ClientId
+    ): Unit = {
       "return agent assignments" in {
         given()
           .agentAdmin(agentCode, providerId, None, None)

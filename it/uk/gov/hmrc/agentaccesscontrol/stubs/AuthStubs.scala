@@ -1,6 +1,5 @@
 package uk.gov.hmrc.agentaccesscontrol.stubs
 
-
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
@@ -9,8 +8,11 @@ object AuthStubs {
   def authIsDown(): StubMapping =
     stubFor(
       post(urlEqualTo("/auth/authorise"))
-        .willReturn(aResponse()
-          .withStatus(500)))
+        .willReturn(
+          aResponse()
+            .withStatus(500)
+        )
+    )
 
   def userIsNotAuthenticated(): StubMapping =
     stubFor(
@@ -18,7 +20,9 @@ object AuthStubs {
         .willReturn(
           aResponse()
             .withStatus(401)
-            .withHeader("WWW-Authenticate", "MDTP detail=\"SessionRecordNotFound\"")))
+            .withHeader("WWW-Authenticate", "MDTP detail=\"SessionRecordNotFound\"")
+        )
+    )
 
   def userHasInsufficientEnrolments(): StubMapping =
     stubFor(
@@ -26,7 +30,9 @@ object AuthStubs {
         .willReturn(
           aResponse()
             .withStatus(401)
-            .withHeader("WWW-Authenticate", "MDTP detail=\"InsufficientEnrolments\"")))
+            .withHeader("WWW-Authenticate", "MDTP detail=\"InsufficientEnrolments\"")
+        )
+    )
 
   def userLoggedInViaUnsupportedAuthProvider(): StubMapping =
     stubFor(
@@ -34,21 +40,24 @@ object AuthStubs {
         .willReturn(
           aResponse()
             .withStatus(401)
-            .withHeader("WWW-Authenticate", "MDTP detail=\"UnsupportedAuthProvider\"")))
+            .withHeader("WWW-Authenticate", "MDTP detail=\"UnsupportedAuthProvider\"")
+        )
+    )
 
-  def userIsNotAnAgent()  = {
+  def userIsNotAnAgent() = {
     stubFor(
       post(urlEqualTo("/auth/authorise"))
         .willReturn(
           aResponse()
             .withStatus(401)
-            .withHeader("WWW-Authenticate", "MDTP detail=\"UnsupportedAffinityGroup\"")))
+            .withHeader("WWW-Authenticate", "MDTP detail=\"UnsupportedAffinityGroup\"")
+        )
+    )
   }
-
 
   def authenticatedAgentFor(mtdAgent: Boolean): StubMapping = {
     val (enrolKey, identifierKey): (String, String) =
-      if(mtdAgent) ("HMRC-AS-AGENT", "AgentReferenceNumber") else ("IR-SA-AGENT","IRAgentReference")
+      if (mtdAgent) ("HMRC-AS-AGENT", "AgentReferenceNumber") else ("IR-SA-AGENT", "IRAgentReference")
 
     givenAuthorisedFor(
       s"""
@@ -83,13 +92,8 @@ object AuthStubs {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(responseBody)))
-
-
-
-
-
-
-
+            .withBody(responseBody)
+        )
+    )
 
 }

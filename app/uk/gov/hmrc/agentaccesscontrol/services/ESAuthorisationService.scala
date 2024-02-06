@@ -16,68 +16,66 @@
 
 package uk.gov.hmrc.agentaccesscontrol.services
 
-import play.api.Logging
+import javax.inject.Inject
+import javax.inject.Singleton
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
 import play.api.mvc.Request
-import uk.gov.hmrc.agentaccesscontrol.audit.{
-  AgentAccessControlDecision,
-  AuditService
-}
+import play.api.Logging
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlDecision
+import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{
-  AgentClientAuthorisationConnector,
-  RelationshipsConnector
-}
-import uk.gov.hmrc.agentaccesscontrol.models.{AccessResponse, AuthDetails}
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.AgentClientAuthorisationConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
+import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
+import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.CredentialRole
-import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-
 @Singleton
-class ESAuthorisationService @Inject()(
+class ESAuthorisationService @Inject() (
     relationshipsConnector: RelationshipsConnector,
     val desAgentClientApiConnector: DesAgentClientApiConnector,
     val agentClientAuthorisationConnector: AgentClientAuthorisationConnector,
     agentPermissionsConnector: AgentPermissionsConnector,
     auditService: AuditService,
-    appConfig: AppConfig)(implicit ec: ExecutionContext)
+    appConfig: AppConfig
+)(implicit ec: ExecutionContext)
     extends AgentSuspensionChecker
     with Logging {
 
-  def authoriseStandardService(agentCode: AgentCode,
-                               taxIdentifier: TaxIdentifier,
-                               serviceId: String,
-                               authDetails: AuthDetails)(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[AccessResponse] =
+  def authoriseStandardService(
+      agentCode: AgentCode,
+      taxIdentifier: TaxIdentifier,
+      serviceId: String,
+      authDetails: AuthDetails
+  )(implicit hc: HeaderCarrier, request: Request[_]): Future[AccessResponse] =
     authDetails match {
       case agentAuthDetails @ AuthDetails(_, Some(arn), _, _, userRoleOpt) =>
         // TODO confirm with stakeholders if we can remove regime for suspension check?
         withSuspensionCheck(arn, getDesRegimeFor(serviceId)) {
-          authoriseBasedOnRelationships(agentCode,
-                                        taxIdentifier,
-                                        serviceId,
-                                        agentAuthDetails,
-                                        arn,
-                                        userRoleOpt)
+          authoriseBasedOnRelationships(agentCode, taxIdentifier, serviceId, agentAuthDetails, arn, userRoleOpt)
         }
 
       case _ =>
         val accessResponse = AccessResponse.NoRelationship
-        auditDecision(agentCode,
-                      authDetails,
-                      taxIdentifier,
-                      result = false,
-                      serviceId,
-                      AccessResponse.toReason(accessResponse))
-        logger.info(
-          s"Not authorised: No ARN found in HMRC-AS-AGENT enrolment for agentCode $agentCode")
+        auditDecision(
+          agentCode,
+          authDetails,
+          taxIdentifier,
+          result = false,
+          serviceId,
+          AccessResponse.toReason(accessResponse)
+        )
+        logger.info(s"Not authorised: No ARN found in HMRC-AS-AGENT enrolment for agentCode $agentCode")
         Future.successful(accessResponse)
     }
 
@@ -87,29 +85,29 @@ class ESAuthorisationService @Inject()(
       regime: String,
       agentAuthDetails: AuthDetails,
       arn: Arn,
-      userRoleOpt: Option[CredentialRole])(
-      implicit hc: HeaderCarrier,
-      request: Request[_]): Future[AccessResponse] = {
-    checkForRelationship(arn,
-                         Some(agentAuthDetails.ggCredentialId),
-                         regime,
-                         taxIdentifier)
+      userRoleOpt: Option[CredentialRole]
+  )(implicit hc: HeaderCarrier, request: Request[_]): Future[AccessResponse] = {
+    checkForRelationship(arn, Some(agentAuthDetails.ggCredentialId), regime, taxIdentifier)
       .map { result =>
-        auditDecision(agentCode,
-                      agentAuthDetails,
-                      taxIdentifier,
-                      result == AccessResponse.Authorised,
-                      regime,
-                      ("arn" -> arn.value) +: AccessResponse.toReason(result))
+        auditDecision(
+          agentCode,
+          agentAuthDetails,
+          taxIdentifier,
+          result == AccessResponse.Authorised,
+          regime,
+          ("arn" -> arn.value) +: AccessResponse.toReason(result)
+        )
         result match {
           case AccessResponse.Authorised =>
             logger.info(
               s"Access allowed for agentCode=$agentCode arn=${arn.value} client=${taxIdentifier.value} userRole: ${userRoleOpt
-                .getOrElse("None found")}")
+                  .getOrElse("None found")}"
+            )
           case otherResponse =>
             logger.info(
               s"Not authorised: Access not allowed for agentCode=$agentCode arn=${arn.value} client=${taxIdentifier.value} userRole: ${userRoleOpt
-                .getOrElse("None found")}. Response: $otherResponse")
+                  .getOrElse("None found")}. Response: $otherResponse"
+            )
         }
         result
       }
@@ -126,45 +124,39 @@ class ESAuthorisationService @Inject()(
     }
   }
 
-  private def auditDecision(agentCode: AgentCode,
-                            agentAuthDetails: AuthDetails,
-                            taxIdentifier: TaxIdentifier,
-                            result: Boolean,
-                            regime: String,
-                            extraDetails: Seq[(String, Any)])(
-      implicit hc: HeaderCarrier,
-      request: Request[Any],
-      ec: ExecutionContext): Future[AuditResult] =
+  private def auditDecision(
+      agentCode: AgentCode,
+      agentAuthDetails: AuthDetails,
+      taxIdentifier: TaxIdentifier,
+      result: Boolean,
+      regime: String,
+      extraDetails: Seq[(String, Any)]
+  )(implicit hc: HeaderCarrier, request: Request[Any], ec: ExecutionContext): Future[AuditResult] =
     auditService.sendAuditEvent(
       AgentAccessControlDecision,
       "agent access decision",
       agentCode,
       regime,
       taxIdentifier,
-      Seq("credId" -> agentAuthDetails.ggCredentialId,
-          "accessGranted" -> result) ++ extraDetails
+      Seq("credId" -> agentAuthDetails.ggCredentialId, "accessGranted" -> result) ++ extraDetails
     )
 
-  def checkForRelationship(arn: Arn,
-                           maybeUserId: Option[String],
-                           regime: String,
-                           taxIdentifier: TaxIdentifier)(
+  def checkForRelationship(arn: Arn, maybeUserId: Option[String], regime: String, taxIdentifier: TaxIdentifier)(
       implicit ec: ExecutionContext,
-      hc: HeaderCarrier): Future[AccessResponse] = {
+      hc: HeaderCarrier
+  ): Future[AccessResponse] = {
 
     for {
       // Does a relationship exist between agency (ARN) and client?
-      agencyHasRelationship <- relationshipsConnector.relationshipExists(
-        arn,
-        None,
-        taxIdentifier)
+      agencyHasRelationship <- relationshipsConnector.relationshipExists(arn, None, taxIdentifier)
       // Check whether Granular Permissions are enabled and opted-in for this agent.
       // If so, when calling agent-client-relationships, we will check whether a relationship exists _for that specific agent user_.
       // (A relationship is also deemed to exist if the agent user is part of an appropriate tax service group)
       // If Granular Permissions are not enabled or opted out, we only check whether a relationship exists with the agency.
-      granPermsEnabled <- if (!appConfig.enableGranularPermissions)
-        Future.successful(false)
-      else agentPermissionsConnector.granularPermissionsOptinRecordExists(arn)
+      granPermsEnabled <-
+        if (!appConfig.enableGranularPermissions)
+          Future.successful(false)
+        else agentPermissionsConnector.granularPermissionsOptinRecordExists(arn)
 
       result <- (agencyHasRelationship, granPermsEnabled, maybeUserId) match {
         // The agency hasn't got a relationship at all with the client: deny access
@@ -188,17 +180,18 @@ class ESAuthorisationService @Inject()(
             }
         case (true, true, None) =>
           throw new IllegalArgumentException(
-            "Cannot check for relationship: Granular Permissions are enabled but no user id is provided.")
+            "Cannot check for relationship: Granular Permissions are enabled but no user id is provided."
+          )
       }
     } yield result
   }
 
-  private def isAuthorisedBasedOnTaxServiceGroup(arn: Arn,
-                                                 userId: String,
-                                                 regime: String,
-                                                 taxIdentifier: TaxIdentifier)(
-      implicit ec: ExecutionContext,
-      hc: HeaderCarrier): Future[Boolean] = {
+  private def isAuthorisedBasedOnTaxServiceGroup(
+      arn: Arn,
+      userId: String,
+      regime: String,
+      taxIdentifier: TaxIdentifier
+  )(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
     val taxGroupsServiceKey = regime match {
       // These tax service groups use a truncated key to indicate either type
       case "HMRC-TERS-ORG" | "HMRC-TERSNT-ORG"   => "HMRC-TERS"

@@ -1,19 +1,21 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.afi
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.connectors.AfiRelationshipConnector
-import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportAppPerSuite
+import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.{AgentCode, Nino}
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
 
-  val arn = Arn("B1111B")
-  val clientId = Nino("AE123456C")
-  val agentCode = AgentCode("ABCDEF123456")
+  val arn        = Arn("B1111B")
+  val clientId   = Nino("AE123456C")
+  val agentCode  = AgentCode("ABCDEF123456")
   val providerId = "12345-credId"
 
   implicit val hc: HeaderCarrier = HeaderCarrier()

@@ -17,14 +17,12 @@
 package uk.gov.hmrc.agentaccesscontrol.models
 
 import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
-import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse.{
-  AgentSuspended,
-  Authorised,
-  NoAssignment,
-  NoRelationship,
-  Error,
-  toReason
-}
+import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse.toReason
+import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse.AgentSuspended
+import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse.Authorised
+import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse.Error
+import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse.NoAssignment
+import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse.NoRelationship
 
 class AccessResponseSpec extends UnitSpec {
 

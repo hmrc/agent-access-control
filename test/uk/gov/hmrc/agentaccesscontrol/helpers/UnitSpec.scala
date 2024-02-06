@@ -16,12 +16,9 @@
 
 package uk.gov.hmrc.agentaccesscontrol.helpers
 
-import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
+import org.mockito.ArgumentMatchersSugar
+import org.mockito.IdiomaticMockito
 import org.scalatestplus.play.PlaySpec
 import play.api.test.DefaultAwaitTimeout
 
-trait UnitSpec
-    extends PlaySpec
-    with DefaultAwaitTimeout
-    with IdiomaticMockito
-    with ArgumentMatchersSugar
+trait UnitSpec extends PlaySpec with DefaultAwaitTimeout with IdiomaticMockito with ArgumentMatchersSugar

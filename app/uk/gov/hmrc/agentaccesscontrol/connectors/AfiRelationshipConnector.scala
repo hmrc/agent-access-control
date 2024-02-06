@@ -16,37 +16,36 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import play.api.http.Status.NOT_FOUND
-import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.http.HttpErrorFunctions._
-import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
-import uk.gov.hmrc.http.{
-  HeaderCarrier,
-  HttpClient,
-  HttpResponse,
-  UpstreamErrorResponse
-}
-import uk.gov.hmrc.play.bootstrap.metrics.Metrics
-
 import java.net.URL
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
 
-class AfiRelationshipConnector @Inject()(appConfig: AppConfig,
-                                         httpClient: HttpClient,
-                                         metrics: Metrics) {
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
-  def hasRelationship(arn: String, clientId: String)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Boolean] = {
+import play.api.http.Status.NOT_FOUND
+import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.HttpErrorFunctions._
+import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
+import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.UpstreamErrorResponse
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
+
+class AfiRelationshipConnector @Inject() (appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics) {
+
+  def hasRelationship(
+      arn: String,
+      clientId: String
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
     val timer =
-      metrics.defaultRegistry.timer(
-        "Timer-ConsumedAPI-AgentFiRelationship-Check-GET")
+      metrics.defaultRegistry.timer("Timer-ConsumedAPI-AgentFiRelationship-Check-GET")
 
     val afiRelationshipUrl =
       new URL(
-        s"${appConfig.afiBaseUrl}/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId").toString
+        s"${appConfig.afiBaseUrl}/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId"
+      ).toString
 
     timer.time()
     httpClient.GET[HttpResponse](afiRelationshipUrl).map { response =>
@@ -55,8 +54,7 @@ class AfiRelationshipConnector @Inject()(appConfig: AppConfig,
         case status if is2xx(status) => true
         case NOT_FOUND               => false
         case _ =>
-          throw UpstreamErrorResponse(s"Error calling: $afiRelationshipUrl",
-                                      response.status)
+          throw UpstreamErrorResponse(s"Error calling: $afiRelationshipUrl", response.status)
       }
     }
   }

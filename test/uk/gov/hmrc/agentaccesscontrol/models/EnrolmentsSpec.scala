@@ -29,16 +29,15 @@ class EnrolmentsSpec extends UnitSpec {
           .identifier("empty") mustBe None
       }
       "the provided identifier key does not match an identifier in the list" in {
-        AuthEnrolment("key",
-                      Seq(EnrolmentIdentifier("UTR", "1234567890")),
-                      "state").identifier("TaxOfficeNo") mustBe None
+        AuthEnrolment("key", Seq(EnrolmentIdentifier("UTR", "1234567890")), "state")
+          .identifier("TaxOfficeNo") mustBe None
       }
     }
     "return Some(identifier)" when {
       "the identifier key matches an identifier in the list" in {
-        AuthEnrolment("key",
-                      Seq(EnrolmentIdentifier("UTR", "1234567890")),
-                      "state").identifier("UTR") mustBe Some("1234567890")
+        AuthEnrolment("key", Seq(EnrolmentIdentifier("UTR", "1234567890")), "state").identifier("UTR") mustBe Some(
+          "1234567890"
+        )
       }
     }
   }
@@ -49,21 +48,16 @@ class EnrolmentsSpec extends UnitSpec {
         Enrolments(Set.empty).saAgentReferenceOption mustBe None
       }
       "no IR-SA-AGENT enrolment exists" in {
-        Enrolments(Set(
-          AuthEnrolment("HMRC-AS-AGENT",
-                        Seq(EnrolmentIdentifier("AgentReferenceNumber", "arn")),
-                        "State"))).saAgentReferenceOption mustBe None
+        Enrolments(
+          Set(AuthEnrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", "arn")), "State"))
+        ).saAgentReferenceOption mustBe None
       }
     }
     "return Some(SaAgentReference)" when {
       "IR-SA-AGENT enrolment exists" in {
         Enrolments(
-          Set(
-            AuthEnrolment(
-              "IR-SA-AGENT",
-              Seq(EnrolmentIdentifier("IRAgentReference", "enrol-123")),
-              "State"))).saAgentReferenceOption mustBe Some(
-          SaAgentReference("enrol-123"))
+          Set(AuthEnrolment("IR-SA-AGENT", Seq(EnrolmentIdentifier("IRAgentReference", "enrol-123")), "State"))
+        ).saAgentReferenceOption mustBe Some(SaAgentReference("enrol-123"))
       }
     }
   }
@@ -75,19 +69,15 @@ class EnrolmentsSpec extends UnitSpec {
       }
       "no HMRC-AS-AGENT enrolment exists" in {
         Enrolments(
-          Set(
-            AuthEnrolment(
-              "IR-SA-AGENT",
-              Seq(EnrolmentIdentifier("IRAgentReference", "enrol-123")),
-              "State"))).arnOption mustBe None
+          Set(AuthEnrolment("IR-SA-AGENT", Seq(EnrolmentIdentifier("IRAgentReference", "enrol-123")), "State"))
+        ).arnOption mustBe None
       }
     }
     "return Some(AgentReferenceNumber)" when {
       "HMRC-AS-AGENT enrolment exists" in {
-        Enrolments(Set(
-          AuthEnrolment("HMRC-AS-AGENT",
-                        Seq(EnrolmentIdentifier("AgentReferenceNumber", "arn")),
-                        "State"))).arnOption mustBe Some(Arn("arn"))
+        Enrolments(
+          Set(AuthEnrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", "arn")), "State"))
+        ).arnOption mustBe Some(Arn("arn"))
       }
     }
   }

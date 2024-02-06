@@ -1,18 +1,21 @@
 package uk.gov.hmrc.agentaccesscontrol
 
-import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportServerPerTest
+import uk.gov.hmrc.agentaccesscontrol.helpers.Resource
+import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneServerPerTestISpec
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HttpResponse
 
 trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
 
-  private val agentCode = AgentCode("ABCDEF123456")
+  private val agentCode  = AgentCode("ABCDEF123456")
   private val providerId = "12345-credId"
-  private val arn = Arn("AARN0000002")
+  private val arn        = Arn("AARN0000002")
 
   private val NoRelationship = "NO_RELATIONSHIP"
-  private val NoAssignment = "NO_ASSIGNMENT"
+  private val NoAssignment   = "NO_ASSIGNMENT"
 
   def standardAuthBehaviour(authType: String, clientId: TaxIdentifier, regime: String): Unit = {
     def authResponseFor(agentCode: AgentCode, clientId: TaxIdentifier, method: String): HttpResponse = {
@@ -51,7 +54,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           val response = authResponseFor(agentCode, clientId, method)
 
           response.status shouldBe 401
-          response.body should include (NoRelationship)
+          response.body should include(NoRelationship)
 
         }
 
@@ -68,7 +71,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           val response = authResponseFor(agentCode, clientId, method)
 
           response.status shouldBe 401
-          response.body should include (NoRelationship)
+          response.body should include(NoRelationship)
 
         }
 
@@ -87,7 +90,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           val response = authResponseFor(agentCode, clientId, method)
 
           response.status shouldBe 401
-          response.body should include (NoAssignment)
+          response.body should include(NoAssignment)
         }
 
       }
@@ -135,7 +138,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
         val response = authResponseFor(agentCode, clientId, method)
 
         response.status shouldBe 401
-        response.body should include (NoRelationship)
+        response.body should include(NoRelationship)
 
         timerShouldExistsAndBeenUpdated(s"API-__${authType}__agent__:__client__:-GET")
       }
@@ -154,7 +157,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
         val response = authResponseFor(agentCode, clientId, method)
 
         response.status shouldBe 401
-        response.body should include (NoRelationship)
+        response.body should include(NoRelationship)
 
         timerShouldExistsAndBeenUpdated(s"API-__${authType}__agent__:__client__:-GET")
       }
@@ -187,7 +190,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           val response = authResponseFor(agentCode, clientId, method)
 
           response.status shouldBe 401
-          response.body should include (NoRelationship)
+          response.body should include(NoRelationship)
         }
 
         "there is no relationship between the agency and client" in {
@@ -203,7 +206,7 @@ trait StandardAuthBehaviours extends WireMockWithOneServerPerTestISpec with Metr
           val response = authResponseFor(agentCode, clientId, method)
 
           response.status shouldBe 401
-          response.body should include (NoRelationship)
+          response.body should include(NoRelationship)
         }
       }
 

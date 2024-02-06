@@ -16,31 +16,30 @@
 
 package uk.gov.hmrc.agentaccesscontrol.services
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.test.Helpers.await
-import uk.gov.hmrc.agentaccesscontrol.audit.{
-  AgentAccessControlEvent,
-  AuditService
-}
+import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent
+import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.{
-  AgentClientAuthorisationConnector,
-  RelationshipsConnector
-}
-import uk.gov.hmrc.agentmtdidentifiers.model._
-import uk.gov.hmrc.auth.core.User
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, TaxIdentifier}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.AgentClientAuthorisationConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
-import uk.gov.hmrc.agentaccesscontrol.models.{AccessResponse, AuthDetails}
+import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
+import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
+import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.agentmtdidentifiers.model.Service.CapitalGains
+import uk.gov.hmrc.auth.core.User
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.SaAgentReference
+import uk.gov.hmrc.domain.TaxIdentifier
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 class ESAuthorisationServiceSpec extends UnitSpec {
 
@@ -50,8 +49,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
       mock[RelationshipsConnector]
     protected val mockDesAgentClientApiConnector: DesAgentClientApiConnector =
       mock[DesAgentClientApiConnector]
-    protected val mockAgentClientAuthorisationConnector
-      : AgentClientAuthorisationConnector =
+    protected val mockAgentClientAuthorisationConnector: AgentClientAuthorisationConnector =
       mock[AgentClientAuthorisationConnector]
     protected val mockAgentPermissionsConnector: AgentPermissionsConnector =
       mock[AgentPermissionsConnector]
@@ -68,8 +66,8 @@ class ESAuthorisationServiceSpec extends UnitSpec {
         )
   }
 
-  private val agentCode: AgentCode = AgentCode("agentCode")
-  private val arn: Arn = Arn("arn")
+  private val agentCode: AgentCode         = AgentCode("agentCode")
+  private val arn: Arn                     = Arn("arn")
   private val saAgentRef: SaAgentReference = SaAgentReference("ABC456")
   private val mtdAuthDetails: AuthDetails =
     AuthDetails(None, Some(arn), "ggId", Some("Agent"), Some(User))
@@ -79,16 +77,12 @@ class ESAuthorisationServiceSpec extends UnitSpec {
   implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
     FakeRequest("GET", "/agent-access-control/mtd-it-auth/agent/arn/client/utr")
 
-  private val templateTestDataSets
-    : Seq[(Service, TaxIdentifier, String, String)] = Seq(
+  private val templateTestDataSets: Seq[(Service, TaxIdentifier, String, String)] = Seq(
     (Service.MtdIt, MtdItId("clientId"), "ITSA", Service.MtdIt.id),
     (Service.Vat, Vrn("vrn"), "ALL", Service.Vat.id),
     (Service.Trust, Utr("utr"), "TRS", "HMRC-TERS"),
     (Service.TrustNT, Urn("urn"), "TRS", "HMRC-TERS"),
-    (Service.CapitalGains,
-     CgtRef("XMCGTP123456789"),
-     "CGT",
-     Service.CapitalGains.id),
+    (Service.CapitalGains, CgtRef("XMCGTP123456789"), "CGT", Service.CapitalGains.id),
     (Service.Ppt, PptRef("pptRef"), "AGSV", Service.Ppt.id),
     (Service.Cbc, CbcId("pptRef"), "CBC", "HMRC-CBC"),
     (Service.CbcNonUk, CbcId("pptRef"), "CBC", "HMRC-CBC")
@@ -97,186 +91,207 @@ class ESAuthorisationServiceSpec extends UnitSpec {
   templateTestDataSets.foreach(testData =>
     s"authorise ${testData._1.id}" should {
       "allow access for agent with a client relationship" in new Setup {
-        mockAuditService.sendAuditEvent(
-          *[AgentAccessControlEvent],
-          *[String],
-          *[AgentCode],
-          *[String],
-          *[TaxIdentifier],
-          *[Seq[(String, Any)]]) returns Future.successful(Success)
+        mockAuditService
+          .sendAuditEvent(
+            *[AgentAccessControlEvent],
+            *[String],
+            *[AgentCode],
+            *[String],
+            *[TaxIdentifier],
+            *[Seq[(String, Any)]]
+          )
+          .returns(Future.successful(Success))
         mockAgentPermissionsConnector
-          .granularPermissionsOptinRecordExists(arn) returns Future.successful(
-          true)
+          .granularPermissionsOptinRecordExists(arn)
+          .returns(Future.successful(true))
         mockAgentPermissionsConnector
-          .getTaxServiceGroups(arn, testData._4) returns Future.successful(None)
+          .getTaxServiceGroups(arn, testData._4)
+          .returns(Future.successful(None))
         mockRelationshipsConnector
-          .relationshipExists(arn, None, testData._2) returns Future.successful(
-          true)
-        mockRelationshipsConnector.relationshipExists(
-          arn,
-          Some(mtdAuthDetails.ggCredentialId),
-          testData._2) returns
-          Future.successful(true)
-        mockAgentClientAuthorisationConnector.getSuspensionDetails(arn) returns
-          Future.successful(SuspensionDetails.notSuspended)
+          .relationshipExists(arn, None, testData._2)
+          .returns(Future.successful(true))
+        mockRelationshipsConnector
+          .relationshipExists(arn, Some(mtdAuthDetails.ggCredentialId), testData._2)
+          .returns(Future.successful(true))
+        mockAgentClientAuthorisationConnector
+          .getSuspensionDetails(arn)
+          .returns(Future.successful(SuspensionDetails.notSuspended))
 
         val result: AccessResponse =
-          await(
-            TestService.authoriseStandardService(agentCode,
-                                                 testData._2,
-                                                 testData._1.id,
-                                                 mtdAuthDetails))
+          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1.id, mtdAuthDetails))
 
         result mustBe AccessResponse.Authorised
       }
 
       "deny access for a non-mtd agent" in new Setup {
-        mockAuditService.sendAuditEvent(
-          *[AgentAccessControlEvent],
-          *[String],
-          *[AgentCode],
-          *[String],
-          *[TaxIdentifier],
-          *[Seq[(String, Any)]]) returns Future.successful(Success)
+        mockAuditService
+          .sendAuditEvent(
+            *[AgentAccessControlEvent],
+            *[String],
+            *[AgentCode],
+            *[String],
+            *[TaxIdentifier],
+            *[Seq[(String, Any)]]
+          )
+          .returns(Future.successful(Success))
 
         val result: AccessResponse =
-          await(
-            TestService.authoriseStandardService(agentCode,
-                                                 testData._2,
-                                                 testData._1.id,
-                                                 nonMtdAuthDetails))
+          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1.id, nonMtdAuthDetails))
 
         result mustBe AccessResponse.NoRelationship
       }
 
       "deny access for a mtd agent without a client relationship" in new Setup {
         mockAgentPermissionsConnector
-          .granularPermissionsOptinRecordExists(arn) returns Future.successful(
-          true)
-        mockAuditService.sendAuditEvent(
-          *[AgentAccessControlEvent],
-          *[String],
-          *[AgentCode],
-          *[String],
-          *[TaxIdentifier],
-          *[Seq[(String, Any)]]) returns Future.successful(Success)
+          .granularPermissionsOptinRecordExists(arn)
+          .returns(Future.successful(true))
+        mockAuditService
+          .sendAuditEvent(
+            *[AgentAccessControlEvent],
+            *[String],
+            *[AgentCode],
+            *[String],
+            *[TaxIdentifier],
+            *[Seq[(String, Any)]]
+          )
+          .returns(Future.successful(Success))
         mockRelationshipsConnector
-          .relationshipExists(arn, None, testData._2) returns Future.successful(
-          false)
-        mockAgentClientAuthorisationConnector.getSuspensionDetails(arn) returns
-          Future.successful(SuspensionDetails.notSuspended)
+          .relationshipExists(arn, None, testData._2)
+          .returns(Future.successful(false))
+        mockAgentClientAuthorisationConnector
+          .getSuspensionDetails(arn)
+          .returns(Future.successful(SuspensionDetails.notSuspended))
 
         val result: AccessResponse =
-          await(
-            TestService.authoriseStandardService(agentCode,
-                                                 testData._2,
-                                                 testData._1.id,
-                                                 mtdAuthDetails))
+          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1.id, mtdAuthDetails))
 
         result mustBe AccessResponse.NoRelationship
       }
 
       "deny access for a mtd agent with a client relationship but agent user is unassigned (and access groups turned on)" in new Setup {
-        mockAuditService.sendAuditEvent(
-          *[AgentAccessControlEvent],
-          *[String],
-          *[AgentCode],
-          *[String],
-          *[TaxIdentifier],
-          *[Seq[(String, Any)]]) returns Future.successful(Success)
+        mockAuditService
+          .sendAuditEvent(
+            *[AgentAccessControlEvent],
+            *[String],
+            *[AgentCode],
+            *[String],
+            *[TaxIdentifier],
+            *[Seq[(String, Any)]]
+          )
+          .returns(Future.successful(Success))
         mockRelationshipsConnector
-          .relationshipExists(arn, None, testData._2) returns Future.successful(
-          true)
-        mockRelationshipsConnector.relationshipExists(
-          arn,
-          Some(mtdAuthDetails.ggCredentialId),
-          testData._2) returns
-          Future.successful(false)
-        mockAgentClientAuthorisationConnector.getSuspensionDetails(arn) returns
-          Future.successful(SuspensionDetails.notSuspended)
-        mockAppConfig.enableGranularPermissions returns true
+          .relationshipExists(arn, None, testData._2)
+          .returns(Future.successful(true))
+        mockRelationshipsConnector
+          .relationshipExists(arn, Some(mtdAuthDetails.ggCredentialId), testData._2)
+          .returns(Future.successful(false))
+        mockAgentClientAuthorisationConnector
+          .getSuspensionDetails(arn)
+          .returns(Future.successful(SuspensionDetails.notSuspended))
+        mockAppConfig.enableGranularPermissions.returns(true)
         mockAgentPermissionsConnector
-          .granularPermissionsOptinRecordExists(arn) returns Future.successful(
-          true)
+          .granularPermissionsOptinRecordExists(arn)
+          .returns(Future.successful(true))
         mockAgentPermissionsConnector
-          .getTaxServiceGroups(arn, testData._4) returns Future.successful(None)
+          .getTaxServiceGroups(arn, testData._4)
+          .returns(Future.successful(None))
 
         val result: AccessResponse =
-          await(
-            TestService.authoriseStandardService(agentCode,
-                                                 testData._2,
-                                                 testData._1.id,
-                                                 mtdAuthDetails))
+          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1.id, mtdAuthDetails))
 
         result mustBe AccessResponse.NoAssignment
       }
 
       "handle suspended agents" in new Setup {
-        mockAgentClientAuthorisationConnector.getSuspensionDetails(arn) returns
-          Future.successful(
-            SuspensionDetails(suspensionStatus = true, Some(Set(testData._3)))
+        mockAgentClientAuthorisationConnector
+          .getSuspensionDetails(arn)
+          .returns(
+            Future.successful(
+              SuspensionDetails(suspensionStatus = true, Some(Set(testData._3)))
+            )
           )
 
         val result: AccessResponse =
-          await(
-            TestService.authoriseStandardService(agentCode,
-                                                 testData._2,
-                                                 testData._1.id,
-                                                 mtdAuthDetails))
+          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1.id, mtdAuthDetails))
 
         result mustBe AccessResponse.AgentSuspended
       }
-  })
+    }
+  )
 
   "granular permissions logic" should {
     "when GP enabled and opted in, specify user to check in relationship service call" in new Setup {
       private val cgtRef = CgtRef("XMCGTP123456789")
-      mockAuditService.sendAuditEvent(
-        *[AgentAccessControlEvent],
-        *[String],
-        *[AgentCode],
-        *[String],
-        *[TaxIdentifier],
-        *[Seq[(String, Any)]]) returns Future.successful(Success)
-      mockAgentClientAuthorisationConnector.getSuspensionDetails(arn) returns
-        Future.successful(SuspensionDetails.notSuspended)
-      mockAgentPermissionsConnector.granularPermissionsOptinRecordExists(arn) returns Future
-        .successful(true)
-      mockAgentPermissionsConnector.getTaxServiceGroups(arn, CapitalGains.id) returns Future
-        .successful(None)
-      mockRelationshipsConnector.relationshipExists(arn, Some("ggId"), cgtRef) returns Future
-        .successful(true)
-      mockRelationshipsConnector.relationshipExists(arn, None, cgtRef) returns Future
-        .successful(true)
+      mockAuditService
+        .sendAuditEvent(
+          *[AgentAccessControlEvent],
+          *[String],
+          *[AgentCode],
+          *[String],
+          *[TaxIdentifier],
+          *[Seq[(String, Any)]]
+        )
+        .returns(Future.successful(Success))
+      mockAgentClientAuthorisationConnector
+        .getSuspensionDetails(arn)
+        .returns(Future.successful(SuspensionDetails.notSuspended))
+      mockAgentPermissionsConnector
+        .granularPermissionsOptinRecordExists(arn)
+        .returns(
+          Future
+            .successful(true)
+        )
+      mockAgentPermissionsConnector
+        .getTaxServiceGroups(arn, CapitalGains.id)
+        .returns(
+          Future
+            .successful(None)
+        )
+      mockRelationshipsConnector
+        .relationshipExists(arn, Some("ggId"), cgtRef)
+        .returns(
+          Future
+            .successful(true)
+        )
+      mockRelationshipsConnector
+        .relationshipExists(arn, None, cgtRef)
+        .returns(
+          Future
+            .successful(true)
+        )
 
-      await(
-        TestService.authoriseStandardService(agentCode,
-                                             cgtRef,
-                                             Service.CapitalGains.id,
-                                             mtdAuthDetails))
+      await(TestService.authoriseStandardService(agentCode, cgtRef, Service.CapitalGains.id, mtdAuthDetails))
     }
 
     "when GP outed out, do NOT specify user to check in relationship service call" in new Setup {
       private val cgtRef = CgtRef("XMCGTP123456789")
-      mockAuditService.sendAuditEvent(
-        *[AgentAccessControlEvent],
-        *[String],
-        *[AgentCode],
-        *[String],
-        *[TaxIdentifier],
-        *[Seq[(String, Any)]]) returns Future.successful(Success)
-      mockAgentClientAuthorisationConnector.getSuspensionDetails(arn) returns
-        Future.successful(SuspensionDetails.notSuspended)
-      mockAgentPermissionsConnector.granularPermissionsOptinRecordExists(arn) returns Future
-        .successful(false)
-      mockRelationshipsConnector.relationshipExists(arn, None, cgtRef) returns Future
-        .successful(true)
+      mockAuditService
+        .sendAuditEvent(
+          *[AgentAccessControlEvent],
+          *[String],
+          *[AgentCode],
+          *[String],
+          *[TaxIdentifier],
+          *[Seq[(String, Any)]]
+        )
+        .returns(Future.successful(Success))
+      mockAgentClientAuthorisationConnector
+        .getSuspensionDetails(arn)
+        .returns(Future.successful(SuspensionDetails.notSuspended))
+      mockAgentPermissionsConnector
+        .granularPermissionsOptinRecordExists(arn)
+        .returns(
+          Future
+            .successful(false)
+        )
+      mockRelationshipsConnector
+        .relationshipExists(arn, None, cgtRef)
+        .returns(
+          Future
+            .successful(true)
+        )
 
-      await(
-        TestService.authoriseStandardService(agentCode,
-                                             cgtRef,
-                                             Service.CapitalGains.id,
-                                             mtdAuthDetails))
+      await(TestService.authoriseStandardService(agentCode, cgtRef, Service.CapitalGains.id, mtdAuthDetails))
     }
   }
 

@@ -16,18 +16,22 @@
 
 package uk.gov.hmrc.agentaccesscontrol
 
-import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportServerPerTest
+import uk.gov.hmrc.agentaccesscontrol.helpers.Resource
+import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneServerPerTestISpec
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.{AgentCode, SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.SaAgentReference
+import uk.gov.hmrc.domain.SaUtr
 import uk.gov.hmrc.http.HttpResponse
 
 class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
 
-  val agentCode = AgentCode("ABCDEF123456")
+  val agentCode        = AgentCode("ABCDEF123456")
   val saAgentReference = SaAgentReference("enrol-123")
-  val providerId = "12345-credId"
-  val clientUtr = SaUtr("123")
-  val arn = Arn("AARN0000002")
+  val providerId       = "12345-credId"
+  val clientUtr        = SaUtr("123")
+  val arn              = Arn("AARN0000002")
 
   "GET /agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
     val method = "GET"
@@ -37,11 +41,9 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
           .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
           .userIsNotAuthenticated()
 
-
         authResponseFor(agentCode, clientUtr, method).status shouldBe 401
       }
     }
-
 
     "agent and client has no relation in DES" in {
       given()
@@ -53,7 +55,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
       authResponseFor(agentCode, clientUtr, method).status shouldBe 401
     }
 
-
     "the client has authorised the agent only with 64-8, but not i64-8" in {
       given()
         .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
@@ -64,7 +65,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 401
     }
-
 
     "the client has authorised the agent only with i64-8, but not 64-8" in {
       given()
@@ -88,7 +88,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
       authResponseFor(agentCode, clientUtr, method).status shouldBe 401
     }
 
-
     "the client is not assigned to the agent in Enrolment Store Proxy" in {
       given()
         .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
@@ -100,7 +99,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
       authResponseFor(agentCode, clientUtr, method).status shouldBe 401
     }
 
-
     "agent uses an MTD cred and has no mappings" in {
       given()
         .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
@@ -110,7 +108,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 401
     }
-
 
     "agent uses an MTD cred and searched with invalid or unsupported key" in {
       given()
@@ -122,7 +119,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
       authResponseFor(agentCode, clientUtr, method).status shouldBe 401
     }
 
-
     "agent uses an MTD cred, has a mappings but no client delegated" in {
       given()
         .agentAdmin(agentCode, providerId, None, Some(arn))
@@ -133,7 +129,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 401
     }
-
 
     "agent uses an MTD cred, has multiple mappings but no client delegated" in {
       given()
@@ -147,7 +142,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 401
     }
-
 
     "agent uses an MTD cred, has multiple mappings, gg has delegate relatioship but ETMP has no relationship" in {
       given()
@@ -163,8 +157,6 @@ class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metric
 
       authResponseFor(agentCode, clientUtr, method).status shouldBe 401
     }
-
-
 
     "respond with 502 (bad gateway)" when {
       "DES is down" in {

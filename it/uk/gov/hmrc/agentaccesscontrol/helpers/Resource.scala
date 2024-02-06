@@ -16,15 +16,19 @@
 
 package uk.gov.hmrc.agentaccesscontrol.helpers
 
-import play.api.libs.json.{Json, Writes}
-import play.api.libs.ws.{WSRequest, WSResponse}
-import play.api.test.WsTestClient
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import uk.gov.hmrc.play.http.ws.WSHttpResponse
-
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
+import play.api.libs.json.Json
+import play.api.libs.json.Writes
+import play.api.libs.ws.WSRequest
+import play.api.libs.ws.WSResponse
+import play.api.test.WsTestClient
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.play.http.ws.WSHttpResponse
 
 class Resource(path: String)(port: Int) {
 
@@ -38,17 +42,21 @@ class Resource(path: String)(port: Int) {
   private def doGet(url: String)(implicit hc: HeaderCarrier): HttpResponse = perform(url) { _.get() }
 
   private def doPost[A](url: String, body: A, headers: Seq[(String, String)] = Seq.empty)(
-    implicit writes: Writes[A],
-    hc: HeaderCarrier): HttpResponse = perform(url) { _.post(Json.toJson(body)) }
+      implicit writes: Writes[A],
+      hc: HeaderCarrier
+  ): HttpResponse = perform(url) { _.post(Json.toJson(body)) }
 
   private def perform(url: String)(fun: WSRequest => Future[WSResponse])(implicit hc: HeaderCarrier): HttpResponse = {
     val headers = hc.headersForUrl(HeaderCarrier.Config())(url) :+ ("Authorization" -> "Bearer XYZ")
     await(
       fun(
-        WsTestClient.wsUrl(url)(port)
+        WsTestClient
+          .wsUrl(url)(port)
           .withHttpHeaders(headers: _*)
-          .withRequestTimeout(Duration(20, SECONDS)))
-        .map(WSHttpResponse(_)))
+          .withRequestTimeout(Duration(20, SECONDS))
+      )
+        .map(WSHttpResponse(_))
+    )
   }
 
   private def await[A](future: Future[A]): A = Await.result(future, Duration(10, SECONDS))

@@ -1,13 +1,14 @@
 package uk.gov.hmrc.agentaccesscontrol.helpers
 
+import scala.jdk.CollectionConverters._
+
 import com.codahale.metrics.MetricRegistry
-import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneServerPerTest}
+import org.scalatest.Assertion
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import org.scalatestplus.play.guice.GuiceOneServerPerTest
 import play.api.Application
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
-
-import scala.jdk.CollectionConverters._
 
 trait MetricTestSupport extends Matchers {
   protected var metricsRegistry: MetricRegistry = _
