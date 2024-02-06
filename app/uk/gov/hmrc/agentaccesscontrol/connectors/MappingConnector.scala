@@ -16,32 +16,33 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
+import java.net.URL
+import javax.inject.Inject
+import javax.inject.Singleton
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.control.NonFatal
+
 import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMappings
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-import java.net.URL
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
-
 @Singleton
-class MappingConnector @Inject()(appConfig: AppConfig,
-                                 httpClient: HttpClient,
-                                 metrics: Metrics)
-    extends Logging {
+class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics) extends Logging {
 
-  def getAgentMappings(key: String, arn: Arn)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[AgentReferenceMappings] = {
+  def getAgentMappings(
+      key: String,
+      arn: Arn
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AgentReferenceMappings] = {
 
     val timer =
-      metrics.defaultRegistry.timer(
-        s"Timer-ConsumedAPI-AgentMapping-Check-$key-GET")
+      metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-AgentMapping-Check-$key-GET")
 
     timer.time()
     httpClient
@@ -59,6 +60,5 @@ class MappingConnector @Inject()(appConfig: AppConfig,
   }
 
   def genMappingUrl(key: String, arn: Arn): URL =
-    new URL(
-      s"${appConfig.agentMappingBaseUrl}/agent-mapping/mappings/key/$key/arn/${arn.value}")
+    new URL(s"${appConfig.agentMappingBaseUrl}/agent-mapping/mappings/key/$key/arn/${arn.value}")
 }

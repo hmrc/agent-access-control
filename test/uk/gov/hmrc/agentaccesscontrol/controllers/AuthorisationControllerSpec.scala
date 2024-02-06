@@ -16,47 +16,47 @@
 
 package uk.gov.hmrc.agentaccesscontrol.controllers
 
-import play.api.mvc.{ControllerComponents, Request, Result}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
+import play.api.mvc.ControllerComponents
+import play.api.mvc.Request
+import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.mvc.Http.Status
 import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
-import uk.gov.hmrc.agentaccesscontrol.models.{AccessResponse, AuthDetails}
-import uk.gov.hmrc.agentaccesscontrol.services.{
-  AuthorisationService,
-  ESAuthorisationService
-}
-import uk.gov.hmrc.agentmtdidentifiers.model.{
-  Arn,
-  CbcId,
-  CgtRef,
-  MtdItId,
-  PptRef,
-  Service,
-  Urn,
-  Utr,
-  Vrn
-}
+import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
+import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
+import uk.gov.hmrc.agentaccesscontrol.services.AuthorisationService
+import uk.gov.hmrc.agentaccesscontrol.services.ESAuthorisationService
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.CbcId
+import uk.gov.hmrc.agentmtdidentifiers.model.CgtRef
+import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
+import uk.gov.hmrc.agentmtdidentifiers.model.PptRef
+import uk.gov.hmrc.agentmtdidentifiers.model.Service
+import uk.gov.hmrc.agentmtdidentifiers.model.Urn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentmtdidentifiers.model.Vrn
+import uk.gov.hmrc.auth.core.{ Nino => _, _ }
 import uk.gov.hmrc.auth.core.authorise.Predicate
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
-import uk.gov.hmrc.auth.core.{Nino => _, _}
-import uk.gov.hmrc.domain.{
-  AgentCode,
-  EmpRef,
-  Nino,
-  SaAgentReference,
-  SaUtr,
-  TaxIdentifier
-}
+import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.auth.core.retrieve.Credentials
+import uk.gov.hmrc.auth.core.retrieve.Retrieval
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.EmpRef
+import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.domain.SaAgentReference
+import uk.gov.hmrc.domain.SaUtr
+import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
-
-import scala.concurrent.{ExecutionContext, Future}
 
 class AuthorisationControllerSpec extends UnitSpec {
 
-  private val cc: ControllerComponents = stubControllerComponents()
-  private val arn: Arn = Arn("arn")
-  private val agentCode = "ABCDEF123456"
+  private val cc: ControllerComponents  = stubControllerComponents()
+  private val arn: Arn                  = Arn("arn")
+  private val agentCode                 = "ABCDEF123456"
   private val credentialRole: User.type = User
 
   trait Setup {
@@ -67,34 +67,29 @@ class AuthorisationControllerSpec extends UnitSpec {
       mock[ESAuthorisationService]
 
     object TestController
-        extends AuthorisationController(mockAuthorisationService,
-                                        mockAuthConnector,
-                                        mockESAuthorisationService,
-                                        cc)
+        extends AuthorisationController(mockAuthorisationService, mockAuthConnector, mockESAuthorisationService, cc)
   }
 
-  private val mtdAuthDetails: AuthDetails = AuthDetails(saAgentReference = None,
-                                                        arn = Some(arn),
-                                                        "ggId",
-                                                        Some("Agent"),
-                                                        Some(User))
+  private val mtdAuthDetails: AuthDetails =
+    AuthDetails(saAgentReference = None, arn = Some(arn), "ggId", Some("Agent"), Some(User))
 
   private val agentEnrolment: Set[Enrolment] = Set(
-    Enrolment("HMRC-AS-AGENT",
-              Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)),
-              state = "Active",
-              delegatedAuthRule = None))
+    Enrolment(
+      "HMRC-AS-AGENT",
+      Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)),
+      state = "Active",
+      delegatedAuthRule = None
+    )
+  )
 
   private val ggCredentials: Credentials =
     Credentials("ggId", "GovernmentGateway")
 
   private val authResponseMtdAgent
-    : Future[~[~[~[Option[String], Enrolments], Option[CredentialRole]],
-               Option[Credentials]]] =
-    Future successful new ~(
-      new ~(new ~(Some(agentCode), Enrolments(agentEnrolment)),
-            Some(credentialRole)),
-      Some(ggCredentials))
+      : Future[~[~[~[Option[String], Enrolments], Option[CredentialRole]], Option[Credentials]]] =
+    Future.successful(
+      new ~(new ~(new ~(Some(agentCode), Enrolments(agentEnrolment)), Some(credentialRole)), Some(ggCredentials))
+    )
 
   private val saAuthDetails: AuthDetails = AuthDetails(
     saAgentReference = Some(SaAgentReference("enrol-123")),
@@ -105,82 +100,78 @@ class AuthorisationControllerSpec extends UnitSpec {
   )
 
   private val saAgentEnrolment: Set[Enrolment] = Set(
-    Enrolment("IR-SA-AGENT",
-              Seq(EnrolmentIdentifier("IRAgentReference", "enrol-123")),
-              state = "Active",
-              delegatedAuthRule = None))
+    Enrolment(
+      "IR-SA-AGENT",
+      Seq(EnrolmentIdentifier("IRAgentReference", "enrol-123")),
+      state = "Active",
+      delegatedAuthRule = None
+    )
+  )
 
   private val authResponseSaAgent
-    : Future[~[~[~[Option[String], Enrolments], Option[CredentialRole]],
-               Option[Credentials]]] =
-    Future successful new ~(
-      new ~(new ~(Some(agentCode), Enrolments(saAgentEnrolment)),
-            Some(credentialRole)),
-      Some(ggCredentials))
+      : Future[~[~[~[Option[String], Enrolments], Option[CredentialRole]], Option[Credentials]]] =
+    Future.successful(
+      new ~(new ~(new ~(Some(agentCode), Enrolments(saAgentEnrolment)), Some(credentialRole)), Some(ggCredentials))
+    )
 
   private implicit val ec: ExecutionContext =
     concurrent.ExecutionContext.Implicits.global
 
   "AuthoriseController" when {
 
-    //Special Cases
+    // Special Cases
     "provided with epaye-auth" should {
       "be routed correctly and handle an 'Authorised' response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseMtdAgent
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseMtdAgent)
 
-        mockAuthorisationService.isAuthorisedForPaye(AgentCode(agentCode),
-                                                     EmpRef("123", "123456"),
-                                                     mtdAuthDetails)(
-          *[ExecutionContext],
-          *[HeaderCarrier],
-          *[Request[Any]]) returns Future.successful(AccessResponse.Authorised)
+        mockAuthorisationService
+          .isAuthorisedForPaye(AgentCode(agentCode), EmpRef("123", "123456"), mtdAuthDetails)(
+            *[ExecutionContext],
+            *[HeaderCarrier],
+            *[Request[Any]]
+          )
+          .returns(Future.successful(AccessResponse.Authorised))
 
         val response: Future[Result] =
-          TestController.authorise("epaye-auth",
-                                   agentCode,
-                                   EmpRef("123", "123456").value)(FakeRequest())
+          TestController.authorise("epaye-auth", agentCode, EmpRef("123", "123456").value)(FakeRequest())
 
         status(response) mustBe Status.OK
       }
       "be routed correctly and handle a 'NoAssignment' response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseMtdAgent
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseMtdAgent)
 
-        mockAuthorisationService.isAuthorisedForPaye(AgentCode(agentCode),
-                                                     EmpRef("123", "123456"),
-                                                     mtdAuthDetails)(
-          *[ExecutionContext],
-          *[HeaderCarrier],
-          *[Request[Any]]) returns Future.successful(
-          AccessResponse.NoAssignment)
+        mockAuthorisationService
+          .isAuthorisedForPaye(AgentCode(agentCode), EmpRef("123", "123456"), mtdAuthDetails)(
+            *[ExecutionContext],
+            *[HeaderCarrier],
+            *[Request[Any]]
+          )
+          .returns(Future.successful(AccessResponse.NoAssignment))
 
         val response: Future[Result] =
-          TestController.authorise("epaye-auth",
-                                   agentCode,
-                                   EmpRef("123", "123456").value)(FakeRequest())
+          TestController.authorise("epaye-auth", agentCode, EmpRef("123", "123456").value)(FakeRequest())
 
         status(response) mustBe Status.UNAUTHORIZED
       }
       "be routed correctly and handle a 'NoRelationship' response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseMtdAgent
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseMtdAgent)
 
-        mockAuthorisationService.isAuthorisedForPaye(AgentCode(agentCode),
-                                                     EmpRef("123", "123456"),
-                                                     mtdAuthDetails)(
-          *[ExecutionContext],
-          *[HeaderCarrier],
-          *[Request[Any]]) returns Future.successful(
-          AccessResponse.NoRelationship)
+        mockAuthorisationService
+          .isAuthorisedForPaye(AgentCode(agentCode), EmpRef("123", "123456"), mtdAuthDetails)(
+            *[ExecutionContext],
+            *[HeaderCarrier],
+            *[Request[Any]]
+          )
+          .returns(Future.successful(AccessResponse.NoRelationship))
 
         val response: Future[Result] =
-          TestController.authorise("epaye-auth",
-                                   agentCode,
-                                   EmpRef("123", "123456").value)(FakeRequest())
+          TestController.authorise("epaye-auth", agentCode, EmpRef("123", "123456").value)(FakeRequest())
 
         status(response) mustBe Status.UNAUTHORIZED
       }
@@ -188,16 +179,17 @@ class AuthorisationControllerSpec extends UnitSpec {
 
     "provided with sa-auth" should {
       "be routed correctly and handle an 'Authorised' response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseSaAgent
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseSaAgent)
 
-        mockAuthorisationService.isAuthorisedForSa(AgentCode(agentCode),
-                                                   SaUtr("utr"),
-                                                   saAuthDetails)(
-          *[ExecutionContext],
-          *[HeaderCarrier],
-          *[Request[Any]]) returns Future.successful(AccessResponse.Authorised)
+        mockAuthorisationService
+          .isAuthorisedForSa(AgentCode(agentCode), SaUtr("utr"), saAuthDetails)(
+            *[ExecutionContext],
+            *[HeaderCarrier],
+            *[Request[Any]]
+          )
+          .returns(Future.successful(AccessResponse.Authorised))
 
         val response: Future[Result] =
           TestController.authorise("sa-auth", agentCode, "utr")(FakeRequest())
@@ -205,16 +197,16 @@ class AuthorisationControllerSpec extends UnitSpec {
         status(response) mustBe Status.OK
       }
       "be routed correctly and handle a 'NoAssignment' response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseSaAgent
-        mockAuthorisationService.isAuthorisedForSa(AgentCode(agentCode),
-                                                   SaUtr("utr"),
-                                                   saAuthDetails)(
-          *[ExecutionContext],
-          *[HeaderCarrier],
-          *[Request[Any]]) returns
-          Future.successful(AccessResponse.NoAssignment)
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseSaAgent)
+        mockAuthorisationService
+          .isAuthorisedForSa(AgentCode(agentCode), SaUtr("utr"), saAuthDetails)(
+            *[ExecutionContext],
+            *[HeaderCarrier],
+            *[Request[Any]]
+          )
+          .returns(Future.successful(AccessResponse.NoAssignment))
 
         val response: Future[Result] =
           TestController.authorise("sa-auth", agentCode, "utr")(FakeRequest())
@@ -222,16 +214,16 @@ class AuthorisationControllerSpec extends UnitSpec {
         status(response) mustBe Status.UNAUTHORIZED
       }
       "be routed correctly and handle a 'NoRelationship' response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseSaAgent
-        mockAuthorisationService.isAuthorisedForSa(AgentCode(agentCode),
-                                                   SaUtr("utr"),
-                                                   saAuthDetails)(
-          *[ExecutionContext],
-          *[HeaderCarrier],
-          *[Request[Any]]) returns
-          Future.successful(AccessResponse.NoRelationship)
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseSaAgent)
+        mockAuthorisationService
+          .isAuthorisedForSa(AgentCode(agentCode), SaUtr("utr"), saAuthDetails)(
+            *[ExecutionContext],
+            *[HeaderCarrier],
+            *[Request[Any]]
+          )
+          .returns(Future.successful(AccessResponse.NoRelationship))
 
         val response: Future[Result] =
           TestController.authorise("sa-auth", agentCode, "utr")(FakeRequest())
@@ -242,65 +234,62 @@ class AuthorisationControllerSpec extends UnitSpec {
 
     "provided with afi-auth" should {
       "be routed correctly and handle an 'Authorised' response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseMtdAgent
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseMtdAgent)
 
-        mockAuthorisationService.isAuthorisedForAfi(AgentCode(agentCode),
-                                                    Nino("AA123456A"),
-                                                    mtdAuthDetails)(
-          *[ExecutionContext],
-          *[HeaderCarrier],
-          *[Request[Any]]) returns
-          Future.successful(AccessResponse.Authorised)
+        mockAuthorisationService
+          .isAuthorisedForAfi(AgentCode(agentCode), Nino("AA123456A"), mtdAuthDetails)(
+            *[ExecutionContext],
+            *[HeaderCarrier],
+            *[Request[Any]]
+          )
+          .returns(Future.successful(AccessResponse.Authorised))
 
         val response: Future[Result] =
-          TestController.authorise("afi-auth", agentCode, "AA123456A")(
-            FakeRequest())
+          TestController.authorise("afi-auth", agentCode, "AA123456A")(FakeRequest())
 
         status(response) mustBe Status.OK
       }
       "be routed correctly and handle a 'NoAssignment' response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseMtdAgent
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseMtdAgent)
 
-        mockAuthorisationService.isAuthorisedForAfi(AgentCode(agentCode),
-                                                    Nino("AA123456A"),
-                                                    mtdAuthDetails)(
-          *[ExecutionContext],
-          *[HeaderCarrier],
-          *[Request[Any]]) returns
-          Future.successful(AccessResponse.NoAssignment)
+        mockAuthorisationService
+          .isAuthorisedForAfi(AgentCode(agentCode), Nino("AA123456A"), mtdAuthDetails)(
+            *[ExecutionContext],
+            *[HeaderCarrier],
+            *[Request[Any]]
+          )
+          .returns(Future.successful(AccessResponse.NoAssignment))
 
         val response: Future[Result] =
-          TestController.authorise("afi-auth", agentCode, "AA123456A")(
-            FakeRequest())
+          TestController.authorise("afi-auth", agentCode, "AA123456A")(FakeRequest())
 
         status(response) mustBe Status.UNAUTHORIZED
       }
       "be routed correctly and handle a 'NoRelationship' response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseMtdAgent
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseMtdAgent)
 
-        mockAuthorisationService.isAuthorisedForAfi(AgentCode(agentCode),
-                                                    Nino("AA123456A"),
-                                                    mtdAuthDetails)(
-          *[ExecutionContext],
-          *[HeaderCarrier],
-          *[Request[Any]]) returns
-          Future.successful(AccessResponse.NoRelationship)
+        mockAuthorisationService
+          .isAuthorisedForAfi(AgentCode(agentCode), Nino("AA123456A"), mtdAuthDetails)(
+            *[ExecutionContext],
+            *[HeaderCarrier],
+            *[Request[Any]]
+          )
+          .returns(Future.successful(AccessResponse.NoRelationship))
 
         val response: Future[Result] =
-          TestController.authorise("afi-auth", agentCode, "AA123456A")(
-            FakeRequest())
+          TestController.authorise("afi-auth", agentCode, "AA123456A")(FakeRequest())
 
         status(response) mustBe Status.UNAUTHORIZED
       }
     }
 
-    //Standard Cases
+    // Standard Cases
     val templateTestDataSets: Seq[(String, TaxIdentifier, Service)] = Seq(
       ("mtd-it-auth", MtdItId("1234567890"), Service.MtdIt),
       ("mtd-vat-auth", Vrn("123456789"), Service.Vat),
@@ -315,120 +304,105 @@ class AuthorisationControllerSpec extends UnitSpec {
       s"provided with ${testData._3}" should {
         "be routed correctly and handle an 'Authorised' response" in new Setup {
           mockAuthConnector
-            .authorise(*[Predicate], *[Retrieval[Any]])(
-              *[HeaderCarrier],
-              *[ExecutionContext]) returns authResponseMtdAgent
+            .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+            .returns(authResponseMtdAgent)
 
-          mockESAuthorisationService.authoriseStandardService(
-            AgentCode(agentCode),
-            testData._2,
-            testData._3.id,
-            mtdAuthDetails)(*[HeaderCarrier], *[Request[Any]]) returns
-            Future.successful(AccessResponse.Authorised)
+          mockESAuthorisationService
+            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3.id, mtdAuthDetails)(
+              *[HeaderCarrier],
+              *[Request[Any]]
+            )
+            .returns(Future.successful(AccessResponse.Authorised))
 
           val response: Future[Result] =
-            TestController.authorise(testData._1, agentCode, testData._2.value)(
-              FakeRequest())
+            TestController.authorise(testData._1, agentCode, testData._2.value)(FakeRequest())
 
           status(response) mustBe Status.OK
         }
         "be routed correctly and handle a 'NoAssignment' response" in new Setup {
           mockAuthConnector
-            .authorise(*[Predicate], *[Retrieval[Any]])(
+            .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+            .returns(authResponseMtdAgent)
+          mockESAuthorisationService
+            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3.id, mtdAuthDetails)(
               *[HeaderCarrier],
-              *[ExecutionContext]) returns authResponseMtdAgent
-          mockESAuthorisationService.authoriseStandardService(
-            AgentCode(agentCode),
-            testData._2,
-            testData._3.id,
-            mtdAuthDetails)(*[HeaderCarrier], *[Request[Any]]) returns
-            Future.successful(AccessResponse.NoAssignment)
+              *[Request[Any]]
+            )
+            .returns(Future.successful(AccessResponse.NoAssignment))
 
           val response: Future[Result] =
-            TestController.authorise(testData._1, agentCode, testData._2.value)(
-              FakeRequest())
+            TestController.authorise(testData._1, agentCode, testData._2.value)(FakeRequest())
 
           status(response) mustBe Status.UNAUTHORIZED
         }
         "be routed correctly and handle a 'NoRelationship' response" in new Setup {
           mockAuthConnector
-            .authorise(*[Predicate], *[Retrieval[Any]])(
+            .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+            .returns(authResponseMtdAgent)
+          mockESAuthorisationService
+            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3.id, mtdAuthDetails)(
               *[HeaderCarrier],
-              *[ExecutionContext]) returns authResponseMtdAgent
-          mockESAuthorisationService.authoriseStandardService(
-            AgentCode(agentCode),
-            testData._2,
-            testData._3.id,
-            mtdAuthDetails)(*[HeaderCarrier], *[Request[Any]]) returns
-            Future.successful(AccessResponse.NoRelationship)
+              *[Request[Any]]
+            )
+            .returns(Future.successful(AccessResponse.NoRelationship))
 
           val response: Future[Result] =
-            TestController.authorise(testData._1, agentCode, testData._2.value)(
-              FakeRequest())
+            TestController.authorise(testData._1, agentCode, testData._2.value)(FakeRequest())
 
           status(response) mustBe Status.UNAUTHORIZED
         }
         "handle exception in authorisations service" in new Setup {
           mockAuthConnector
-            .authorise(*[Predicate], *[Retrieval[Any]])(
+            .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+            .returns(authResponseMtdAgent)
+          mockESAuthorisationService
+            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3.id, mtdAuthDetails)(
               *[HeaderCarrier],
-              *[ExecutionContext]) returns authResponseMtdAgent
-          mockESAuthorisationService.authoriseStandardService(
-            AgentCode(agentCode),
-            testData._2,
-            testData._3.id,
-            mtdAuthDetails)(*[HeaderCarrier], *[Request[Any]]) returns
-            Future.failed(
-              new IllegalArgumentException(s"Unexpected auth type: x"))
+              *[Request[Any]]
+            )
+            .returns(Future.failed(new IllegalArgumentException(s"Unexpected auth type: x")))
 
           val response: Future[Result] =
-            TestController.authorise(testData._1, agentCode, testData._2.value)(
-              FakeRequest())
+            TestController.authorise(testData._1, agentCode, testData._2.value)(FakeRequest())
 
           status(response) mustBe Status.BAD_REQUEST
         }
-    })
+      }
+    )
 
-    //Misc. cases
+    // Misc. cases
     "provided with an invalid auth type" should {
-      "return a bad request" in new Setup { //TODO code needs fixing, this should be bad request
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseMtdAgent
+      "return a bad request" in new Setup { // TODO code needs fixing, this should be bad request
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseMtdAgent)
 
         an[IllegalArgumentException] mustBe thrownBy(
-          status(
-            TestController.authorise("invalid-auth-type", agentCode, "utr")(
-              FakeRequest()))
+          status(TestController.authorise("invalid-auth-type", agentCode, "utr")(FakeRequest()))
         )
       }
     }
 
     "provided with an invalid trust identifier" should {
-      "return a bad request" in new Setup { //TODO code needs fixing, this should be bad request
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns authResponseMtdAgent
+      "return a bad request" in new Setup { // TODO code needs fixing, this should be bad request
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(authResponseMtdAgent)
 
         an[IllegalArgumentException] mustBe thrownBy(
-          status(
-            TestController.authorise("trust-auth",
-                                     agentCode,
-                                     "XMCGTP123456789")(FakeRequest()))
+          status(TestController.authorise("trust-auth", agentCode, "XMCGTP123456789")(FakeRequest()))
         )
       }
     }
 
     "auth returns an UnsupportedAffinityGroup" should {
       "return a Forbidden response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns
-          Future.failed(UnsupportedAffinityGroup("UnsupportedAffinityGroup"))
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(Future.failed(UnsupportedAffinityGroup("UnsupportedAffinityGroup")))
 
         val response: Future[Result] =
-          TestController.authorise("authType", agentCode, "clientId")(
-            FakeRequest())
+          TestController.authorise("authType", agentCode, "clientId")(FakeRequest())
 
         status(response) mustBe Status.FORBIDDEN
       }
@@ -436,14 +410,12 @@ class AuthorisationControllerSpec extends UnitSpec {
 
     "auth returns an UnsupportedAuthProvider" should {
       "return a Forbidden response" in new Setup {
-        mockAuthConnector.authorise(*[Predicate], *[Retrieval[Any]])(
-          *[HeaderCarrier],
-          *[ExecutionContext]) returns
-          Future.failed(UnsupportedAuthProvider("UnsupportedAuthProvider"))
+        mockAuthConnector
+          .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
+          .returns(Future.failed(UnsupportedAuthProvider("UnsupportedAuthProvider")))
 
         val response: Future[Result] =
-          TestController.authorise("authType", agentCode, "clientId")(
-            FakeRequest())
+          TestController.authorise("authType", agentCode, "clientId")(FakeRequest())
 
         status(response) mustBe Status.FORBIDDEN
       }

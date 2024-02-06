@@ -19,10 +19,13 @@ package uk.gov.hmrc.agentaccesscontrol.stubs
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{Millis, Seconds, Span}
+import org.scalatest.time.Millis
+import org.scalatest.time.Seconds
+import org.scalatest.time.Span
 
 object DataStreamStub extends Eventually {
-  override implicit val patienceConfig: DataStreamStub.PatienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
+  implicit override val patienceConfig: DataStreamStub.PatienceConfig =
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
 
   private def auditUrl = "/write/audit"
 

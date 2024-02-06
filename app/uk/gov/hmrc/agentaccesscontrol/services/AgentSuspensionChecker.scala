@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.agentaccesscontrol.services
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
 import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.AgentClientAuthorisationConnector
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
@@ -23,16 +26,13 @@ import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetailsNotFound
 import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ExecutionContext, Future}
-
 trait AgentSuspensionChecker { this: Logging =>
 
   val agentClientAuthorisationConnector: AgentClientAuthorisationConnector
 
   def withSuspensionCheck(agentId: TaxIdentifier, regime: String)(
-      proceed: => Future[AccessResponse])(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[AccessResponse] = {
+      proceed: => Future[AccessResponse]
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AccessResponse] = {
 
     agentClientAuthorisationConnector
       .getSuspensionDetails(agentId)
@@ -41,8 +41,7 @@ trait AgentSuspensionChecker { this: Logging =>
           val isSuspended = suspensionDetails.suspensionStatus && suspensionDetails.suspendedRegimes
             .contains(regime)
           if (isSuspended) {
-            logger.warn(
-              s"agent with id : ${agentId.value} is suspended for regime $regime")
+            logger.warn(s"agent with id : ${agentId.value} is suspended for regime $regime")
             Future.successful(AccessResponse.AgentSuspended)
           } else proceed
       }
@@ -51,7 +50,7 @@ trait AgentSuspensionChecker { this: Logging =>
           val message = s"Suspension details not found for $agentId"
           logger.warn(s"Not authorised: $message")
           AccessResponse.Error(message)
-        case e => //TODO this will also catch any errors thrown in the 'proceed' function
+        case e => // TODO this will also catch any errors thrown in the 'proceed' function
           val message =
             s"Error retrieving suspension details for $agentId: ${e.getMessage}"
           logger.warn(s"Not authorised: $message")

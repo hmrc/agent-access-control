@@ -1,20 +1,28 @@
 package uk.gov.hmrc.agentaccesscontrol
 
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, CgtRef, Urn, Utr}
-import uk.gov.hmrc.agents.accessgroups.Client
-import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
-import uk.gov.hmrc.http.HttpResponse
 import com.github.tomakehurst.wiremock.client.WireMock
-import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportServerPerTest
+import uk.gov.hmrc.agentaccesscontrol.helpers.Resource
+import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneServerPerTestISpec
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.CgtRef
+import uk.gov.hmrc.agentmtdidentifiers.model.Urn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agents.accessgroups.Client
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.TaxIdentifier
+import uk.gov.hmrc.http.HttpResponse
 
-class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
-  val agentCode = AgentCode("A11112222A")
-  val arn = Arn("01234567890")
-  val cgtRef = CgtRef("XMCGTP123456789")
+class GranularPermissionsAuthorisationISpec
+    extends WireMockWithOneServerPerTestISpec
+    with MetricTestSupportServerPerTest {
+  val agentCode  = AgentCode("A11112222A")
+  val arn        = Arn("01234567890")
+  val cgtRef     = CgtRef("XMCGTP123456789")
   val providerId = "12345-credId"
 
   private val NoRelationship = "NO_RELATIONSHIP"
-  private val NoAssignment = "NO_ASSIGNMENT"
+  private val NoAssignment   = "NO_ASSIGNMENT"
 
   // Using CGT as a sample, not checking this individually for all services
   "GET /agent-access-control/cgt-auth/agent/:agentCode/client/:cgt" should {
@@ -36,7 +44,16 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         status shouldBe 200
 
         // Check that we have called agent-client-relationships specifying for which agent user to check the relationship
-        WireMock.verify(1, WireMock.getRequestedFor(WireMock.urlPathEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}")).withQueryParam("userId", WireMock.equalTo(providerId)))
+        WireMock.verify(
+          1,
+          WireMock
+            .getRequestedFor(
+              WireMock.urlPathEqualTo(
+                s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}"
+              )
+            )
+            .withQueryParam("userId", WireMock.equalTo(providerId))
+        )
       }
       "agency and client have a relationship, agency is opted-in to GP, agent user IS in the relevant tax service group (even if client not assigned to agent user)" in {
         given()
@@ -55,7 +72,16 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
         status shouldBe 200
 
         // Check that we have NOT called agent-client-relationships to check for the user assignment - no need
-        WireMock.verify(0, WireMock.getRequestedFor(WireMock.urlPathEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}")).withQueryParam("userId", WireMock.equalTo(providerId)))
+        WireMock.verify(
+          0,
+          WireMock
+            .getRequestedFor(
+              WireMock.urlPathEqualTo(
+                s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}"
+              )
+            )
+            .withQueryParam("userId", WireMock.equalTo(providerId))
+        )
       }
       "agency and client have a relationship, agency is opted-in to GP, agent user IS in the relevant tax service group (special case for HMRC-TERS-ORG)" in {
         val utr = Utr("5066836985")
@@ -69,7 +95,10 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
           .isOptedInToGranularPermissions
           .hasARelationshipWith(utr)
           .hasNoAssignedRelationshipToAgentUser(utr, providerId)
-          .userIsInTaxServiceGroup("HMRC-TERS", providerId) // tax service groups use the nonstandard key "HMRC-TERS" to mean either type of trust
+          .userIsInTaxServiceGroup(
+            "HMRC-TERS",
+            providerId
+          ) // tax service groups use the nonstandard key "HMRC-TERS" to mean either type of trust
 
         authResponseFor(agentCode, utr, method).status shouldBe 200
       }
@@ -85,7 +114,10 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
           .isOptedInToGranularPermissions
           .hasARelationshipWith(urn)
           .hasNoAssignedRelationshipToAgentUser(urn, providerId)
-          .userIsInTaxServiceGroup("HMRC-TERS", providerId) // tax service groups use the nonstandard key "HMRC-TERS" to mean either type of trust
+          .userIsInTaxServiceGroup(
+            "HMRC-TERS",
+            providerId
+          ) // tax service groups use the nonstandard key "HMRC-TERS" to mean either type of trust
 
         authResponseFor(agentCode, urn, method).status shouldBe 200
       }
@@ -122,10 +154,19 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
 
         val response = authResponseFor(agentCode, cgtRef, method)
         response.status shouldBe 401
-        response.body should include (NoAssignment)
+        response.body should include(NoAssignment)
 
         // Check that we have called agent-client-relationships specifying for which agent user to check the relationship
-        WireMock.verify(1, WireMock.getRequestedFor(WireMock.urlPathEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}")).withQueryParam("userId", WireMock.equalTo(providerId)))
+        WireMock.verify(
+          1,
+          WireMock
+            .getRequestedFor(
+              WireMock.urlPathEqualTo(
+                s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}"
+              )
+            )
+            .withQueryParam("userId", WireMock.equalTo(providerId))
+        )
       }
       "there is no relationship between the agency and client" in {
         given()
@@ -139,7 +180,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
 
         val response = authResponseFor(agentCode, cgtRef, method)
         response.status shouldBe 401
-        response.body should include (NoRelationship)
+        response.body should include(NoRelationship)
       }
       "agency and client have a relationship, agency is opted-in to GP, agent user IS in a tax service group but for a different service" in {
         given()
@@ -152,14 +193,26 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
           .isOptedInToGranularPermissions
           .hasARelationshipWith(cgtRef)
           .hasNoAssignedRelationshipToAgentUser(cgtRef, providerId)
-          .userIsInTaxServiceGroup("HMRC-MTD-VAT", providerId) // tax service group is for vat, not cgt - shouldn't grant access
+          .userIsInTaxServiceGroup(
+            "HMRC-MTD-VAT",
+            providerId
+          ) // tax service group is for vat, not cgt - shouldn't grant access
 
         val response = authResponseFor(agentCode, cgtRef, method)
         response.status shouldBe 401
-        response.body should include (NoAssignment)
+        response.body should include(NoAssignment)
 
         // Check that we have called agent-client-relationships specifying for which agent user to check the relationship
-        WireMock.verify(1, WireMock.getRequestedFor(WireMock.urlPathEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}")).withQueryParam("userId", WireMock.equalTo(providerId)))
+        WireMock.verify(
+          1,
+          WireMock
+            .getRequestedFor(
+              WireMock.urlPathEqualTo(
+                s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}"
+              )
+            )
+            .withQueryParam("userId", WireMock.equalTo(providerId))
+        )
       }
       "agency and client have a relationship, agency is opted-in to GP, there is a tax service group for the right service but agent user is not part of it" in {
         given()
@@ -172,14 +225,26 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
           .isOptedInToGranularPermissions
           .hasARelationshipWith(cgtRef)
           .hasNoAssignedRelationshipToAgentUser(cgtRef, providerId)
-          .userIsInTaxServiceGroup("HMRC-CGT-PD", "someOtherUserId") // the agent user is not part of this tax service group - shouldn't grant access
+          .userIsInTaxServiceGroup(
+            "HMRC-CGT-PD",
+            "someOtherUserId"
+          ) // the agent user is not part of this tax service group - shouldn't grant access
 
         val response = authResponseFor(agentCode, cgtRef, method)
         response.status shouldBe 401
-        response.body should include (NoAssignment)
+        response.body should include(NoAssignment)
 
         // Check that we have called agent-client-relationships specifying for which agent user to check the relationship
-        WireMock.verify(1, WireMock.getRequestedFor(WireMock.urlPathEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}")).withQueryParam("userId", WireMock.equalTo(providerId)))
+        WireMock.verify(
+          1,
+          WireMock
+            .getRequestedFor(
+              WireMock.urlPathEqualTo(
+                s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}"
+              )
+            )
+            .withQueryParam("userId", WireMock.equalTo(providerId))
+        )
       }
       "agency and client have a relationship, agency is opted-in to GP, agent user is in the relevant tax service group but client is excluded from group" in {
         given()
@@ -192,14 +257,27 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
           .isOptedInToGranularPermissions
           .hasARelationshipWith(cgtRef)
           .hasNoAssignedRelationshipToAgentUser(cgtRef, providerId)
-          .userIsInTaxServiceGroup("HMRC-CGT-PD", providerId, excludedClients = Set(Client(s"HMRC-CGT-PD~CGTPDRef~${cgtRef.value}", "Zoe Client")))
+          .userIsInTaxServiceGroup(
+            "HMRC-CGT-PD",
+            providerId,
+            excludedClients = Set(Client(s"HMRC-CGT-PD~CGTPDRef~${cgtRef.value}", "Zoe Client"))
+          )
 
         val response = authResponseFor(agentCode, cgtRef, method)
         response.status shouldBe 401
-        response.body should include (NoAssignment)
+        response.body should include(NoAssignment)
 
         // Check that we have called agent-client-relationships to check for the user assignment (as the tax service group check should have failed)
-        WireMock.verify(1, WireMock.getRequestedFor(WireMock.urlPathEqualTo(s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}")).withQueryParam("userId", WireMock.equalTo(providerId)))
+        WireMock.verify(
+          1,
+          WireMock
+            .getRequestedFor(
+              WireMock.urlPathEqualTo(
+                s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/${cgtRef.value}"
+              )
+            )
+            .withQueryParam("userId", WireMock.equalTo(providerId))
+        )
       }
       "GP enabled, agent user IS in the relevant tax service group but there is no agency-level relationship" in {
         val aStrangersCgtRef = CgtRef("XMCGTP987654321")
@@ -217,7 +295,7 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
 
         val response = authResponseFor(agentCode, aStrangersCgtRef, method)
         response.status shouldBe 401
-        response.body should include (NoRelationship)
+        response.body should include(NoRelationship)
       }
     }
   }
@@ -225,9 +303,9 @@ class GranularPermissionsAuthorisationISpec extends WireMockWithOneServerPerTest
   def authResponseFor(agentCode: AgentCode, taxRef: TaxIdentifier, method: String): HttpResponse = {
     val taxUrlPart = taxRef match {
       case _: CgtRef => "cgt-auth"
-      case _: Utr => "trust-auth"
-      case _: Urn => "trust-auth"
-      case _ => throw new IllegalArgumentException
+      case _: Utr    => "trust-auth"
+      case _: Urn    => "trust-auth"
+      case _         => throw new IllegalArgumentException
     }
     val resource =
       new Resource(s"/agent-access-control/$taxUrlPart/agent/${agentCode.value}/client/${taxRef.value}")(port)

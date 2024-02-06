@@ -21,35 +21,35 @@ sealed trait AccessResponse
 object AccessResponse {
 
   /**
-    * Represents a response where it was verified that the agent user is authorised to act for a given client.
-    */
+   * Represents a response where it was verified that the agent user is authorised to act for a given client.
+   */
   case object Authorised extends AccessResponse
 
   /**
-    * Represents a response where the agent user cannot act for a given client because the agency has no relationship with the client.
-    */
+   * Represents a response where the agent user cannot act for a given client because the agency has no relationship with the client.
+   */
   case object NoRelationship extends AccessResponse
 
   /**
-    * Represents a response where the agent user cannot act for a given client because the agency has a relationship with the client
-    * but the agent user has not been assigned the client (when access groups/granular permissions are enabled).
-    */
+   * Represents a response where the agent user cannot act for a given client because the agency has a relationship with the client
+   * but the agent user has not been assigned the client (when access groups/granular permissions are enabled).
+   */
   case object NoAssignment extends AccessResponse
 
   /**
-    * Represents a response where the agent user cannot act for a given client because the agency is suspended.
-    */
+   * Represents a response where the agent user cannot act for a given client because the agency is suspended.
+   */
   case object AgentSuspended extends AccessResponse
 
   /**
-    * Represents a response where the agent user cannot act for a given client because we cannot verify it for some other reason.
-    */
+   * Represents a response where the agent user cannot act for a given client because we cannot verify it for some other reason.
+   */
   case class Error(message: String) extends AccessResponse
 
   /**
-    * For our own benefit we have more fine-grained responses, but auth will only handle NoAssignment and NoRelationship
-    * responses so we intentionally convert other responses into 'NoRelationship'.
-    */
+   * For our own benefit we have more fine-grained responses, but auth will only handle NoAssignment and NoRelationship
+   * responses so we intentionally convert other responses into 'NoRelationship'.
+   */
   def toReason(accessResponse: AccessResponse): Seq[(String, Any)] =
     accessResponse match {
       case AccessResponse.Authorised   => Seq.empty[(String, Any)]

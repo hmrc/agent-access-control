@@ -16,30 +16,38 @@
 
 package uk.gov.hmrc.agentaccesscontrol.helpers
 
-import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.stubbing.StubMapping
-import org.scalatest.{OptionValues, TestData}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneServerPerTest}
-import play.api.Application
-import play.api.http.Status.{NOT_FOUND, NO_CONTENT}
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.Json
-import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
-import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
-import uk.gov.hmrc.agentmtdidentifiers.model._
-import uk.gov.hmrc.agents.accessgroups.{AgentUser, Client, TaxGroup}
-import uk.gov.hmrc.domain.{Vrn => _, _}
-
 import java.time.LocalDateTime
 import java.util.UUID
 
-abstract class WireMockISpec extends AnyWordSpecLike
-  with Matchers
-  with OptionValues
-  with ScalaFutures with StartAndStopWireMock with StubUtils {
+import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.OptionValues
+import org.scalatest.TestData
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import org.scalatestplus.play.guice.GuiceOneServerPerTest
+import play.api.http.Status.NOT_FOUND
+import play.api.http.Status.NO_CONTENT
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Json
+import play.api.Application
+import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
+import uk.gov.hmrc.agentaccesscontrol.StartAndStopWireMock
+import uk.gov.hmrc.agentmtdidentifiers.model._
+import uk.gov.hmrc.agents.accessgroups.AgentUser
+import uk.gov.hmrc.agents.accessgroups.Client
+import uk.gov.hmrc.agents.accessgroups.TaxGroup
+import uk.gov.hmrc.domain.{ Vrn => _, _ }
+
+abstract class WireMockISpec
+    extends AnyWordSpecLike
+    with Matchers
+    with OptionValues
+    with ScalaFutures
+    with StartAndStopWireMock
+    with StubUtils {
 
   protected val wireMockAppConfiguration: Map[String, Any] = Map(
     "microservice.services.des.host"                        -> wiremockHost,
@@ -75,7 +83,7 @@ abstract class WireMockISpec extends AnyWordSpecLike
 }
 
 abstract class WireMockWithOneAppPerSuiteISpec extends WireMockISpec with GuiceOneAppPerSuite {
-  override implicit lazy val app: Application = appBuilder.build()
+  implicit override lazy val app: Application = appBuilder.build()
 }
 
 abstract class WireMockWithOneServerPerTestISpec extends WireMockISpec with GuiceOneServerPerTest {
@@ -86,7 +94,12 @@ trait StubUtils {
   me: StartAndStopWireMock =>
 
   class PreconditionBuilder {
-    def agentAdmin(agentCode: AgentCode, providerId: String, saAgentReference: Option[SaAgentReference], arn: Option[Arn]): AgentAdmin =
+    def agentAdmin(
+        agentCode: AgentCode,
+        providerId: String,
+        saAgentReference: Option[SaAgentReference],
+        arn: Option[Arn]
+    ): AgentAdmin =
       new AgentAdmin(agentCode.value, providerId, saAgentReference, arn)
 
     def mtdAgency(arn: Arn): MtdAgency =
@@ -97,11 +110,11 @@ trait StubUtils {
     new PreconditionBuilder()
 
   class AgentAdmin(
-                   override val agentCode: String,
-                   override val providerId: String,
-                   override val saAgentReference: Option[SaAgentReference],
-                   override val arn: Option[Arn])
-      extends AfiStub[AgentAdmin]
+      override val agentCode: String,
+      override val providerId: String,
+      override val saAgentReference: Option[SaAgentReference],
+      override val arn: Option[Arn]
+  ) extends AfiStub[AgentAdmin]
       with AuthStubs[AgentAdmin]
       with DesStub[AgentAdmin]
       with EnrolmentStoreProxyStubs[AgentAdmin]
@@ -118,25 +131,37 @@ trait StubUtils {
 
     def andHasRelationship(arn: Arn, clientId: Nino): A = {
       stubFor(
-        get(urlPathMatching(
-          s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/${arn.value}/client/${clientId.value}"))
-          .willReturn(aResponse().withStatus(200)))
+        get(
+          urlPathMatching(
+            s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/${arn.value}/client/${clientId.value}"
+          )
+        )
+          .willReturn(aResponse().withStatus(200))
+      )
       this
     }
 
     def andHasNoRelationship(arn: Arn, clientId: Nino): A = {
       stubFor(
-        get(urlPathMatching(
-          s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/${arn.value}/client/${clientId.value}"))
-          .willReturn(aResponse().withStatus(404)))
+        get(
+          urlPathMatching(
+            s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/${arn.value}/client/${clientId.value}"
+          )
+        )
+          .willReturn(aResponse().withStatus(404))
+      )
       this
     }
 
     def statusReturnedForRelationship(arn: Arn, clientId: Nino, statusCode: Int): A = {
       stubFor(
-        get(urlPathMatching(
-          s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/${arn.value}/client/${clientId.value}"))
-          .willReturn(aResponse().withStatus(statusCode)))
+        get(
+          urlPathMatching(
+            s"/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/${arn.value}/client/${clientId.value}"
+          )
+        )
+          .willReturn(aResponse().withStatus(statusCode))
+      )
       this
     }
   }
@@ -147,7 +172,8 @@ trait StubUtils {
     def andDesIsDown(): A = {
       stubFor(get(urlPathMatching("/sa/agents/[^/]+/client/[^/]+")).willReturn(aResponse().withStatus(500)))
       stubFor(
-        get(urlPathMatching("/agents/regime/PAYE/agent/[^/]+/client/[^/]+")).willReturn(aResponse().withStatus(500)))
+        get(urlPathMatching("/agents/regime/PAYE/agent/[^/]+/client/[^/]+")).willReturn(aResponse().withStatus(500))
+      )
       this
     }
 
@@ -162,15 +188,17 @@ trait StubUtils {
     }
 
     def andIsRelatedToSaClientInDes(
-      clientUtr: SaUtr,
-      authorizationHeader: String = "secret",
-      envHeader: String = "test"): SaDesStubBuilder =
+        clientUtr: SaUtr,
+        authorizationHeader: String = "secret",
+        envHeader: String = "test"
+    ): SaDesStubBuilder =
       new SaDesStubBuilder(clientUtr, authorizationHeader, envHeader)
 
     def andIsRelatedToPayeClientInDes(
-      empRef: EmpRef,
-      authorizationHeader: String = "secret",
-      envHeader: String = "test"): PayeDesStubBuilder =
+        empRef: EmpRef,
+        authorizationHeader: String = "secret",
+        envHeader: String = "test"
+    ): PayeDesStubBuilder =
       new PayeDesStubBuilder(empRef, authorizationHeader, envHeader)
 
     private def matcherForClient(client: SaUtr) =
@@ -179,7 +207,9 @@ trait StubUtils {
     private def matcherForClient(empRef: EmpRef) =
       get(
         urlPathEqualTo(
-          s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"))
+          s"/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
+        )
+      )
 
     class SaDesStubBuilder(client: SaUtr, authorizationToken: String, environment: String) {
       def andIsAuthorisedByOnly648(): A = withFlags(auth_64_8 = true, auth_i64_8 = false)
@@ -195,12 +225,17 @@ trait StubUtils {
           matcherForClient(client)
             .withHeader("Authorization", equalTo(s"Bearer $authorizationToken"))
             .withHeader("Environment", equalTo(environment))
-            .willReturn(aResponse().withStatus(200).withBody(s"""
-                                                                |{
-                                                                |    "Auth_64-8": $auth_64_8,
-                                                                |    "Auth_i64-8": $auth_i64_8
-                                                                |}
-        """.stripMargin)))
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withBody(s"""
+                             |{
+                             |    "Auth_64-8": $auth_64_8,
+                             |    "Auth_i64-8": $auth_i64_8
+                             |}
+        """.stripMargin)
+            )
+        )
         DesStub.this
       }
     }
@@ -215,11 +250,16 @@ trait StubUtils {
           matcherForClient(client)
             .withHeader("Authorization", equalTo(s"Bearer $authorizationToken"))
             .withHeader("Environment", equalTo(environment))
-            .willReturn(aResponse().withStatus(200).withBody(s"""
-                                                                |{
-                                                                |    "Auth_64-8": $auth_64_8
-                                                                |}
-        """.stripMargin)))
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withBody(s"""
+                             |{
+                             |    "Auth_64-8": $auth_64_8
+                             |}
+        """.stripMargin)
+            )
+        )
         DesStub.this
       }
     }
@@ -227,17 +267,18 @@ trait StubUtils {
     def givenSuspensionStatus(taxId: TaxIdentifier, suspended: Boolean, regime: String): StubMapping = {
       stubFor(
         get(
-          urlPathEqualTo(
-            s"/agent-client-authorisation/client/suspension-details/${taxId.value}")
-        ).willReturn(aResponse().withStatus(200)
-          .withBody(s"""{"suspensionStatus":$suspended,"regimes":["$regime"]}"""))
+          urlPathEqualTo(s"/agent-client-authorisation/client/suspension-details/${taxId.value}")
+        ).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(s"""{"suspensionStatus":$suspended,"regimes":["$regime"]}""")
+        )
       )
     }
   }
 
   trait MappingStubs[A] {
     me: A =>
-
 
     def givenSaMappingSingular(key: String, arn: Arn, identifier: String): A = {
       stubFor(
@@ -251,7 +292,8 @@ trait StubUtils {
                                               |    }
                                               |  ]
                                               |}
-             """.stripMargin)))
+             """.stripMargin))
+      )
       this
     }
 
@@ -275,28 +317,32 @@ trait StubUtils {
                                               |    }
                                               |  ]
                                               |}
-             """.stripMargin)))
+             """.stripMargin))
+      )
       this
     }
 
     def givenNotFound404Mapping(key: String, arn: Arn): A = {
       stubFor(
         get(urlMatching(s"/agent-mapping/mappings/key/$key/arn/${arn.value}"))
-          .willReturn(aResponse().withStatus(404)))
+          .willReturn(aResponse().withStatus(404))
+      )
       this
     }
 
     def givenBadRequest400Mapping(key: String, arn: Arn): A = {
       stubFor(
         get(urlMatching(s"/agent-mapping/mappings/key/$key/arn/${arn.value}"))
-          .willReturn(aResponse().withStatus(400)))
+          .willReturn(aResponse().withStatus(400))
+      )
       this
     }
 
     def givenServiceUnavailable502Mapping(key: String, arn: Arn): A = {
       stubFor(
         get(urlMatching(s"/agent-mapping/mappings/key/$key/arn/${arn.value}"))
-          .willReturn(aResponse().withStatus(502)))
+          .willReturn(aResponse().withStatus(502))
+      )
       this
     }
   }
@@ -327,7 +373,7 @@ trait StubUtils {
     private def getES0Principal(id: TaxIdentifier) = {
       val enrolmentKey = id match {
         case saAgentRef: SaAgentReference => s"IR-SA-AGENT~IRAgentReference~${saAgentRef.value}"
-        case _ => throw new IllegalArgumentException
+        case _                            => throw new IllegalArgumentException
       }
       get(urlEqualTo(pathPrincipal(enrolmentKey)))
     }
@@ -335,7 +381,8 @@ trait StubUtils {
     def andEnrolmentStoreProxyReturnsAnError500(): A = {
       stubFor(
         get(urlMatching(pathRegex))
-          .willReturn(aResponse().withStatus(500)))
+          .willReturn(aResponse().withStatus(500))
+      )
       this
     }
 
@@ -344,74 +391,90 @@ trait StubUtils {
     def andEnrolmentStoreProxyReturnsUnparseableJson(id: TaxIdentifier): A = {
       stubFor(
         getES0Delegated(id)
-          .willReturn(aResponse()
-            .withBody("Not Json!")))
+          .willReturn(
+            aResponse()
+              .withBody("Not Json!")
+          )
+      )
       this
     }
 
     def andIsAssignedToClient(id: TaxIdentifier, otherDelegatedUserIds: String*): A = {
       stubFor(
         getES0Delegated(id)
-          .willReturn(aResponse()
-            .withBody(s"""
-                         |{
-                         |    "principalUserIds": [],
-                         |    "delegatedUserIds": [
-                         |       ${(otherDelegatedUserIds :+ providerId).map(a => "\"" + a + "\"").mkString(",")}
-                         |    ]
-                         |}
-                         |""".stripMargin)))
+          .willReturn(
+            aResponse()
+              .withBody(s"""
+                           |{
+                           |    "principalUserIds": [],
+                           |    "delegatedUserIds": [
+                           |       ${(otherDelegatedUserIds :+ providerId).map(a => "\"" + a + "\"").mkString(",")}
+                           |    ]
+                           |}
+                           |""".stripMargin)
+          )
+      )
       this
     }
 
     def andHasSaEnrolmentForAgent(id: TaxIdentifier, otherPrincipalUserIds: String*): A = {
       stubFor(
         getES0Principal(id)
-          .willReturn(aResponse()
-            .withBody(s"""
-                         |{
-                         |    "principalUserIds": [
-                         |       ${(otherPrincipalUserIds :+ providerId).map(a => "\"" + a + "\"").mkString(",")}
-                         |     ]
-                         |}
-                         |""".stripMargin)))
+          .willReturn(
+            aResponse()
+              .withBody(s"""
+                           |{
+                           |    "principalUserIds": [
+                           |       ${(otherPrincipalUserIds :+ providerId).map(a => "\"" + a + "\"").mkString(",")}
+                           |     ]
+                           |}
+                           |""".stripMargin)
+          )
+      )
       this
     }
 
     def andIsNotAssignedToClient(id: TaxIdentifier): A = {
       stubFor(
         getES0Delegated(id)
-          .willReturn(aResponse()
-            .withBody(s"""
-                         |{
-                         |    "principalUserIds": [],
-                         |    "delegatedUserIds": [
-                         |       "98741987654323",
-                         |       "98741987654324",
-                         |       "98741987654325"
-                         |    ]
-                         |}
-                         |""".stripMargin)))
+          .willReturn(
+            aResponse()
+              .withBody(s"""
+                           |{
+                           |    "principalUserIds": [],
+                           |    "delegatedUserIds": [
+                           |       "98741987654323",
+                           |       "98741987654324",
+                           |       "98741987654325"
+                           |    ]
+                           |}
+                           |""".stripMargin)
+          )
+      )
       this
     }
 
     def andHasNoAssignmentsForAnyClient: A = {
       stubFor(
         get(urlMatching(pathRegex))
-          .willReturn(aResponse()
-            .withBody(s"""
-                         |{
-                         |    "principalUserIds": [],
-                         |    "delegatedUserIds": []
-                         |}
-                         |""".stripMargin)))
+          .willReturn(
+            aResponse()
+              .withBody(s"""
+                           |{
+                           |    "principalUserIds": [],
+                           |    "delegatedUserIds": []
+                           |}
+                           |""".stripMargin)
+          )
+      )
       this
     }
 
     def andEnrolmentStoreProxyReturns204NoContent: A = {
       stubFor(
         get(urlMatching(pathRegex))
-          .willReturn(aResponse().withStatus(204)))
+          .willReturn(aResponse().withStatus(204))
+      )
       this
     }
   }
@@ -430,18 +493,23 @@ trait StubUtils {
     def authIsDown(): A = {
       stubFor(
         post(urlEqualTo("/auth/authorise"))
-          .willReturn(aResponse()
-            .withStatus(500)))
-    this
+          .willReturn(
+            aResponse()
+              .withStatus(500)
+          )
+      )
+      this
     }
 
-    def userIsNotAuthenticated(): A  = {
+    def userIsNotAuthenticated(): A = {
       stubFor(
         post(urlEqualTo("/auth/authorise"))
           .willReturn(
             aResponse()
               .withStatus(401)
-              .withHeader("WWW-Authenticate", "MDTP detail=\"SessionRecordNotFound\"")))
+              .withHeader("WWW-Authenticate", "MDTP detail=\"SessionRecordNotFound\"")
+          )
+      )
       this
     }
 
@@ -451,7 +519,9 @@ trait StubUtils {
           .willReturn(
             aResponse()
               .withStatus(401)
-              .withHeader("WWW-Authenticate", "MDTP detail=\"InsufficientEnrolments\"")))
+              .withHeader("WWW-Authenticate", "MDTP detail=\"InsufficientEnrolments\"")
+          )
+      )
       this
     }
 
@@ -461,24 +531,28 @@ trait StubUtils {
           .willReturn(
             aResponse()
               .withStatus(401)
-              .withHeader("WWW-Authenticate", "MDTP detail=\"UnsupportedAuthProvider\"")))
+              .withHeader("WWW-Authenticate", "MDTP detail=\"UnsupportedAuthProvider\"")
+          )
+      )
       this
     }
 
-    def userIsNotAnAgent(): A  = {
+    def userIsNotAnAgent(): A = {
       stubFor(
         post(urlEqualTo("/auth/authorise"))
           .willReturn(
             aResponse()
               .withStatus(401)
-              .withHeader("WWW-Authenticate", "MDTP detail=\"UnsupportedAffinityGroup\"")))
+              .withHeader("WWW-Authenticate", "MDTP detail=\"UnsupportedAffinityGroup\"")
+          )
+      )
       this
     }
 
-
     def isAuthenticated(): A = {
       val (enrolKey, identifierKey, identifierValue: String): (String, String, String) =
-        if(arn.isDefined) ("HMRC-AS-AGENT", "AgentReferenceNumber", arn.get.value) else ("IR-SA-AGENT","IRAgentReference", saAgentReference.fold("")(_.value))
+        if (arn.isDefined) ("HMRC-AS-AGENT", "AgentReferenceNumber", arn.get.value)
+        else ("IR-SA-AGENT", "IRAgentReference", saAgentReference.fold("")(_.value))
 
       givenAuthorisedFor(
         s"""
@@ -514,7 +588,9 @@ trait StubUtils {
             aResponse()
               .withStatus(200)
               .withHeader("Content-Type", "application/json")
-              .withBody(responseBody)))
+              .withBody(responseBody)
+          )
+      )
       this
     }
   }
@@ -527,13 +603,19 @@ trait StubUtils {
 
     def hasNoRelationshipWith(identifier: TaxIdentifier): A = statusReturnedForRelationship(identifier, 404)
 
-    def hasAssignedRelationshipToAgentUser(identifier: TaxIdentifier, agentUserId: String): A = statusReturnedForUserLevelRelationship(identifier, agentUserId, 200)
-    def hasNoAssignedRelationshipToAgentUser(identifier: TaxIdentifier, agentUserId: String): A = statusReturnedForUserLevelRelationship(identifier, agentUserId, 404)
+    def hasAssignedRelationshipToAgentUser(identifier: TaxIdentifier, agentUserId: String): A =
+      statusReturnedForUserLevelRelationship(identifier, agentUserId, 200)
+    def hasNoAssignedRelationshipToAgentUser(identifier: TaxIdentifier, agentUserId: String): A =
+      statusReturnedForUserLevelRelationship(identifier, agentUserId, 404)
 
-    def isOptedInToGranularPermissions: A = statusReturnedForGPOptInRecordExists(NO_CONTENT)
+    def isOptedInToGranularPermissions: A  = statusReturnedForGPOptInRecordExists(NO_CONTENT)
     def isOptedOutOfGranularPermissions: A = statusReturnedForGPOptInRecordExists(NOT_FOUND)
 
-    def userIsInTaxServiceGroup(taxService: String, agentUserId: String, excludedClients: Set[Client] = Set.empty): A = {
+    def userIsInTaxServiceGroup(
+        taxService: String,
+        agentUserId: String,
+        excludedClients: Set[Client] = Set.empty
+    ): A = {
       val url = s"/agent-permissions/arn/${arn.value}/tax-group/$taxService"
       val response: TaxGroup =
         TaxGroup(
@@ -552,9 +634,12 @@ trait StubUtils {
 
       stubFor(
         get(urlEqualTo(url))
-          .willReturn(aResponse()
-            .withStatus(200)
-          .withBody(Json.toJson(response).toString())))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody(Json.toJson(response).toString())
+          )
+      )
       this
     }
 
@@ -564,11 +649,14 @@ trait StubUtils {
         s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/$mtdItId"
       case _ @Vrn(vrn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-VAT/client/VRN/$vrn"
       case _ @Utr(utr) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-TERS-ORG/client/SAUTR/$utr"
-      case _ @CgtRef(cgtRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/$cgtRef"
+      case _ @CgtRef(cgtRef) =>
+        s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CGT-PD/client/CGTPDRef/$cgtRef"
       case _ @Urn(urn) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-TERSNT-ORG/client/URN/$urn"
-      case _ @PptRef(pptRef) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PPT-ORG/client/EtmpRegistrationNumber/$pptRef"
+      case _ @PptRef(pptRef) =>
+        s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PPT-ORG/client/EtmpRegistrationNumber/$pptRef"
       case _ @CbcId(cbcId) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CBC-ORG/client/cbcId/$cbcId"
-      case _ @PlrId(plrId) => s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PILLAR2-ORG/client/PLRID/$plrId"
+      case _ @PlrId(plrId) =>
+        s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PILLAR2-ORG/client/PLRID/$plrId"
       case _ => throw new IllegalArgumentException
     }
 
@@ -577,8 +665,11 @@ trait StubUtils {
 
       stubFor(
         get(urlEqualTo(url))
-          .willReturn(aResponse()
-            .withStatus(status)))
+          .willReturn(
+            aResponse()
+              .withStatus(status)
+          )
+      )
       this
     }
 
@@ -587,8 +678,11 @@ trait StubUtils {
 
       stubFor(
         get(urlEqualTo(url))
-          .willReturn(aResponse()
-            .withStatus(status)))
+          .willReturn(
+            aResponse()
+              .withStatus(status)
+          )
+      )
       this
     }
 
@@ -597,8 +691,11 @@ trait StubUtils {
 
       stubFor(
         get(urlEqualTo(url))
-          .willReturn(aResponse()
-            .withStatus(status)))
+          .willReturn(
+            aResponse()
+              .withStatus(status)
+          )
+      )
       this
     }
   }

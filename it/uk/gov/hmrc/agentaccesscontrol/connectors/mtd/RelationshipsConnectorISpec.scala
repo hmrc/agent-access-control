@@ -1,45 +1,46 @@
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportAppPerSuite
+import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
 
-  val arn: Arn = Arn("B1111B")
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  val arn: Arn                          = Arn("B1111B")
+  implicit val hc: HeaderCarrier        = HeaderCarrier()
   val connector: RelationshipsConnector = app.injector.instanceOf[RelationshipsConnector]
 
   "relationshipExists for HMRC-MTD-IT" should {
-    behave like aCheckEndpoint(MtdItId("C1111C"), "MtdItId")
+    behave.like(aCheckEndpoint(MtdItId("C1111C"), "MtdItId"))
   }
 
   "relationshipExists for HMRC-MTD-VAT" should {
-    behave like aCheckEndpoint(Vrn("101747641"), "Vrn")
+    behave.like(aCheckEndpoint(Vrn("101747641"), "Vrn"))
   }
 
   "relationshipExists for HMRC-TERS-ORG" should {
-    behave like aCheckEndpoint(Utr("101747641"), "Utr")
+    behave.like(aCheckEndpoint(Utr("101747641"), "Utr"))
   }
 
   "relationshipExists for HMRC-TERSNT-ORG" should {
-    behave like aCheckEndpoint(Urn("urn101747641"), "Urn")
+    behave.like(aCheckEndpoint(Urn("urn101747641"), "Urn"))
   }
 
   "relationshipExists for HMRC-CGT-PD" should {
-    behave like aCheckEndpoint(CgtRef("XMCGTP123456789"), "CgtRef")
+    behave.like(aCheckEndpoint(CgtRef("XMCGTP123456789"), "CgtRef"))
   }
 
   "relationshipExists for HMRC-PPT-ORG" should {
-    behave like aCheckEndpoint(PptRef("XHPPT0006633194"), "PptRef")
+    behave.like(aCheckEndpoint(PptRef("XHPPT0006633194"), "PptRef"))
   }
 
   "relationshipExists for HMRC-CBC-ORG or HMRC-CBC-NONUK-ORG" should {
-    behave like aCheckEndpoint(CbcId("XHCBC0006633194"), "CbcId")
+    behave.like(aCheckEndpoint(CbcId("XHCBC0006633194"), "CbcId"))
   }
 
   private def aCheckEndpoint(identifier: TaxIdentifier, clientType: String): Unit = {

@@ -16,22 +16,24 @@ package uk.gov.hmrc.agentaccesscontrol
  * limitations under the License.
  */
 
-import uk.gov.hmrc.agentaccesscontrol.helpers.{Resource, WireMockWithOneServerPerTestISpec}
+import uk.gov.hmrc.agentaccesscontrol.helpers.Resource
+import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneServerPerTestISpec
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.{AgentCode, Nino}
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HttpResponse
 
 class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
 
-  val agentCode = AgentCode("ABCDEF123456")
-  val clientId = Nino("AE123456C")
-  val arn = Arn("TARN0000001")
+  val agentCode  = AgentCode("ABCDEF123456")
+  val clientId   = Nino("AE123456C")
+  val arn        = Arn("TARN0000001")
   val providerId = "12345-credId"
 
   val afiAuthUri = s"/agent-access-control/afi-auth/agent/${agentCode.value}/client/${clientId.value}"
-  val GET = "GET"
-  val POST = "POST"
-  val regime = "AGSV"
+  val GET        = "GET"
+  val POST       = "POST"
+  val regime     = "AGSV"
 
   s"Calling $afiAuthUri" when {
 

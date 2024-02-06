@@ -20,8 +20,10 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.CredentialRole
 import uk.gov.hmrc.domain.SaAgentReference
 
-case class AuthDetails(saAgentReference: Option[SaAgentReference],
-                       arn: Option[Arn],
-                       ggCredentialId: String,
-                       affinityGroup: Option[String],
-                       agentUserRole: Option[CredentialRole])
+case class AuthDetails(
+    saAgentReference: Option[SaAgentReference],
+    arn: Option[Arn],
+    ggCredentialId: String,
+    affinityGroup: Option[String],
+    agentUserRole: Option[CredentialRole]
+)

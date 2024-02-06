@@ -16,14 +16,13 @@
 
 package uk.gov.hmrc.agentaccesscontrol.models
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.Json
+import play.api.libs.json.OFormat
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 
 case class EnrolmentIdentifier(key: String, value: String)
-case class AuthEnrolment(key: String,
-                         identifiers: Seq[EnrolmentIdentifier],
-                         state: String) {
+case class AuthEnrolment(key: String, identifiers: Seq[EnrolmentIdentifier], state: String) {
   def identifier(key: String): Option[String] =
     identifiers.find(_.key == key).map(_.value)
 }

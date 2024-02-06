@@ -16,29 +16,37 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
+
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportAppPerSuite, WireMockWithOneAppPerSuiteISpec}
-import uk.gov.hmrc.agentaccesscontrol.models.{PayeFoundResponse, PayeNotFoundResponse, SaFoundResponse, SaNotFoundResponse}
-import uk.gov.hmrc.domain.{AgentCode, EmpRef, SaAgentReference, SaUtr}
+import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportAppPerSuite
+import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneAppPerSuiteISpec
+import uk.gov.hmrc.agentaccesscontrol.models.PayeFoundResponse
+import uk.gov.hmrc.agentaccesscontrol.models.PayeNotFoundResponse
+import uk.gov.hmrc.agentaccesscontrol.models.SaFoundResponse
+import uk.gov.hmrc.agentaccesscontrol.models.SaNotFoundResponse
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.EmpRef
+import uk.gov.hmrc.domain.SaAgentReference
+import uk.gov.hmrc.domain.SaUtr
 import uk.gov.hmrc.http.HeaderCarrier
-
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 class DesAgentClientApiConnectorISpec
     extends WireMockWithOneAppPerSuiteISpec
     with MockitoSugar
     with MetricTestSupportAppPerSuite {
 
-  implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
-  implicit val ec: ExecutionContextExecutor = ExecutionContext.global
+  implicit val headerCarrier: HeaderCarrier       = HeaderCarrier()
+  implicit val ec: ExecutionContextExecutor       = ExecutionContext.global
   val desApiConnector: DesAgentClientApiConnector = app.injector.instanceOf[DesAgentClientApiConnector]
 
   val saAgentReference = SaAgentReference("AGENTR")
-  val saUtr = SaUtr("SAUTR456")
-  val empRef = EmpRef("123", "4567890")
-  val agentCode = AgentCode("A1234567890A")
-  val providerId = "12345-credId"
+  val saUtr            = SaUtr("SAUTR456")
+  val empRef           = EmpRef("123", "4567890")
+  val agentCode        = AgentCode("A1234567890A")
+  val providerId       = "12345-credId"
 
   def givenClientIsLoggedIn() =
     given()
@@ -65,7 +73,8 @@ class DesAgentClientApiConnectorISpec
 
         await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
           auth64_8 = true,
-          authI64_8 = true)
+          authI64_8 = true
+        )
       }
       "agent is authorised by only i64-8" in {
         givenClientIsLoggedIn()
@@ -74,7 +83,8 @@ class DesAgentClientApiConnectorISpec
 
         await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
           auth64_8 = false,
-          authI64_8 = true)
+          authI64_8 = true
+        )
       }
       "agent is authorised by only 64-8" in {
         givenClientIsLoggedIn()
@@ -83,7 +93,8 @@ class DesAgentClientApiConnectorISpec
 
         await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
           auth64_8 = true,
-          authI64_8 = false)
+          authI64_8 = false
+        )
       }
       "agent is not authorised" in {
         givenClientIsLoggedIn()
@@ -92,7 +103,8 @@ class DesAgentClientApiConnectorISpec
 
         await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
           auth64_8 = false,
-          authI64_8 = false)
+          authI64_8 = false
+        )
       }
     }
 
@@ -117,7 +129,8 @@ class DesAgentClientApiConnectorISpec
 
       await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
         auth64_8 = true,
-        authI64_8 = true)
+        authI64_8 = true
+      )
       timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
     }
 
@@ -146,14 +159,18 @@ class DesAgentClientApiConnectorISpec
           .andIsRelatedToPayeClientInDes(empRef)
           .andIsAuthorisedBy648()
 
-        await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true)
+        await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 =
+          true
+        )
       }
       "agent is not authorised" in {
         givenClientIsLoggedIn()
           .andIsRelatedToPayeClientInDes(empRef)
           .butIsNotAuthorised()
 
-        await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = false)
+        await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 =
+          false
+        )
       }
     }
 
@@ -176,7 +193,9 @@ class DesAgentClientApiConnectorISpec
         .andIsAuthorisedBy648()
       givenCleanMetricRegistry()
 
-      await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 = true)
+      await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 =
+        true
+      )
       timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
     }
 

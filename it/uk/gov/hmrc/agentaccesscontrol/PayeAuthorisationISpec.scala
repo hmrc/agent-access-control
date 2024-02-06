@@ -1,13 +1,16 @@
 package uk.gov.hmrc.agentaccesscontrol
 
 import play.utils.UriEncoding.encodePathSegment
-import uk.gov.hmrc.agentaccesscontrol.helpers.{MetricTestSupportServerPerTest, Resource, WireMockWithOneServerPerTestISpec}
-import uk.gov.hmrc.domain.{AgentCode, EmpRef}
+import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportServerPerTest
+import uk.gov.hmrc.agentaccesscontrol.helpers.Resource
+import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneServerPerTestISpec
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.EmpRef
 import uk.gov.hmrc.http.HttpResponse
 
 class PayeAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
-  val agentCode = AgentCode("A11112222A")
-  val empRef = EmpRef("123", "123456")
+  val agentCode  = AgentCode("A11112222A")
+  val empRef     = EmpRef("123", "123456")
   val providerId = "12345-credId"
 
   "GET /agent-access-control/epaye-auth/agent/:agentCode/client/:empRef" should {
@@ -49,7 +52,6 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metr
 
       status shouldBe 502
     }
-
 
     "send an AccessControlDecision audit event" in {
       given()
@@ -130,8 +132,8 @@ class PayeAuthorisationISpec extends WireMockWithOneServerPerTestISpec with Metr
 
   def authResponseFor(agentCode: AgentCode, empRef: EmpRef, method: String): HttpResponse = {
     val resource = new Resource(
-      s"/agent-access-control/epaye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}")(
-      port)
+      s"/agent-access-control/epaye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}"
+    )(port)
     method match {
       case "GET"  => resource.get()
       case "POST" => resource.post(body = """{"foo": "bar"}""")

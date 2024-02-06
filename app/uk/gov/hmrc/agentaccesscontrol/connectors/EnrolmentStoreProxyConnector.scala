@@ -16,60 +16,62 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
+import java.net.URL
+import javax.inject.Inject
+import javax.inject.Singleton
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
 import play.api.http.Status._
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.domain.{AgentUserId, EmpRef, SaAgentReference, SaUtr}
+import uk.gov.hmrc.domain.AgentUserId
+import uk.gov.hmrc.domain.EmpRef
+import uk.gov.hmrc.domain.SaAgentReference
+import uk.gov.hmrc.domain.SaUtr
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{
-  HeaderCarrier,
-  HttpClient,
-  HttpResponse,
-  UpstreamErrorResponse
-}
+import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-import java.net.URL
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-
 @Singleton
-class EnrolmentStoreProxyConnector @Inject()(appConfig: AppConfig,
-                                             httpClient: HttpClient,
-                                             metrics: Metrics) {
+class EnrolmentStoreProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics) {
   private def pathES0(enrolmentKey: String, usersType: String): String =
     new URL(
-      s"${appConfig.esProxyBaseUrl}/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=$usersType").toString
+      s"${appConfig.esProxyBaseUrl}/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=$usersType"
+    ).toString
 
-  def getIRSAAGENTPrincipalUserIdsFor(saAgentReference: SaAgentReference)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Set[AgentUserId]] =
-    getES0(s"IR-SA-AGENT~IRAgentReference~${saAgentReference.value}",
-           "principal")
+  def getIRSAAGENTPrincipalUserIdsFor(
+      saAgentReference: SaAgentReference
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
+    getES0(s"IR-SA-AGENT~IRAgentReference~${saAgentReference.value}", "principal")
 
-  def getIRSADelegatedUserIdsFor(utr: SaUtr)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Set[AgentUserId]] =
+  def getIRSADelegatedUserIdsFor(
+      utr: SaUtr
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
     getES0(s"IR-SA~UTR~$utr", "delegated")
 
-  def getIRPAYEDelegatedUserIdsFor(empRef: EmpRef)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Set[AgentUserId]] = {
+  def getIRPAYEDelegatedUserIdsFor(
+      empRef: EmpRef
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] = {
     val enrolmentKey =
       s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
 
     getES0(enrolmentKey, "delegated")
   }
 
-  private def getES0(enrolmentKey: String, usersType: String)(
-      implicit hc: HeaderCarrier,
-      ec: ExecutionContext): Future[Set[AgentUserId]] = {
+  private def getES0(
+      enrolmentKey: String,
+      usersType: String
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] = {
 
     val url = pathES0(enrolmentKey, usersType)
 
     val timer =
-      metrics.defaultRegistry.timer(
-        "Timer-ConsumedAPI-EnrolmentStoreProxy-ES0-GET")
+      metrics.defaultRegistry.timer("Timer-ConsumedAPI-EnrolmentStoreProxy-ES0-GET")
 
     timer.time()
     httpClient.GET[HttpResponse](url).map { response =>
@@ -86,7 +88,8 @@ class EnrolmentStoreProxyConnector @Inject()(appConfig: AppConfig,
             s"Error calling in getSaAgentClientRelationship at: $url",
             response.status,
             if (response.status == INTERNAL_SERVER_ERROR) BAD_GATEWAY
-            else response.status)
+            else response.status
+          )
       }
     }
   }

@@ -16,14 +16,18 @@
 
 package uk.gov.hmrc.agentaccesscontrol
 
-import com.github.tomakehurst.wiremock.WireMockServer
+import java.net.ServerSocket
+
+import scala.annotation.tailrec
+
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEachTestData, Suite, TestData}
+import com.github.tomakehurst.wiremock.WireMockServer
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.BeforeAndAfterEachTestData
+import org.scalatest.Suite
+import org.scalatest.TestData
 import play.api.Logging
-
-import java.net.ServerSocket
-import scala.annotation.tailrec
 
 object StartAndStopWireMock {
   // We have to make the wireMockPort constant per-JVM instead of constant
@@ -35,10 +39,10 @@ object StartAndStopWireMock {
 trait StartAndStopWireMock extends BeforeAndAfterEachTestData with BeforeAndAfterAll {
   self: Suite =>
 
-  protected val wiremockPort = StartAndStopWireMock.wireMockPort
-  protected val wiremockHost = "localhost"
+  protected val wiremockPort            = StartAndStopWireMock.wireMockPort
+  protected val wiremockHost            = "localhost"
   protected val wiremockBaseUrl: String = s"http://$wiremockHost:$wiremockPort"
-  val wireMockServer = new WireMockServer(wireMockConfig().port(wiremockPort))
+  val wireMockServer                    = new WireMockServer(wireMockConfig().port(wiremockPort))
 
   override def beforeAll() = {
     wireMockServer.stop()
@@ -49,14 +53,14 @@ trait StartAndStopWireMock extends BeforeAndAfterEachTestData with BeforeAndAfte
   override def beforeEach(testData: TestData) =
     WireMock.reset()
 
-  override protected def afterAll(): Unit =
+  protected override def afterAll(): Unit =
     wireMockServer.stop()
 }
 
 // This class was copy-pasted from the hmrctest project, which is now deprecated.
 object Port extends Logging {
-  val rnd = new scala.util.Random
-  val range = 8000 to 39999
+  val rnd       = new scala.util.Random
+  val range     = 8000 to 39999
   val usedPorts = List[Int]()
 
   @tailrec

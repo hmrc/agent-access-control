@@ -16,18 +16,17 @@
 
 package uk.gov.hmrc.agentaccesscontrol.config
 
-import com.google.inject.{Inject, Singleton}
+import com.google.inject.Inject
+import com.google.inject.Singleton
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton
-class AppConfig @Inject()(servicesConfig: ServicesConfig) {
+class AppConfig @Inject() (servicesConfig: ServicesConfig) {
 
   val appName = "agent-access-control"
 
   def getConfString(key: String): String =
-    servicesConfig.getConfString(
-      key,
-      throw new RuntimeException(s"config '$key' not found"))
+    servicesConfig.getConfString(key, throw new RuntimeException(s"config '$key' not found"))
 
   def baseUrl(serviceName: String): String = servicesConfig.baseUrl(serviceName)
 

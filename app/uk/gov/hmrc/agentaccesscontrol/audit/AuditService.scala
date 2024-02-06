@@ -16,51 +16,47 @@
 
 package uk.gov.hmrc.agentaccesscontrol.audit
 
-import javax.inject.{Inject, Singleton}
-import play.api.mvc.Request
-import uk.gov.hmrc.domain.{AgentCode, TaxIdentifier}
-import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.audit.model.DataEvent
+import javax.inject.Inject
+import javax.inject.Singleton
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
+import play.api.mvc.Request
+import uk.gov.hmrc.domain.AgentCode
+import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.http.connector.AuditResult
+import uk.gov.hmrc.play.audit.model.DataEvent
+import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 
 @Singleton
-class AuditService @Inject()(val auditConnector: AuditConnector) {
+class AuditService @Inject() (val auditConnector: AuditConnector) {
 
-  def sendAuditEvent(event: AgentAccessControlEvent,
-                     transactionName: String,
-                     agentCode: AgentCode,
-                     regime: String,
-                     regimeId: TaxIdentifier,
-                     details: Seq[(String, Any)] = Seq.empty)(
-      implicit hc: HeaderCarrier,
-      request: Request[Any],
-      ec: ExecutionContext): Future[AuditResult] =
-    auditConnector.sendEvent(
-      createAuditEvent(event,
-                       transactionName,
-                       agentCode,
-                       regime,
-                       regimeId.value,
-                       details: _*))
+  def sendAuditEvent(
+      event: AgentAccessControlEvent,
+      transactionName: String,
+      agentCode: AgentCode,
+      regime: String,
+      regimeId: TaxIdentifier,
+      details: Seq[(String, Any)] = Seq.empty
+  )(implicit hc: HeaderCarrier, request: Request[Any], ec: ExecutionContext): Future[AuditResult] =
+    auditConnector.sendEvent(createAuditEvent(event, transactionName, agentCode, regime, regimeId.value, details: _*))
 
-  def createAuditEvent(event: AgentAccessControlEvent,
-                       transactionName: String,
-                       agentCode: AgentCode,
-                       regime: String,
-                       regimeId: String,
-                       details: (String, Any)*)(
-      implicit hc: HeaderCarrier,
-      request: Request[Any]): DataEvent =
+  def createAuditEvent(
+      event: AgentAccessControlEvent,
+      transactionName: String,
+      agentCode: AgentCode,
+      regime: String,
+      regimeId: String,
+      details: (String, Any)*
+  )(implicit hc: HeaderCarrier, request: Request[Any]): DataEvent =
     DataEvent(
       auditSource = "agent-access-control",
       auditType = event.toString,
       tags = hc.toAuditTags(transactionName, request.path),
-      detail = hc.toAuditDetails("agentCode" -> agentCode.value,
-                                 "regime" -> regime,
-                                 "regimeId" -> regimeId)
+      detail = hc.toAuditDetails("agentCode" -> agentCode.value, "regime" -> regime, "regimeId" -> regimeId)
         ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
     )
 }
