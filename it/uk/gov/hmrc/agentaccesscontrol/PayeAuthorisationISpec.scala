@@ -1,142 +1,102 @@
 package uk.gov.hmrc.agentaccesscontrol
 
+import play.api.libs.json.Json
+import play.api.test.Helpers._
 import play.utils.UriEncoding.encodePathSegment
-import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportServerPerTest
-import uk.gov.hmrc.agentaccesscontrol.helpers.Resource
-import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneServerPerTestISpec
-import uk.gov.hmrc.domain.AgentCode
-import uk.gov.hmrc.domain.EmpRef
-import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.DesStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.EnrolmentStoreProxyStub
+import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
+import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testAgentCode
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testArn
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testEmpRef
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testProviderId
 
-class PayeAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
-  val agentCode  = AgentCode("A11112222A")
-  val empRef     = EmpRef("123", "123456")
-  val providerId = "12345-credId"
+class PayeAuthorisationISpec
+    extends ComponentSpecHelper
+    with MetricTestSupport
+    with AuthStub
+    with DataStreamStub
+    with DesStub
+    with EnrolmentStoreProxyStub {
 
-  "GET /agent-access-control/epaye-auth/agent/:agentCode/client/:empRef" should {
-    val method = "GET"
+  val uri = s"/epaye-auth/agent/${testAgentCode.value}/client/${encodePathSegment(testEmpRef.value, "UTF-8")}"
+
+  s"GET $uri" should {
     "return 200 when access is granted" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, None)
-        .isAuthenticated()
-        .andIsAssignedToClient(empRef)
-        .andIsRelatedToPayeClientInDes(empRef)
-        .andIsAuthorisedBy648()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubQueryUsersAssignedEnrolmentsDelegatedPaye(testEmpRef)(OK, successfulResponseDelegated(Seq(testProviderId)))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
 
-      val status = authResponseFor(agentCode, empRef, method).status
+      val result = get(uri)
 
-      status shouldBe 200
+      result.status shouldBe OK
     }
 
     "return 401 when access is not granted" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, None)
-        .isAuthenticated()
-        .andIsNotAssignedToClient(empRef)
-        .andIsRelatedToPayeClientInDes(empRef)
-        .andIsAuthorisedBy648()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubQueryUsersAssignedEnrolmentsDelegatedPaye(testEmpRef)(OK, successfulResponseDelegated(Seq.empty))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
 
-      val status = authResponseFor(agentCode, empRef, method).status
+      val result = get(uri)
 
-      status shouldBe 401
+      result.status shouldBe UNAUTHORIZED
     }
 
     "return 502 if a downstream service fails" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, None)
-        .isAuthenticated()
-        .andIsAssignedToClient(empRef)
-        .andDesIsDown()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubQueryUsersAssignedEnrolmentsDelegatedPaye(testEmpRef)(OK, successfulResponseDelegated(Seq(testProviderId)))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(BAD_GATEWAY, Json.obj())
 
-      val status = authResponseFor(agentCode, empRef, method).status
+      val result = get(uri)
 
-      status shouldBe 502
-    }
-
-    "send an AccessControlDecision audit event" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, None)
-        .isAuthenticated()
-        .andIsAssignedToClient(empRef)
-        .andIsRelatedToPayeClientInDes(empRef)
-        .andIsAuthorisedBy648()
-
-      authResponseFor(agentCode, empRef, method).status shouldBe 200
+      result.status shouldBe BAD_GATEWAY
     }
   }
 
-  "POST /agent-access-control/epaye-auth/agent/:agentCode/client/:empRef" should {
-    val method = "POST"
+  s"POST $uri" should {
     "return 200 when access is granted" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, None)
-        .isAuthenticated()
-        .andIsAssignedToClient(empRef)
-        .andIsRelatedToPayeClientInDes(empRef)
-        .andIsAuthorisedBy648()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubQueryUsersAssignedEnrolmentsDelegatedPaye(testEmpRef)(OK, successfulResponseDelegated(Seq(testProviderId)))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
 
-      val status = authResponseFor(agentCode, empRef, method).status
+      val result = post(uri)(Json.obj())
 
-      status shouldBe 200
+      result.status shouldBe OK
     }
 
     "return 401 when access is not granted" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, None)
-        .isAuthenticated()
-        .andIsNotAssignedToClient(empRef)
-        .andIsRelatedToPayeClientInDes(empRef)
-        .andIsAuthorisedBy648()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubQueryUsersAssignedEnrolmentsDelegatedPaye(testEmpRef)(OK, successfulResponseDelegated(Seq.empty))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
 
-      val status = authResponseFor(agentCode, empRef, method).status
+      val result = post(uri)(Json.obj())
 
-      status shouldBe 401
+      result.status shouldBe UNAUTHORIZED
     }
 
     "return 502 if a downstream service fails" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, None)
-        .isAuthenticated()
-        .andIsAssignedToClient(empRef)
-        .andDesIsDown()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubQueryUsersAssignedEnrolmentsDelegatedPaye(testEmpRef)(OK, successfulResponseDelegated(Seq(testProviderId)))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(BAD_GATEWAY, Json.obj())
 
-      val status = authResponseFor(agentCode, empRef, method).status
+      val result = post(uri)(Json.obj())
 
-      status shouldBe 502
+      result.status shouldBe BAD_GATEWAY
     }
 
     "record metrics for inbound http call" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, None)
-        .isAuthenticated()
-        .andIsAssignedToClient(empRef)
-        .andIsRelatedToPayeClientInDes(empRef)
-        .andIsAuthorisedBy648()
-      givenCleanMetricRegistry()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubQueryUsersAssignedEnrolmentsDelegatedPaye(testEmpRef)(OK, successfulResponseDelegated(Seq(testProviderId)))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
+      cleanMetricRegistry()
 
-      authResponseFor(agentCode, empRef, method).status shouldBe 200
-      timerShouldExistsAndBeenUpdated("API-__epaye-auth__agent__:__client__:-POST")
-    }
+      val result = post(uri)(Json.obj())
 
-    "send an AccessControlDecision audit event" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, None)
-        .isAuthenticated()
-        .andIsAssignedToClient(empRef)
-        .andIsRelatedToPayeClientInDes(empRef)
-        .andIsAuthorisedBy648()
-
-      authResponseFor(agentCode, empRef, method).status shouldBe 200
-    }
-  }
-
-  def authResponseFor(agentCode: AgentCode, empRef: EmpRef, method: String): HttpResponse = {
-    val resource = new Resource(
-      s"/agent-access-control/epaye-auth/agent/${agentCode.value}/client/${encodePathSegment(empRef.value, "UTF-8")}"
-    )(port)
-    method match {
-      case "GET"  => resource.get()
-      case "POST" => resource.post(body = """{"foo": "bar"}""")
+      result.status shouldBe OK
+      timerShouldExistAndHasBeenUpdated("API-__epaye-auth__agent__:__client__:-POST")
     }
   }
 

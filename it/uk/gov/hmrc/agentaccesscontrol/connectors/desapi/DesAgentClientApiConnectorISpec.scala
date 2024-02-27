@@ -19,89 +19,90 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContextExecutor
 
-import org.scalatestplus.mockito.MockitoSugar
+import play.api.libs.json.Json
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportAppPerSuite
-import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.agentaccesscontrol.models.PayeFoundResponse
 import uk.gov.hmrc.agentaccesscontrol.models.PayeNotFoundResponse
 import uk.gov.hmrc.agentaccesscontrol.models.SaFoundResponse
 import uk.gov.hmrc.agentaccesscontrol.models.SaNotFoundResponse
-import uk.gov.hmrc.domain.AgentCode
-import uk.gov.hmrc.domain.EmpRef
-import uk.gov.hmrc.domain.SaAgentReference
-import uk.gov.hmrc.domain.SaUtr
+import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.DesStub
+import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
+import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 import uk.gov.hmrc.http.HeaderCarrier
 
 class DesAgentClientApiConnectorISpec
-    extends WireMockWithOneAppPerSuiteISpec
-    with MockitoSugar
-    with MetricTestSupportAppPerSuite {
+    extends ComponentSpecHelper
+    with MetricTestSupport
+    with AuthStub
+    with DataStreamStub
+    with DesStub {
 
   implicit val headerCarrier: HeaderCarrier       = HeaderCarrier()
   implicit val ec: ExecutionContextExecutor       = ExecutionContext.global
   val desApiConnector: DesAgentClientApiConnector = app.injector.instanceOf[DesAgentClientApiConnector]
 
-  val saAgentReference = SaAgentReference("AGENTR")
-  val saUtr            = SaUtr("SAUTR456")
-  val empRef           = EmpRef("123", "4567890")
-  val agentCode        = AgentCode("A1234567890A")
-  val providerId       = "12345-credId"
-
-  def givenClientIsLoggedIn() =
-    given()
-      .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-      .isAuthenticated()
-
   "getSaAgentClientRelationship" should {
     "request DES API with the correct auth tokens" in {
-      givenClientIsLoggedIn()
-        .andIsRelatedToSaClientInDes(saUtr)
-        .andAuthorisedByBoth648AndI648()
-      givenCleanMetricRegistry()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+        OK,
+        successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+      )
+      cleanMetricRegistry()
 
-      val response = await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr))
+      val response = await(desApiConnector.getSaAgentClientRelationship(testSaAgentReference, testSaUtr))
       response shouldBe SaFoundResponse(auth64_8 = true, authI64_8 = true)
-      timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
+      timerShouldExistAndHasBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
     }
 
     "pass along 64-8 and i64-8 information" when {
       "agent is authorised by 64-8 and i64-8" in {
-        givenClientIsLoggedIn()
-          .andIsRelatedToSaClientInDes(saUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
+        await(desApiConnector.getSaAgentClientRelationship(testSaAgentReference, testSaUtr)) shouldBe SaFoundResponse(
           auth64_8 = true,
           authI64_8 = true
         )
       }
       "agent is authorised by only i64-8" in {
-        givenClientIsLoggedIn()
-          .andIsRelatedToSaClientInDes(saUtr)
-          .andIsAuthorisedByOnlyI648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = true)
+        )
 
-        await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
+        await(desApiConnector.getSaAgentClientRelationship(testSaAgentReference, testSaUtr)) shouldBe SaFoundResponse(
           auth64_8 = false,
           authI64_8 = true
         )
       }
       "agent is authorised by only 64-8" in {
-        givenClientIsLoggedIn()
-          .andIsRelatedToSaClientInDes(saUtr)
-          .andIsAuthorisedByOnly648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = false)
+        )
 
-        await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
+        await(desApiConnector.getSaAgentClientRelationship(testSaAgentReference, testSaUtr)) shouldBe SaFoundResponse(
           auth64_8 = true,
           authI64_8 = false
         )
       }
       "agent is not authorised" in {
-        givenClientIsLoggedIn()
-          .andIsRelatedToSaClientInDes(saUtr)
-          .butIsNotAuthorised()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = false)
+        )
 
-        await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
+        await(desApiConnector.getSaAgentClientRelationship(testSaAgentReference, testSaUtr)) shouldBe SaFoundResponse(
           auth64_8 = false,
           authI64_8 = false
         )
@@ -109,100 +110,90 @@ class DesAgentClientApiConnectorISpec
     }
 
     "return NotFoundResponse in case of a 404" in {
-      givenClientIsLoggedIn()
-        .andHasNoRelationInDesWith(saUtr)
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(NOT_FOUND, Json.obj())
 
-      await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaNotFoundResponse
+      await(desApiConnector.getSaAgentClientRelationship(testSaAgentReference, testSaUtr)) shouldBe SaNotFoundResponse
     }
 
     "fail in any other cases, like internal server error" in {
-      givenClientIsLoggedIn().andDesIsDown()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(INTERNAL_SERVER_ERROR, Json.obj())
 
-      an[Exception] should be thrownBy await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr))
+      an[Exception] should be thrownBy await(
+        desApiConnector.getSaAgentClientRelationship(testSaAgentReference, testSaUtr)
+      )
     }
 
     "log metrics for the outbound call" in {
-      givenClientIsLoggedIn()
-        .andIsRelatedToSaClientInDes(saUtr)
-        .andAuthorisedByBoth648AndI648()
-      givenCleanMetricRegistry()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+        OK,
+        successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+      )
+      cleanMetricRegistry()
 
-      await(desApiConnector.getSaAgentClientRelationship(saAgentReference, saUtr)) shouldBe SaFoundResponse(
+      await(desApiConnector.getSaAgentClientRelationship(testSaAgentReference, testSaUtr)) shouldBe SaFoundResponse(
         auth64_8 = true,
         authI64_8 = true
       )
-      timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
-    }
-
-    "audit outbound DES call" in {
-      givenClientIsLoggedIn()
-        .andIsRelatedToSaClientInDes(saUtr)
-        .andAuthorisedByBoth648AndI648()
+      timerShouldExistAndHasBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
     }
   }
 
   "getPayeAgentClientRelationship" should {
     "request DES API with the correct auth tokens" in {
-      givenClientIsLoggedIn()
-        .andIsRelatedToPayeClientInDes(empRef)
-        .andIsAuthorisedBy648()
-      givenCleanMetricRegistry()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
+      cleanMetricRegistry()
 
-      val response = await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef))
+      val response = await(desApiConnector.getPayeAgentClientRelationship(testAgentCode, testEmpRef))
       response shouldBe PayeFoundResponse(auth64_8 = true)
-      timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
+      timerShouldExistAndHasBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
     }
 
     "pass along 64-8 and i64-8 information" when {
       "agent is authorised by 64-8" in {
-        givenClientIsLoggedIn()
-          .andIsRelatedToPayeClientInDes(empRef)
-          .andIsAuthorisedBy648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
 
-        await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 =
-          true
+        await(desApiConnector.getPayeAgentClientRelationship(testAgentCode, testEmpRef)) shouldBe PayeFoundResponse(
+          auth64_8 = true
         )
       }
       "agent is not authorised" in {
-        givenClientIsLoggedIn()
-          .andIsRelatedToPayeClientInDes(empRef)
-          .butIsNotAuthorised()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = false))
 
-        await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 =
-          false
+        await(desApiConnector.getPayeAgentClientRelationship(testAgentCode, testEmpRef)) shouldBe PayeFoundResponse(
+          auth64_8 = false
         )
       }
     }
 
     "return NotFoundResponse in case of a 404" in {
-      givenClientIsLoggedIn()
-        .andHasNoRelationInDesWith(empRef)
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(NOT_FOUND, Json.obj())
 
-      await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeNotFoundResponse
+      await(desApiConnector.getPayeAgentClientRelationship(testAgentCode, testEmpRef)) shouldBe PayeNotFoundResponse
     }
 
     "fail in any other cases, like internal server error" in {
-      givenClientIsLoggedIn().andDesIsDown()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(INTERNAL_SERVER_ERROR, Json.obj())
 
-      an[Exception] should be thrownBy await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef))
+      an[Exception] should be thrownBy await(desApiConnector.getPayeAgentClientRelationship(testAgentCode, testEmpRef))
     }
 
     "log metrics for outbound call" in {
-      givenClientIsLoggedIn()
-        .andIsRelatedToPayeClientInDes(empRef)
-        .andIsAuthorisedBy648()
-      givenCleanMetricRegistry()
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
+      cleanMetricRegistry()
 
-      await(desApiConnector.getPayeAgentClientRelationship(agentCode, empRef)) shouldBe PayeFoundResponse(auth64_8 =
-        true
+      await(desApiConnector.getPayeAgentClientRelationship(testAgentCode, testEmpRef)) shouldBe PayeFoundResponse(
+        auth64_8 = true
       )
-      timerShouldExistsAndBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
-    }
-
-    "audit outbound call to DES" in {
-      givenClientIsLoggedIn()
-        .andIsRelatedToPayeClientInDes(empRef)
-        .andIsAuthorisedBy648()
+      timerShouldExistAndHasBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
     }
   }
 }
