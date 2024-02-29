@@ -24,7 +24,10 @@ lazy val root = (project in file("."))
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     Compile / scalafmtOnCompile := true,
-    Test / scalafmtOnCompile := true
+    Test / scalafmtOnCompile := true,
+    IntegrationTest / scalafmtOnCompile := true,
+    Test / logBuffered := false,
+    IntegrationTest / logBuffered := false
   )
   .configs(IntegrationTest)
   .settings(

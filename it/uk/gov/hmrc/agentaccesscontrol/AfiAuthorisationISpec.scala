@@ -1,7 +1,5 @@
-package uk.gov.hmrc.agentaccesscontrol
-
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,111 +14,94 @@ package uk.gov.hmrc.agentaccesscontrol
  * limitations under the License.
  */
 
-import uk.gov.hmrc.agentaccesscontrol.helpers.Resource
-import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneServerPerTestISpec
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.AgentCode
-import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.HttpResponse
+package uk.gov.hmrc.agentaccesscontrol
 
-class AfiAuthorisationISpec extends WireMockWithOneServerPerTestISpec {
+import play.api.libs.json.Json
+import play.api.test.Helpers._
+import uk.gov.hmrc.agentaccesscontrol.stubs._
+import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 
-  val agentCode  = AgentCode("ABCDEF123456")
-  val clientId   = Nino("AE123456C")
-  val arn        = Arn("TARN0000001")
-  val providerId = "12345-credId"
+class AfiAuthorisationISpec
+    extends ComponentSpecHelper
+    with AuthStub
+    with AgentFiRelationshipStub
+    with AgentClientAuthorisationStub {
 
-  val afiAuthUri = s"/agent-access-control/afi-auth/agent/${agentCode.value}/client/${clientId.value}"
-  val GET        = "GET"
-  val POST       = "POST"
-  val regime     = "AGSV"
+  private val uri: String    = s"/afi-auth/agent/${testAgentCode.value}/client/${testNino.value}"
+  private val regime: String = "AGSV"
 
-  s"Calling $afiAuthUri" when {
-
+  s"Calling $uri" when {
     s"http method is $GET" should {
-
       "respond with 200" when {
         "the client has authorised the agent and agent is not suspended" in {
-          given()
-            .agentAdmin(agentCode, providerId, None, Some(arn))
-            .isAuthenticated()
-            .andHasRelationship(arn, clientId)
-            .givenSuspensionStatus(arn, suspended = false, regime)
+          stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+          stubAgentFiRelationship(testArn, testNino)(OK)
+          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, regime)
 
-          authResponseFor(GET).status shouldBe 200
+          val result = get(uri)
+
+          result.status shouldBe OK
         }
       }
 
       "respond with 401" when {
         "the client has authorised the agent but agent is suspended" in {
-          given()
-            .agentAdmin(agentCode, providerId, None, Some(arn))
-            .isAuthenticated()
-            .andHasRelationship(arn, clientId)
-            .givenSuspensionStatus(arn, suspended = true, regime)
+          stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+          stubAgentFiRelationship(testArn, testNino)(OK)
+          stubAgentClientAuthorisationSuspensionStatus(testArn)(OK, isSuspended = true, regime)
 
-          authResponseFor(GET).status shouldBe 401
+          val result = get(uri)
+
+          result.status shouldBe UNAUTHORIZED
         }
-      }
 
-      "respond with 401" when {
         "the client has not authorised the agent and agent is not suspended" in {
-          given()
-            .agentAdmin(agentCode, providerId, None, Some(arn))
-            .isAuthenticated()
-            .andHasNoRelationship(arn, clientId)
-            .givenSuspensionStatus(arn, suspended = false, regime)
+          stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+          stubAgentFiRelationship(testArn, testNino)(NOT_FOUND)
+          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, regime)
 
-          authResponseFor(GET).status shouldBe 401
+          val result = get(uri)
+
+          result.status shouldBe UNAUTHORIZED
         }
       }
     }
 
     s"http method is $POST" should {
-
       "respond with 200" when {
         "the client has authorised the agent and agent is not suspended" in {
-          given()
-            .agentAdmin(agentCode, providerId, None, Some(arn))
-            .isAuthenticated()
-            .andHasRelationship(arn, clientId)
-            .givenSuspensionStatus(arn, suspended = false, regime)
+          stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+          stubAgentFiRelationship(testArn, testNino)(OK)
+          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, regime)
 
-          authResponseFor(POST).status shouldBe 200
+          val result = post(uri)(Json.obj())
+
+          result.status shouldBe OK
         }
       }
 
       "respond with 401" when {
         "the client has authorised the agent but agent is suspended" in {
-          given()
-            .agentAdmin(agentCode, providerId, None, Some(arn))
-            .isAuthenticated()
-            .andHasRelationship(arn, clientId)
-            .givenSuspensionStatus(arn, suspended = true, regime)
+          stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+          stubAgentFiRelationship(testArn, testNino)(OK)
+          stubAgentClientAuthorisationSuspensionStatus(testArn)(OK, isSuspended = true, regime)
 
-          authResponseFor(POST).status shouldBe 401
+          val result = post(uri)(Json.obj())
+
+          result.status shouldBe UNAUTHORIZED
         }
-      }
 
-      "respond with 401" when {
         "the client has not authorised the agent and agent is not suspended" in {
-          given()
-            .agentAdmin(agentCode, providerId, None, Some(arn))
-            .isAuthenticated()
-            .andHasNoRelationship(arn, clientId)
-            .givenSuspensionStatus(arn, suspended = false, regime)
+          stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+          stubAgentFiRelationship(testArn, testNino)(NOT_FOUND)
+          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, regime)
 
-          authResponseFor(POST).status shouldBe 401
+          val result = post(uri)(Json.obj())
+
+          result.status shouldBe UNAUTHORIZED
         }
       }
-    }
-  }
-
-  def authResponseFor(method: String): HttpResponse = {
-    val resource = new Resource(afiAuthUri)(port)
-    method match {
-      case "GET"  => resource.get()
-      case "POST" => resource.post(body = """{"foo": "bar"}""")
     }
   }
 }

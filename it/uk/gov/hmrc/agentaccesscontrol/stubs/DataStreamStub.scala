@@ -22,17 +22,28 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.time.Millis
 import org.scalatest.time.Seconds
 import org.scalatest.time.Span
+import uk.gov.hmrc.agentaccesscontrol.utils.WiremockHelper.stubPost
+import uk.gov.hmrc.agentaccesscontrol.utils.WiremockHelper.verifyPost
 
-object DataStreamStub extends Eventually {
-  implicit override val patienceConfig: DataStreamStub.PatienceConfig =
+trait DataStreamStub extends Eventually {
+  implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
 
   private def auditUrl = "/write/audit"
 
-  def givenAuditConnector(): Seq[StubMapping] = {
+  def givenAuditConnector(): Seq[StubMapping] =
     List(
       stubFor(post(urlPathEqualTo(auditUrl)).willReturn(aResponse().withStatus(204))),
       stubFor(post(urlPathEqualTo(auditUrl + "/merged")).willReturn(aResponse().withStatus(204)))
     )
+  def stubAudit(): StubMapping = {
+    stubPost("/write/audit", 204, "{}")
+    stubPost("/write/audit/merged", 204, "{}")
   }
+
+  def verifyAudit(): Unit = {
+    verifyPost("/write/audit")
+    verifyPost("/write/audit/merged")
+  }
+
 }

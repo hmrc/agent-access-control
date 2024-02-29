@@ -3,86 +3,269 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportAppPerSuite
-import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.agentmtdidentifiers.model._
-import uk.gov.hmrc.domain.TaxIdentifier
+import uk.gov.hmrc.agentaccesscontrol.stubs.AgentClientRelationshipStub
+import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
+import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 import uk.gov.hmrc.http.HeaderCarrier
 
-class RelationshipsConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
+class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSupport with AgentClientRelationshipStub {
 
-  val arn: Arn                          = Arn("B1111B")
   implicit val hc: HeaderCarrier        = HeaderCarrier()
   val connector: RelationshipsConnector = app.injector.instanceOf[RelationshipsConnector]
 
   "relationshipExists for HMRC-MTD-IT" should {
-    behave.like(aCheckEndpoint(MtdItId("C1111C"), "MtdItId"))
-  }
-
-  "relationshipExists for HMRC-MTD-VAT" should {
-    behave.like(aCheckEndpoint(Vrn("101747641"), "Vrn"))
-  }
-
-  "relationshipExists for HMRC-TERS-ORG" should {
-    behave.like(aCheckEndpoint(Utr("101747641"), "Utr"))
-  }
-
-  "relationshipExists for HMRC-TERSNT-ORG" should {
-    behave.like(aCheckEndpoint(Urn("urn101747641"), "Urn"))
-  }
-
-  "relationshipExists for HMRC-CGT-PD" should {
-    behave.like(aCheckEndpoint(CgtRef("XMCGTP123456789"), "CgtRef"))
-  }
-
-  "relationshipExists for HMRC-PPT-ORG" should {
-    behave.like(aCheckEndpoint(PptRef("XHPPT0006633194"), "PptRef"))
-  }
-
-  "relationshipExists for HMRC-CBC-ORG or HMRC-CBC-NONUK-ORG" should {
-    behave.like(aCheckEndpoint(CbcId("XHCBC0006633194"), "CbcId"))
-  }
-
-  private def aCheckEndpoint(identifier: TaxIdentifier, clientType: String): Unit = {
     "return true when relationship exists" in {
-      given()
-        .mtdAgency(arn)
-        .hasARelationshipWith(identifier)
-      givenCleanMetricRegistry()
+      stubMtdItAgentClientRelationship(testArn, testMtdItId)(OK)
+      cleanMetricRegistry()
 
-      await(connector.relationshipExists(arn, None, identifier)) shouldBe true
-      timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET")
+      await(connector.relationshipExists(testArn, None, testMtdItId)) shouldBe true
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
     }
 
     "return false when relationship does not exist" in {
-      given()
-        .mtdAgency(arn)
-        .hasNoRelationshipWith(identifier)
-      givenCleanMetricRegistry()
+      stubMtdItAgentClientRelationship(testArn, testMtdItId)(NOT_FOUND)
+      cleanMetricRegistry()
 
-      await(connector.relationshipExists(arn, None, identifier)) shouldBe false
-      timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET")
+      await(connector.relationshipExists(testArn, None, testMtdItId)) shouldBe false
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
     }
 
     "throw exception when unexpected status code encountered" in {
-      given()
-        .mtdAgency(arn)
-        .statusReturnedForRelationship(identifier, 300)
+      stubMtdItAgentClientRelationship(testArn, testMtdItId)(MULTIPLE_CHOICES)
+      cleanMetricRegistry()
 
       intercept[Exception] {
-        await(connector.relationshipExists(arn, None, identifier))
+        await(connector.relationshipExists(testArn, None, testMtdItId))
       }.getMessage should include("300")
     }
 
     "record metrics" in {
-      given()
-        .mtdAgency(arn)
-        .hasARelationshipWith(identifier)
-      givenCleanMetricRegistry()
+      stubMtdItAgentClientRelationship(testArn, testMtdItId)(OK)
+      cleanMetricRegistry()
 
-      await(connector.relationshipExists(arn, None, identifier))
+      await(connector.relationshipExists(testArn, None, testMtdItId))
 
-      timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentClientRelationships-Check$clientType-GET")
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
     }
   }
+
+  "relationshipExists for HMRC-MTD-VAT" should {
+    "return true when relationship exists" in {
+      stubMtdVatAgentClientRelationship(testArn, testVrn)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testVrn)) shouldBe true
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckVrn-GET")
+    }
+
+    "return false when relationship does not exist" in {
+      stubMtdVatAgentClientRelationship(testArn, testVrn)(NOT_FOUND)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testVrn)) shouldBe false
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckVrn-GET")
+    }
+
+    "throw exception when unexpected status code encountered" in {
+      stubMtdVatAgentClientRelationship(testArn, testVrn)(MULTIPLE_CHOICES)
+      cleanMetricRegistry()
+
+      intercept[Exception] {
+        await(connector.relationshipExists(testArn, None, testVrn))
+      }.getMessage should include("300")
+    }
+
+    "record metrics" in {
+      stubMtdVatAgentClientRelationship(testArn, testVrn)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testVrn))
+
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckVrn-GET")
+    }
+  }
+
+  "relationshipExists for HMRC-TERS-ORG" should {
+    "return true when relationship exists" in {
+      stubTersAgentClientRelationship(testArn, testUtr)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testUtr)) shouldBe true
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUtr-GET")
+    }
+
+    "return false when relationship does not exist" in {
+      stubTersAgentClientRelationship(testArn, testUtr)(NOT_FOUND)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testUtr)) shouldBe false
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUtr-GET")
+    }
+
+    "throw exception when unexpected status code encountered" in {
+      stubTersAgentClientRelationship(testArn, testUtr)(MULTIPLE_CHOICES)
+      cleanMetricRegistry()
+
+      intercept[Exception] {
+        await(connector.relationshipExists(testArn, None, testUtr))
+      }.getMessage should include("300")
+    }
+
+    "record metrics" in {
+      stubTersAgentClientRelationship(testArn, testUtr)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testUtr))
+
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUtr-GET")
+    }
+  }
+
+  "relationshipExists for HMRC-TERSNT-ORG" should {
+    "return true when relationship exists" in {
+      stubTersntAgentClientRelationship(testArn, testUrn)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testUrn)) shouldBe true
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUrn-GET")
+    }
+
+    "return false when relationship does not exist" in {
+      stubTersntAgentClientRelationship(testArn, testUrn)(NOT_FOUND)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testUrn)) shouldBe false
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUrn-GET")
+    }
+
+    "throw exception when unexpected status code encountered" in {
+      stubTersntAgentClientRelationship(testArn, testUrn)(MULTIPLE_CHOICES)
+      cleanMetricRegistry()
+
+      intercept[Exception] {
+        await(connector.relationshipExists(testArn, None, testUrn))
+      }.getMessage should include("300")
+    }
+
+    "record metrics" in {
+      stubTersntAgentClientRelationship(testArn, testUrn)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testUrn))
+
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUrn-GET")
+    }
+  }
+
+  "relationshipExists for HMRC-CGT-PD" should {
+    "return true when relationship exists" in {
+      stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testCgtRef)) shouldBe true
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCgtRef-GET")
+    }
+
+    "return false when relationship does not exist" in {
+      stubCgtAgentClientRelationship(testArn, testCgtRef)(NOT_FOUND)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testCgtRef)) shouldBe false
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCgtRef-GET")
+    }
+
+    "throw exception when unexpected status code encountered" in {
+      stubCgtAgentClientRelationship(testArn, testCgtRef)(MULTIPLE_CHOICES)
+      cleanMetricRegistry()
+
+      intercept[Exception] {
+        await(connector.relationshipExists(testArn, None, testCgtRef))
+      }.getMessage should include("300")
+    }
+
+    "record metrics" in {
+      stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testCgtRef))
+
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCgtRef-GET")
+    }
+  }
+
+  "relationshipExists for HMRC-PPT-ORG" should {
+    "return true when relationship exists" in {
+      stubPptAgentClientRelationship(testArn, testPptRef)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testPptRef)) shouldBe true
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPptRef-GET")
+    }
+
+    "return false when relationship does not exist" in {
+      stubPptAgentClientRelationship(testArn, testPptRef)(NOT_FOUND)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testPptRef)) shouldBe false
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPptRef-GET")
+    }
+
+    "throw exception when unexpected status code encountered" in {
+      stubPptAgentClientRelationship(testArn, testPptRef)(MULTIPLE_CHOICES)
+      cleanMetricRegistry()
+
+      intercept[Exception] {
+        await(connector.relationshipExists(testArn, None, testPptRef))
+      }.getMessage should include("300")
+    }
+
+    "record metrics" in {
+      stubPptAgentClientRelationship(testArn, testPptRef)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testPptRef))
+
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPptRef-GET")
+    }
+  }
+
+  "relationshipExists for HMRC-CBC-ORG or HMRC-CBC-NONUK-ORG" should {
+    "return true when relationship exists" in {
+      stubCbcIdAgentClientRelationship(testArn, testCbcId)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testCbcId)) shouldBe true
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCbcId-GET")
+    }
+
+    "return false when relationship does not exist" in {
+      stubCbcIdAgentClientRelationship(testArn, testCbcId)(NOT_FOUND)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testCbcId)) shouldBe false
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCbcId-GET")
+    }
+
+    "throw exception when unexpected status code encountered" in {
+      stubCbcIdAgentClientRelationship(testArn, testCbcId)(MULTIPLE_CHOICES)
+      cleanMetricRegistry()
+
+      intercept[Exception] {
+        await(connector.relationshipExists(testArn, None, testCbcId))
+      }.getMessage should include("300")
+    }
+
+    "record metrics" in {
+      stubCbcIdAgentClientRelationship(testArn, testCbcId)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testCbcId))
+
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCbcId-GET")
+    }
+  }
+
+  // TODO add Pillar2?
+
 }

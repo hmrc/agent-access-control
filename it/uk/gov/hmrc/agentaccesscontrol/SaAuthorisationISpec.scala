@@ -16,537 +16,610 @@
 
 package uk.gov.hmrc.agentaccesscontrol
 
-import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportServerPerTest
-import uk.gov.hmrc.agentaccesscontrol.helpers.Resource
-import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneServerPerTestISpec
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.AgentCode
+import play.api.libs.json.Json
+import play.api.test.Helpers._
+import uk.gov.hmrc.agentaccesscontrol.stubs.AgentMappingStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.DesStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.EnrolmentStoreProxyStub
+import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
+import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 import uk.gov.hmrc.domain.SaAgentReference
-import uk.gov.hmrc.domain.SaUtr
-import uk.gov.hmrc.http.HttpResponse
 
-class SaAuthorisationISpec extends WireMockWithOneServerPerTestISpec with MetricTestSupportServerPerTest {
+class SaAuthorisationISpec
+    extends ComponentSpecHelper
+    with MetricTestSupport
+    with AuthStub
+    with EnrolmentStoreProxyStub
+    with DesStub
+    with AgentMappingStub {
 
-  val agentCode        = AgentCode("ABCDEF123456")
-  val saAgentReference = SaAgentReference("enrol-123")
-  val providerId       = "12345-credId"
-  val clientUtr        = SaUtr("123")
-  val arn              = Arn("AARN0000002")
+  val url = s"/sa-auth/agent/${testAgentCode.value}/client/${testSaUtr.value}"
 
   "GET /agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
-    val method = "GET"
-    "respond with 401" when {
+    "respond with UNAUTHORIZED" when {
       "agent is not logged in" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .userIsNotAuthenticated()
+        stubAuthUserIsNotAuthenticated()
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent and client has no relation in DES" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(NOT_FOUND, Json.obj())
+
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "the client has authorised the agent only with 64-8, but not i64-8" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = false)
+        )
+
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "the client has authorised the agent only with i64-8, but not 64-8" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = true)
+        )
+
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "the client has not authorised the agent" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = false)
+        )
+
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "the client is not assigned to the agent in Enrolment Store Proxy" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq.empty))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = false)
+        )
+
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent uses an MTD cred and has no mappings" in {
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubAgentMappingSa(testArn)(NOT_FOUND, Json.obj())
+
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent uses an MTD cred and searched with invalid or unsupported key" in {
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubAgentMappingSa(testArn)(BAD_REQUEST, Json.obj())
+
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent uses an MTD cred, has a mappings but no client delegated" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubAgentMappingSa(testArn)(OK, successfulSingularResponse(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq.empty))
+
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent uses an MTD cred, has multiple mappings but no client delegated" in {
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubAgentMappingSa(testArn)(OK, successfulMultipleResponses(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("SA6012"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "88741987654329", "88741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "98741987654329", "98741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("A1709A"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "78741987654329", "78741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq.empty))
+
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent uses an MTD cred, has multiple mappings, gg has delegate relationship but ETMP has no relationship" in {
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubAgentMappingSa(testArn)(OK, successfulMultipleResponses(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("SA6012"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "88741987654329", "88741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "98741987654329", "98741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("A1709A"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "78741987654329", "78741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = false)
+        )
+
+        val result = get(url)
+        result.status shouldBe UNAUTHORIZED
       }
     }
 
-    "agent and client has no relation in DES" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-        .isAuthenticated()
-        .andIsAssignedToClient(clientUtr)
-        .andHasNoRelationInDesWith(clientUtr)
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-    }
-
-    "the client has authorised the agent only with 64-8, but not i64-8" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-        .isAuthenticated()
-        .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr)
-        .andIsAuthorisedByOnly648()
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-    }
-
-    "the client has authorised the agent only with i64-8, but not 64-8" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-        .isAuthenticated()
-        .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr)
-        .andIsAuthorisedByOnlyI648()
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-    }
-
-    "the client has not authorised the agent" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-        .isAuthenticated()
-        .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr)
-        .butIsNotAuthorised()
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-    }
-
-    "the client is not assigned to the agent in Enrolment Store Proxy" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-        .isAuthenticated()
-        .andIsNotAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr)
-        .andAuthorisedByBoth648AndI648()
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-    }
-
-    "agent uses an MTD cred and has no mappings" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-        .isAuthenticated()
-        .andIsAssignedToClient(clientUtr)
-        .givenNotFound404Mapping("sa", arn)
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-    }
-
-    "agent uses an MTD cred and searched with invalid or unsupported key" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-        .isAuthenticated()
-        .andIsAssignedToClient(clientUtr)
-        .givenBadRequest400Mapping("sa", arn)
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-    }
-
-    "agent uses an MTD cred, has a mappings but no client delegated" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, Some(arn))
-        .isAuthenticated()
-        .givenSaMappingSingular("sa", arn, saAgentReference.value)
-        .andHasSaEnrolmentForAgent(saAgentReference)
-        .andIsNotAssignedToClient(clientUtr)
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-    }
-
-    "agent uses an MTD cred, has multiple mappings but no client delegated" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-        .isAuthenticated()
-        .givenSaMappingMultiple("sa", arn, saAgentReference.value)
-        .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
-        .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
-        .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
-        .andIsNotAssignedToClient(clientUtr)
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-    }
-
-    "agent uses an MTD cred, has multiple mappings, gg has delegate relatioship but ETMP has no relationship" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-        .isAuthenticated()
-        .givenSaMappingMultiple("sa", arn, saAgentReference.value)
-        .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
-        .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
-        .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
-        .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr)
-        .butIsNotAuthorised()
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-    }
-
-    "respond with 502 (bad gateway)" when {
+    "respond with BAD_GATEWAY" when {
       "DES is down" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .andDesIsDown()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(INTERNAL_SERVER_ERROR, Json.obj())
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 502
+        val result = get(url)
+        result.status shouldBe BAD_GATEWAY
       }
 
       "Enrolment Store Proxy is down" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
-          .andEnrolmentStoreProxyIsDown(clientUtr)
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(INTERNAL_SERVER_ERROR, Json.obj())
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 502
+        val result = get(url)
+        result.status shouldBe BAD_GATEWAY
       }
     }
 
-    "respond with 200" when {
+    "respond with OK" when {
 
       "agent is enrolled to IR-SA-AGENT but the enrolment is not activated and the the client has authorised the agent with both 64-8 and i64-8" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = get(url)
+        result.status shouldBe OK
       }
 
       "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with only one groupId" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingSingular("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubAgentMappingSa(testArn)(OK, successfulSingularResponse(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = get(url)
+        result.status shouldBe OK
       }
 
       "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with multiple groupId" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingSingular("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(saAgentReference)
-          .andIsAssignedToClient(clientUtr, "823982983983")
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubAgentMappingSa(testArn)(OK, successfulSingularResponse(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(
+          OK,
+          successfulResponseDelegated(Seq(testProviderId, "823982983983"))
+        )
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = get(url)
+        result.status shouldBe OK
       }
 
       "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with multiple groupId" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingMultiple("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
-          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
-          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubAgentMappingSa(testArn)(OK, successfulMultipleResponses(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "98741987654329", "98741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("SA6012"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "88741987654329", "88741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("A1709A"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "78741987654329", "78741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-      }
-
-      "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with groupId" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingMultiple("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
-          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
-          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
-
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = get(url)
+        result.status shouldBe OK
       }
 
       "the client has authorised the agent with both 64-8 and i64-8" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = get(url)
+        result.status shouldBe OK
       }
-    }
 
-    "record metrics for inbound http call" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-        .isAuthenticated()
-        .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr)
-        .andAuthorisedByBoth648AndI648()
-      givenCleanMetricRegistry()
+      "record metrics for inbound http call" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-      timerShouldExistsAndBeenUpdated("API-__sa-auth__agent__:__client__:-GET")
-    }
+        cleanMetricRegistry()
 
-    "send an AccessControlDecision audit event" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-        .isAuthenticated()
-        .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr)
-        .andAuthorisedByBoth648AndI648()
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = get(url)
+        result.status shouldBe OK
+        timerShouldExistAndHasBeenUpdated("API-__sa-auth__agent__:__client__:-GET")
+      }
     }
   }
 
   "POST /agent-access-control/sa-auth/agent/:agentCode/client/:saUtr" should {
-    val method = "POST"
-    "respond with 401" when {
+    "respond with UNAUTHORIZED" when {
       "agent is not logged in" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .userIsNotAuthenticated()
+        stubAuthUserIsNotAuthenticated()
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-      }
-
-      "agent uses an MTD cred and has no mappings" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .givenNotFound404Mapping("sa", arn)
-
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-      }
-
-      "agent uses an MTD cred and searched with invalid or unsupported key" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .givenBadRequest400Mapping("sa", arn)
-
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-      }
-
-      "agent uses an MTD cred, has a mappings but no client delegated" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingSingular("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(saAgentReference)
-          .andIsNotAssignedToClient(clientUtr)
-
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-      }
-
-      "agent uses an MTD cred, has multiple mappings but no client delegated" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingMultiple("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
-          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
-          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
-          .andIsNotAssignedToClient(clientUtr)
-
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
-      }
-
-      "agent uses an MTD cred, has multiple mappings, gg has delegate relatioship but ETMP has no relationship" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingMultiple("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
-          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
-          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .butIsNotAuthorised()
-
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
       }
 
       "agent and client has no relation in DES" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .andHasNoRelationInDesWith(clientUtr)
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(NOT_FOUND, Json.obj())
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
       }
 
       "the client has authorised the agent only with 64-8, but not i64-8" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andIsAuthorisedByOnly648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = false)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
       }
 
       "the client has authorised the agent only with i64-8, but not 64-8" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andIsAuthorisedByOnlyI648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
       }
 
       "the client has not authorised the agent" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .butIsNotAuthorised()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = false)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
       }
 
       "the client is not assigned to the agent in Enrolment Store Proxy" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsNotAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq.empty))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = false)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 401
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent uses an MTD cred and has no mappings" in {
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubAgentMappingSa(testArn)(NOT_FOUND, Json.obj())
+
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent uses an MTD cred and searched with invalid or unsupported key" in {
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubAgentMappingSa(testArn)(BAD_REQUEST, Json.obj())
+
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent uses an MTD cred, has a mappings but no client delegated" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubAgentMappingSa(testArn)(OK, successfulSingularResponse(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq.empty))
+
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent uses an MTD cred, has multiple mappings but no client delegated" in {
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubAgentMappingSa(testArn)(OK, successfulMultipleResponses(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("SA6012"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "88741987654329", "88741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "98741987654329", "98741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("A1709A"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "78741987654329", "78741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq.empty))
+
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
+      }
+
+      "agent uses an MTD cred, has multiple mappings, gg has delegate relationship but ETMP has no relationship" in {
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubAgentMappingSa(testArn)(OK, successfulMultipleResponses(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("SA6012"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "88741987654329", "88741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "98741987654329", "98741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("A1709A"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "78741987654329", "78741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = false)
+        )
+
+        val result = post(url)(Json.obj())
+        result.status shouldBe UNAUTHORIZED
       }
     }
 
-    "respond with 502 (bad gateway)" when {
+    "respond with BAD_GATEWAY" when {
       "DES is down" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .andDesIsDown()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(INTERNAL_SERVER_ERROR, Json.obj())
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 502
+        val result = post(url)(Json.obj())
+        result.status shouldBe BAD_GATEWAY
       }
 
       "Enrolment Store Proxy is down" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
-          .andEnrolmentStoreProxyIsDown(clientUtr)
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(INTERNAL_SERVER_ERROR, Json.obj())
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 502
+        val result = post(url)(Json.obj())
+        result.status shouldBe BAD_GATEWAY
       }
     }
 
-    "respond with 200" when {
+    "respond with OK" when {
 
       "agent is enrolled to IR-SA-AGENT but the enrolment is not activated and the the client has authorised the agent with both 64-8 and i64-8" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = post(url)(Json.obj())
+        result.status shouldBe OK
       }
 
       "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with only one groupId" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingSingular("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubAgentMappingSa(testArn)(OK, successfulSingularResponse(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = post(url)(Json.obj())
+        result.status shouldBe OK
       }
 
       "agent uses an MTD cred, has mapping and SaAgentRef has enrolment with multiple groupId" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingSingular("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(saAgentReference)
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubAgentMappingSa(testArn)(OK, successfulSingularResponse(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(
+          OK,
+          successfulResponseDelegated(Seq(testProviderId, "823982983983"))
+        )
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = post(url)(Json.obj())
+        result.status shouldBe OK
       }
 
       "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with multiple groupId" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingMultiple("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
-          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329", "88741987654322")
-          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(
+          OK,
+          successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), Some(testSaAgentReference))
+        )
+        stubAgentMappingSa(testArn)(OK, successfulMultipleResponses(testArn, testSaAgentReference))
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(testSaAgentReference)(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "98741987654329", "98741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("SA6012"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "88741987654329", "88741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsPrincipalSa(SaAgentReference("A1709A"))(
+          OK,
+          successfulResponsePrincipal(Seq(testProviderId, "78741987654329", "78741987654322"))
+        )
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-      }
-
-      "agent uses an MTD cred, has multiple mappings and SaAgentRef has enrolment with groupId" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), Some(arn))
-          .isAuthenticated()
-          .givenSaMappingMultiple("sa", arn, saAgentReference.value)
-          .andHasSaEnrolmentForAgent(saAgentReference, "98741987654329", "98741987654322")
-          .andHasSaEnrolmentForAgent(SaAgentReference("SA6012"), "88741987654329")
-          .andHasSaEnrolmentForAgent(SaAgentReference("A1709A"), "78741987654329", "78741987654322")
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
-
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = post(url)(Json.obj())
+        result.status shouldBe OK
       }
 
       "the client has authorised the agent with both 64-8 and i64-8" in {
-        given()
-          .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-          .isAuthenticated()
-          .andIsAssignedToClient(clientUtr)
-          .andIsRelatedToSaClientInDes(clientUtr)
-          .andAuthorisedByBoth648AndI648()
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-        authResponseFor(agentCode, clientUtr, method).status shouldBe 200
+        val result = post(url)(Json.obj())
+        result.status shouldBe OK
       }
-    }
 
-    "record metrics for inbound http call" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-        .isAuthenticated()
-        .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr)
-        .andAuthorisedByBoth648AndI648()
-      givenCleanMetricRegistry()
+      "record metrics for inbound http call" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, None, Some(testSaAgentReference)))
+        stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
 
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-      timerShouldExistsAndBeenUpdated("API-__sa-auth__agent__:__client__:-POST")
-    }
+        cleanMetricRegistry()
 
-    "send an AccessControlDecision audit event" in {
-      given()
-        .agentAdmin(agentCode, providerId, Some(saAgentReference), None)
-        .isAuthenticated()
-        .andIsAssignedToClient(clientUtr)
-        .andIsRelatedToSaClientInDes(clientUtr)
-        .andAuthorisedByBoth648AndI648()
-
-      authResponseFor(agentCode, clientUtr, method).status shouldBe 200
-    }
-  }
-
-  def authResponseFor(agentCode: AgentCode, clientSaUtr: SaUtr, method: String): HttpResponse = {
-    val resource =
-      new Resource(s"/agent-access-control/sa-auth/agent/${agentCode.value}/client/${clientSaUtr.value}")(port)
-    method match {
-      case "GET"  => resource.get()
-      case "POST" => resource.post(body = """{"foo": "bar"}""")
+        val result = post(url)(Json.obj())
+        result.status shouldBe OK
+        timerShouldExistAndHasBeenUpdated("API-__sa-auth__agent__:__client__:-POST")
+      }
     }
   }
 

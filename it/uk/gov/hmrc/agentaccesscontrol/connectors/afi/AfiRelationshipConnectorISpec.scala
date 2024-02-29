@@ -4,19 +4,21 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.connectors.AfiRelationshipConnector
-import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportAppPerSuite
-import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneAppPerSuiteISpec
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.AgentCode
-import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.agentaccesscontrol.stubs.AgentFiRelationshipStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
+import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
+import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testAgentCode
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testArn
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testNino
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testProviderId
 import uk.gov.hmrc.http.HeaderCarrier
 
-class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
-
-  val arn        = Arn("B1111B")
-  val clientId   = Nino("AE123456C")
-  val agentCode  = AgentCode("ABCDEF123456")
-  val providerId = "12345-credId"
+class AfiRelationshipConnectorISpec
+    extends ComponentSpecHelper
+    with MetricTestSupport
+    with AuthStub
+    with AgentFiRelationshipStub {
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -24,32 +26,26 @@ class AfiRelationshipConnectorISpec extends WireMockWithOneAppPerSuiteISpec with
 
   "hasRelationship" should {
     "return true when relationship exists" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, Some(arn))
-        .isAuthenticated()
-        .andHasRelationship(arn, clientId)
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubAgentFiRelationship(testArn, testNino)(OK)
 
-      await(connector.hasRelationship(arn.value, clientId.value)) shouldBe true
+      await(connector.hasRelationship(testArn.value, testNino.value)) shouldBe true
     }
 
     "return false when relationship does not exist" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, Some(arn))
-        .isAuthenticated()
-        .andHasNoRelationship(arn, clientId)
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubAgentFiRelationship(testArn, testNino)(NOT_FOUND)
 
-      await(connector.hasRelationship(arn.value, clientId.value)) shouldBe false
+      await(connector.hasRelationship(testArn.value, testNino.value)) shouldBe false
     }
 
     "throw exception when unexpected status code encountered" in {
-      given()
-        .agentAdmin(agentCode, providerId, None, Some(arn))
-        .isAuthenticated()
-        .statusReturnedForRelationship(arn, clientId, 300)
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubAgentFiRelationship(testArn, testNino)(MULTIPLE_CHOICES)
 
       intercept[Exception] {
-        await(connector.hasRelationship(arn.value, clientId.value))
-      }.getMessage should include("300")
+        await(connector.hasRelationship(testArn.value, testNino.value))
+      }.getMessage shouldBe "Unsupported statusCode 300"
     }
   }
 }

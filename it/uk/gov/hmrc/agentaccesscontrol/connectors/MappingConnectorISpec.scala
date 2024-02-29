@@ -2,60 +2,60 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
+import play.api.libs.json.Json
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentaccesscontrol.helpers.MetricTestSupportAppPerSuite
-import uk.gov.hmrc.agentaccesscontrol.helpers.WireMockWithOneAppPerSuiteISpec
 import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMapping
 import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMappings
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.domain.SaAgentReference
+import uk.gov.hmrc.agentaccesscontrol.stubs.AgentMappingStub
+import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
+import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testArn
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testSaAgentReference
 import uk.gov.hmrc.http.HeaderCarrier
 
-class MappingConnectorISpec extends WireMockWithOneAppPerSuiteISpec with MetricTestSupportAppPerSuite {
+class MappingConnectorISpec extends ComponentSpecHelper with MetricTestSupport with AgentMappingStub {
 
-  val connector = app.injector.instanceOf[MappingConnector]
-
-  val saAgentReference           = SaAgentReference("enrol-123")
-  val arn                        = Arn("AARN0000002")
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  val connector: MappingConnector = app.injector.instanceOf[MappingConnector]
+  private val saKey: String       = "sa"
+  implicit val hc: HeaderCarrier  = HeaderCarrier()
 
   "MappingConnector" should {
     "return 200 for finding one SA mapping for a particular ARN" in {
-      given().mtdAgency(arn).givenSaMappingSingular("sa", arn, saAgentReference.value)
-      givenCleanMetricRegistry()
+      stubAgentMappingSa(testArn)(OK, successfulSingularResponse(testArn, testSaAgentReference))
+      cleanMetricRegistry()
 
-      await(connector.getAgentMappings("sa", arn)) shouldBe AgentReferenceMappings(
-        List(AgentReferenceMapping(arn.value, saAgentReference.value))
+      await(connector.getAgentMappings(saKey, testArn)) shouldBe AgentReferenceMappings(
+        List(AgentReferenceMapping(testArn.value, testSaAgentReference.value))
       )
-      timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentMapping-Check-sa-GET")
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentMapping-Check-sa-GET")
     }
 
     "return 200 for finding multiple SA mappings for a particular ARN" in {
-      given().mtdAgency(arn).givenSaMappingMultiple("sa", arn, saAgentReference.value)
-      givenCleanMetricRegistry()
+      stubAgentMappingSa(testArn)(OK, successfulMultipleResponses(testArn, testSaAgentReference))
+      cleanMetricRegistry()
 
-      await(connector.getAgentMappings("sa", arn)) shouldBe AgentReferenceMappings(
+      await(connector.getAgentMappings(saKey, testArn)) shouldBe AgentReferenceMappings(
         List(
-          AgentReferenceMapping(arn.value, saAgentReference.value),
-          AgentReferenceMapping(arn.value, "SA6012"),
-          AgentReferenceMapping(arn.value, "A1709A")
+          AgentReferenceMapping(testArn.value, testSaAgentReference.value),
+          AgentReferenceMapping(testArn.value, "A1709A"),
+          AgentReferenceMapping(testArn.value, "SA6012")
         )
       )
-      timerShouldExistsAndBeenUpdated(s"ConsumedAPI-AgentMapping-Check-sa-GET")
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentMapping-Check-sa-GET")
     }
 
     "return 404 for no SA mappings found for a particular ARN" in {
-      given().mtdAgency(arn).givenNotFound404Mapping("sa", arn)
-      givenCleanMetricRegistry()
+      stubAgentMappingSa(testArn)(NOT_FOUND, Json.obj())
+      cleanMetricRegistry()
 
-      await(connector.getAgentMappings("sa", arn)) shouldBe AgentReferenceMappings(List.empty)
+      await(connector.getAgentMappings(saKey, testArn)) shouldBe AgentReferenceMappings(List.empty)
     }
 
     "return 400 when requested the wrong / unsupported key" in {
-      given().mtdAgency(arn).givenBadRequest400Mapping("sa", arn)
-      givenCleanMetricRegistry()
+      stubAgentMappingSa(testArn)(BAD_REQUEST, Json.obj())
+      cleanMetricRegistry()
 
-      await(connector.getAgentMappings("sa", arn)) shouldBe AgentReferenceMappings(List.empty)
+      await(connector.getAgentMappings(saKey, testArn)) shouldBe AgentReferenceMappings(List.empty)
     }
   }
 
