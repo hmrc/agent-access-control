@@ -266,6 +266,40 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
     }
   }
 
-  // TODO add Pillar2?
+  "relationshipExists for HMRC-PILLAR2" should {
+    "return true when relationship exists" in {
+      stubPlrIdAgentClientRelationship(testArn, testPlrId)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testPlrId)) shouldBe true
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPlrId-GET")
+    }
+
+    "return false when relationship does not exist" in {
+      stubPlrIdAgentClientRelationship(testArn, testPlrId)(NOT_FOUND)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testPlrId)) shouldBe false
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPlrId-GET")
+    }
+
+    "throw exception when unexpected status code encountered" in {
+      stubPlrIdAgentClientRelationship(testArn, testPlrId)(MULTIPLE_CHOICES)
+      cleanMetricRegistry()
+
+      intercept[Exception] {
+        await(connector.relationshipExists(testArn, None, testPlrId))
+      }.getMessage should include("300")
+    }
+
+    "record metrics" in {
+      stubPlrIdAgentClientRelationship(testArn, testPlrId)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testPlrId))
+
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPlrId-GET")
+    }
+  }
 
 }

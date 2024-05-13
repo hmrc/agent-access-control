@@ -90,6 +90,7 @@ class AuthorisationController @Inject() (
               Service.Cbc,
               CbcId(clientId)
             ) // AAC does not care about regime for CBC uk or non-uk, handled in ACR - audits will be uk for both
+          case "pillar2-auth" => standardAuth(Service.Pillar2, PlrId(clientId))
           case x =>
             throw new IllegalArgumentException(s"Unexpected auth type: $x") // TODO this is not caught by the recover
         }).map {

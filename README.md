@@ -12,6 +12,7 @@ to agents to their clients's data. Currently supports:
 * MTD Capital Gains (CGT)
 * MTD Plastic Packaging Tax (PPT)
 * Country by country reporting (CBC)
+* Pillar2 (PILLAR2)
 
 ### Agent access groups
 
@@ -146,6 +147,18 @@ authorised(
     .withDeledatedAuthRule("cbc-auth") { /* your protected logic */  }
 )
 ```
+
+
+##### GET /agent-access-control/pillar2-auth/agent/:agentCode/client/:Pillar2Id
+
+```scala
+authorised(
+  Enrolment("HMRC-PILLAR2")
+    .withIdentifier("PlrId", "XYPILLAR21234567890")
+    .withDeledatedAuthRule("pillar2-auth") { /* your protected logic */  }
+)
+```
+
 
 ### Response
 Headers: need to contain a valid `Authorization` header.
