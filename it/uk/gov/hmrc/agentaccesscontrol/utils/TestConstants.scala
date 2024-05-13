@@ -7,6 +7,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentmtdidentifiers.model.CbcId
 import uk.gov.hmrc.agentmtdidentifiers.model.CgtRef
 import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
+import uk.gov.hmrc.agentmtdidentifiers.model.PlrId
 import uk.gov.hmrc.agentmtdidentifiers.model.PptRef
 import uk.gov.hmrc.agentmtdidentifiers.model.Urn
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
@@ -33,6 +34,7 @@ object TestConstants {
   val testVrn: Vrn                           = Vrn("101747641")
   val testPptRef: PptRef                     = PptRef("XHPPT0006633194")
   val testCbcId: CbcId                       = CbcId("XHCBC0006633194")
+  val testPlrId: PlrId                       = PlrId("XDPLR6210917659")
   val testSaUtr: SaUtr                       = SaUtr("1234567890")
   val testEmpRef: EmpRef                     = EmpRef("123", "4567890")
   val testSaAgentReference: SaAgentReference = SaAgentReference("enrol-123")

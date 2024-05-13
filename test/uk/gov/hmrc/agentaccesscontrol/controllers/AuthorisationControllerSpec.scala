@@ -34,6 +34,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentmtdidentifiers.model.CbcId
 import uk.gov.hmrc.agentmtdidentifiers.model.CgtRef
 import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
+import uk.gov.hmrc.agentmtdidentifiers.model.PlrId
 import uk.gov.hmrc.agentmtdidentifiers.model.PptRef
 import uk.gov.hmrc.agentmtdidentifiers.model.Service
 import uk.gov.hmrc.agentmtdidentifiers.model.Urn
@@ -298,6 +299,7 @@ class AuthorisationControllerSpec extends UnitSpec {
       ("cgt-auth", CgtRef("XMCGTP123456789"), Service.CapitalGains),
       ("ppt-auth", PptRef("XAPPT0000123456"), Service.Ppt),
       ("cbc-auth", CbcId("XACBC0123456789"), Service.Cbc),
+      ("pillar2-auth", PlrId("XDPLR6210917659"), Service.Pillar2),
     )
 
     templateTestDataSets.foreach(testData =>

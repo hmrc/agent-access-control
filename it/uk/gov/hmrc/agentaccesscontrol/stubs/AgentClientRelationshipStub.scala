@@ -38,6 +38,12 @@ trait AgentClientRelationshipStub extends WiremockMethods {
       uri = s"/agent-client-relationships/agent/${arn.value}/service/HMRC-CBC-ORG/client/cbcId/${cbcId.value}"
     ).thenReturn(status)
 
+  def stubPlrIdAgentClientRelationship(arn: Arn, PlrId: PlrId)(status: Int): StubMapping =
+    when(
+      method = GET,
+      uri = s"/agent-client-relationships/agent/${arn.value}/service/HMRC-PILLAR2-ORG/client/PLRID/${PlrId.value}"
+    ).thenReturn(status)
+
   def stubTersAgentClientRelationship(arn: Arn, utr: Utr)(status: Int): StubMapping =
     when(
       method = GET,
