@@ -1,12 +1,14 @@
+import uk.gov.hmrc.{DefaultBuildSettings, SbtAutoBuildPlugin}
 
-lazy val root = (project in file("."))
+ThisBuild / majorVersion := 1
+ThisBuild / scalaVersion := "2.13.12"
+
+lazy val microservice = (project in file("."))
   .enablePlugins(PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin)
   .settings(
     name := "agent-access-control",
     organization := "uk.gov.hmrc",
-    scalaVersion := "2.13.10",
-    majorVersion := 1,
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
       "-Xlint:-missing-interpolator,_",
@@ -29,15 +31,14 @@ lazy val root = (project in file("."))
     Test / logBuffered := false,
     IntegrationTest / logBuffered := false
   )
-  .configs(IntegrationTest)
+
+lazy val it = project
+  .enablePlugins(PlayScala)
+  .dependsOn(microservice % "test->test") // the "test->test" allows reusing test code and test dependencies
+  .settings(DefaultBuildSettings.itSettings())
+  .settings(libraryDependencies ++= AppDependencies.test)
   .settings(
-    CodeCoverageSettings.scoverageSettings,
-    Test / parallelExecution := false,
-    IntegrationTest / Keys.fork := false,
-    Defaults.itSettings,
-    IntegrationTest / unmanagedSourceDirectories += baseDirectory(_ / "it").value,
-    IntegrationTest / parallelExecution := false,
-    //fix for scoverage compile errors for scala 2.13.10
-    libraryDependencySchemes ++= Seq("org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always)
+    Compile / scalafmtOnCompile := true,
+    Test / scalafmtOnCompile := true
   )
 

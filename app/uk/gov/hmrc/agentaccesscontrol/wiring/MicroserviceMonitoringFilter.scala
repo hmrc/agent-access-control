@@ -27,9 +27,9 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 
-import akka.stream.Materializer
 import app.Routes
 import com.codahale.metrics.MetricRegistry
+import org.apache.pekko.stream.Materializer
 import play.api.mvc.Filter
 import play.api.mvc.RequestHeader
 import play.api.mvc.Result
