@@ -1,4 +1,4 @@
-import uk.gov.hmrc.{DefaultBuildSettings, SbtAutoBuildPlugin}
+import uk.gov.hmrc.DefaultBuildSettings
 
 ThisBuild / majorVersion := 1
 ThisBuild / scalaVersion := "2.13.12"
@@ -27,9 +27,7 @@ lazy val microservice = (project in file("."))
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     Compile / scalafmtOnCompile := true,
     Test / scalafmtOnCompile := true,
-    IntegrationTest / scalafmtOnCompile := true,
-    Test / logBuffered := false,
-    IntegrationTest / logBuffered := false
+    Test / logBuffered := false
   )
 
 lazy val it = project
@@ -39,6 +37,7 @@ lazy val it = project
   .settings(libraryDependencies ++= AppDependencies.test)
   .settings(
     Compile / scalafmtOnCompile := true,
-    Test / scalafmtOnCompile := true
+    Test / scalafmtOnCompile := true,
+    Test / logBuffered := false
   )
 
