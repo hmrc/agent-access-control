@@ -144,7 +144,7 @@ Note: POSTs function exactly the same.
 authorised(
   Enrolment("HMRC-CBC-ORG" /* or HMRC-CBC-NONUK-ORG */)
     .withIdentifier("cbcId", "XYCBC1234567890")
-    .withDeledatedAuthRule("cbc-auth") { /* your protected logic */  }
+    .withDelegatedAuthRule("cbc-auth") { /* your protected logic */  }
 )
 ```
 
@@ -154,8 +154,8 @@ authorised(
 ```scala
 authorised(
   Enrolment("HMRC-PILLAR2")
-    .withIdentifier("PlrId", "XYPILLAR21234567890")
-    .withDeledatedAuthRule("pillar2-auth") { /* your protected logic */  }
+    .withIdentifier("PLRID", "XYPILLAR21234567890")
+    .withDelegatedAuthRule("pillar2-auth") { /* your protected logic */  }
 )
 ```
 
