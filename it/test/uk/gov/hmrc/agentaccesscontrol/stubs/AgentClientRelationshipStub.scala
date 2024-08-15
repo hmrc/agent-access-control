@@ -29,6 +29,12 @@ trait AgentClientRelationshipStub extends WiremockMethods {
       uri = s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/${mtdItId.value}"
     ).thenReturn(status)
 
+  def stubMtdItSuppAgentClientRelationship(arn: Arn, mtdItId: MtdItId)(status: Int): StubMapping =
+    when(
+      method = GET,
+      uri = s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT-SUPP/client/MTDITID/${mtdItId.value}"
+    ).thenReturn(status)
+
   def stubMtdVatAgentClientRelationship(arn: Arn, vrn: Vrn)(status: Int): StubMapping =
     when(
       method = GET,
@@ -77,6 +83,15 @@ trait AgentClientRelationshipStub extends WiremockMethods {
       method = GET,
       uri =
         s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT/client/MTDITID/${mtdItId.value}\\?userId=$providerId"
+    ).thenReturn(status)
+
+  def stubMtdItSuppAgentClientRelationshipToUser(arn: Arn, mtdItId: MtdItId, providerId: String)(
+      status: Int
+  ): StubMapping =
+    when(
+      method = GET,
+      uri =
+        s"/agent-client-relationships/agent/${arn.value}/service/HMRC-MTD-IT-SUPP/client/MTDITID/${mtdItId.value}\\?userId=$providerId"
     ).thenReturn(status)
 
   def stubMtdVatAgentClientRelationshipToUser(arn: Arn, vrn: Vrn, providerId: String)(status: Int): StubMapping =

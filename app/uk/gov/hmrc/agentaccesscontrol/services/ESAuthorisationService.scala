@@ -34,6 +34,7 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Service
 import uk.gov.hmrc.auth.core.CredentialRole
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.domain.TaxIdentifier
@@ -55,14 +56,14 @@ class ESAuthorisationService @Inject() (
   def authoriseStandardService(
       agentCode: AgentCode,
       taxIdentifier: TaxIdentifier,
-      serviceId: String,
+      service: Service,
       authDetails: AuthDetails
   )(implicit hc: HeaderCarrier, request: Request[_]): Future[AccessResponse] =
     authDetails match {
       case agentAuthDetails @ AuthDetails(_, Some(arn), _, _, userRoleOpt) =>
         // TODO confirm with stakeholders if we can remove regime for suspension check?
-        withSuspensionCheck(arn, getDesRegimeFor(serviceId)) {
-          authoriseBasedOnRelationships(agentCode, taxIdentifier, serviceId, agentAuthDetails, arn, userRoleOpt)
+        withSuspensionCheck(arn, getDesRegimeFor(service.id)) {
+          authoriseBasedOnRelationships(agentCode, taxIdentifier, service, agentAuthDetails, arn, userRoleOpt)
         }
 
       case _ =>
@@ -72,7 +73,7 @@ class ESAuthorisationService @Inject() (
           authDetails,
           taxIdentifier,
           result = false,
-          serviceId,
+          service.id,
           AccessResponse.toReason(accessResponse)
         )
         logger.info(s"Not authorised: No ARN found in HMRC-AS-AGENT enrolment for agentCode $agentCode")
@@ -82,19 +83,19 @@ class ESAuthorisationService @Inject() (
   private def authoriseBasedOnRelationships(
       agentCode: AgentCode,
       taxIdentifier: TaxIdentifier,
-      regime: String,
+      service: Service,
       agentAuthDetails: AuthDetails,
       arn: Arn,
       userRoleOpt: Option[CredentialRole]
   )(implicit hc: HeaderCarrier, request: Request[_]): Future[AccessResponse] = {
-    checkForRelationship(arn, Some(agentAuthDetails.ggCredentialId), regime, taxIdentifier)
+    checkForRelationship(arn, Some(agentAuthDetails.ggCredentialId), service, taxIdentifier)
       .map { result =>
         auditDecision(
           agentCode,
           agentAuthDetails,
           taxIdentifier,
           result == AccessResponse.Authorised,
-          regime,
+          service.id,
           ("arn" -> arn.value) +: AccessResponse.toReason(result)
         )
         result match {
@@ -115,7 +116,7 @@ class ESAuthorisationService @Inject() (
 
   private def getDesRegimeFor(regime: String) = {
     regime match {
-      case "HMRC-MTD-IT"                         => "ITSA"
+      case "HMRC-MTD-IT" | "HMRC-MTD-IT-SUPP"    => "ITSA"
       case "HMRC-MTD-VAT"                        => "VATC"
       case "HMRC-TERS-ORG" | "HMRC-TERSNT-ORG"   => "TRS"
       case "HMRC-CGT-PD"                         => "CGT"
@@ -142,14 +143,14 @@ class ESAuthorisationService @Inject() (
       Seq("credId" -> agentAuthDetails.ggCredentialId, "accessGranted" -> result) ++ extraDetails
     )
 
-  def checkForRelationship(arn: Arn, maybeUserId: Option[String], regime: String, taxIdentifier: TaxIdentifier)(
+  def checkForRelationship(arn: Arn, maybeUserId: Option[String], service: Service, taxIdentifier: TaxIdentifier)(
       implicit ec: ExecutionContext,
       hc: HeaderCarrier
   ): Future[AccessResponse] = {
 
     for {
       // Does a relationship exist between agency (ARN) and client?
-      agencyHasRelationship <- relationshipsConnector.relationshipExists(arn, None, taxIdentifier)
+      agencyHasRelationship <- relationshipsConnector.relationshipExists(arn, None, taxIdentifier, service)
       // Check whether Granular Permissions are enabled and opted-in for this agent.
       // If so, when calling agent-client-relationships, we will check whether a relationship exists _for that specific agent user_.
       // (A relationship is also deemed to exist if the agent user is part of an appropriate tax service group)
@@ -168,12 +169,12 @@ class ESAuthorisationService @Inject() (
         //  - the user is part of the tax service group for the given tax service, (no user relationship needed), or
         //  - the user has a relationship with the specific agent user
         case (true, true, Some(userId)) =>
-          isAuthorisedBasedOnTaxServiceGroup(arn, userId, regime, taxIdentifier)
+          isAuthorisedBasedOnTaxServiceGroup(arn, userId, service.id, taxIdentifier)
             .flatMap {
               case true => Future.successful(AccessResponse.Authorised)
               case false =>
                 relationshipsConnector
-                  .relationshipExists(arn, Some(userId), taxIdentifier)
+                  .relationshipExists(arn, Some(userId), taxIdentifier, service)
                   .map {
                     case true  => AccessResponse.Authorised
                     case false => AccessResponse.NoAssignment

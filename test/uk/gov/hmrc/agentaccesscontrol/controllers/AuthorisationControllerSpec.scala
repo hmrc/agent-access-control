@@ -293,6 +293,7 @@ class AuthorisationControllerSpec extends UnitSpec {
     // Standard Cases
     val templateTestDataSets: Seq[(String, TaxIdentifier, Service)] = Seq(
       ("mtd-it-auth", MtdItId("1234567890"), Service.MtdIt),
+      ("mtd-it-auth-supp", MtdItId("1234567890"), Service.MtdItSupp),
       ("mtd-vat-auth", Vrn("123456789"), Service.Vat),
       ("trust-auth", Utr("0123456789"), Service.Trust),
       ("trust-auth", Urn("xxtrust12345678"), Service.TrustNT),
@@ -310,7 +311,7 @@ class AuthorisationControllerSpec extends UnitSpec {
             .returns(authResponseMtdAgent)
 
           mockESAuthorisationService
-            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3.id, mtdAuthDetails)(
+            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3, mtdAuthDetails)(
               *[HeaderCarrier],
               *[Request[Any]]
             )
@@ -326,7 +327,7 @@ class AuthorisationControllerSpec extends UnitSpec {
             .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
             .returns(authResponseMtdAgent)
           mockESAuthorisationService
-            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3.id, mtdAuthDetails)(
+            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3, mtdAuthDetails)(
               *[HeaderCarrier],
               *[Request[Any]]
             )
@@ -342,7 +343,7 @@ class AuthorisationControllerSpec extends UnitSpec {
             .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
             .returns(authResponseMtdAgent)
           mockESAuthorisationService
-            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3.id, mtdAuthDetails)(
+            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3, mtdAuthDetails)(
               *[HeaderCarrier],
               *[Request[Any]]
             )
@@ -358,7 +359,7 @@ class AuthorisationControllerSpec extends UnitSpec {
             .authorise(*[Predicate], *[Retrieval[Any]])(*[HeaderCarrier], *[ExecutionContext])
             .returns(authResponseMtdAgent)
           mockESAuthorisationService
-            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3.id, mtdAuthDetails)(
+            .authoriseStandardService(AgentCode(agentCode), testData._2, testData._3, mtdAuthDetails)(
               *[HeaderCarrier],
               *[Request[Any]]
             )

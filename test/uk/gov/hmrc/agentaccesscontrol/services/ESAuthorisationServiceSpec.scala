@@ -79,6 +79,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
 
   private val templateTestDataSets: Seq[(Service, TaxIdentifier, String, String)] = Seq(
     (Service.MtdIt, MtdItId("clientId"), "ITSA", Service.MtdIt.id),
+    (Service.MtdItSupp, MtdItId("clientId"), "ITSA", Service.MtdItSupp.id),
     (Service.Vat, Vrn("vrn"), "ALL", Service.Vat.id),
     (Service.Trust, Utr("utr"), "TRS", "HMRC-TERS"),
     (Service.TrustNT, Urn("urn"), "TRS", "HMRC-TERS"),
@@ -108,17 +109,17 @@ class ESAuthorisationServiceSpec extends UnitSpec {
           .getTaxServiceGroups(arn, testData._4)
           .returns(Future.successful(None))
         mockRelationshipsConnector
-          .relationshipExists(arn, None, testData._2)
+          .relationshipExists(arn, None, testData._2, testData._1)
           .returns(Future.successful(true))
         mockRelationshipsConnector
-          .relationshipExists(arn, Some(mtdAuthDetails.ggCredentialId), testData._2)
+          .relationshipExists(arn, Some(mtdAuthDetails.ggCredentialId), testData._2, testData._1)
           .returns(Future.successful(true))
         mockAgentClientAuthorisationConnector
           .getSuspensionDetails(arn)
           .returns(Future.successful(SuspensionDetails.notSuspended))
 
         val result: AccessResponse =
-          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1.id, mtdAuthDetails))
+          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1, mtdAuthDetails))
 
         result mustBe AccessResponse.Authorised
       }
@@ -136,7 +137,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
           .returns(Future.successful(Success))
 
         val result: AccessResponse =
-          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1.id, nonMtdAuthDetails))
+          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1, nonMtdAuthDetails))
 
         result mustBe AccessResponse.NoRelationship
       }
@@ -156,14 +157,14 @@ class ESAuthorisationServiceSpec extends UnitSpec {
           )
           .returns(Future.successful(Success))
         mockRelationshipsConnector
-          .relationshipExists(arn, None, testData._2)
+          .relationshipExists(arn, None, testData._2, testData._1)
           .returns(Future.successful(false))
         mockAgentClientAuthorisationConnector
           .getSuspensionDetails(arn)
           .returns(Future.successful(SuspensionDetails.notSuspended))
 
         val result: AccessResponse =
-          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1.id, mtdAuthDetails))
+          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1, mtdAuthDetails))
 
         result mustBe AccessResponse.NoRelationship
       }
@@ -180,10 +181,10 @@ class ESAuthorisationServiceSpec extends UnitSpec {
           )
           .returns(Future.successful(Success))
         mockRelationshipsConnector
-          .relationshipExists(arn, None, testData._2)
+          .relationshipExists(arn, None, testData._2, testData._1)
           .returns(Future.successful(true))
         mockRelationshipsConnector
-          .relationshipExists(arn, Some(mtdAuthDetails.ggCredentialId), testData._2)
+          .relationshipExists(arn, Some(mtdAuthDetails.ggCredentialId), testData._2, testData._1)
           .returns(Future.successful(false))
         mockAgentClientAuthorisationConnector
           .getSuspensionDetails(arn)
@@ -197,7 +198,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
           .returns(Future.successful(None))
 
         val result: AccessResponse =
-          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1.id, mtdAuthDetails))
+          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1, mtdAuthDetails))
 
         result mustBe AccessResponse.NoAssignment
       }
@@ -212,7 +213,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
           )
 
         val result: AccessResponse =
-          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1.id, mtdAuthDetails))
+          await(TestService.authoriseStandardService(agentCode, testData._2, testData._1, mtdAuthDetails))
 
         result mustBe AccessResponse.AgentSuspended
       }
@@ -248,19 +249,19 @@ class ESAuthorisationServiceSpec extends UnitSpec {
             .successful(None)
         )
       mockRelationshipsConnector
-        .relationshipExists(arn, Some("ggId"), cgtRef)
+        .relationshipExists(arn, Some("ggId"), cgtRef, Service.CapitalGains)
         .returns(
           Future
             .successful(true)
         )
       mockRelationshipsConnector
-        .relationshipExists(arn, None, cgtRef)
+        .relationshipExists(arn, None, cgtRef, Service.CapitalGains)
         .returns(
           Future
             .successful(true)
         )
 
-      await(TestService.authoriseStandardService(agentCode, cgtRef, Service.CapitalGains.id, mtdAuthDetails))
+      await(TestService.authoriseStandardService(agentCode, cgtRef, Service.CapitalGains, mtdAuthDetails))
     }
 
     "when GP outed out, do NOT specify user to check in relationship service call" in new Setup {
@@ -285,13 +286,13 @@ class ESAuthorisationServiceSpec extends UnitSpec {
             .successful(false)
         )
       mockRelationshipsConnector
-        .relationshipExists(arn, None, cgtRef)
+        .relationshipExists(arn, None, cgtRef, Service.CapitalGains)
         .returns(
           Future
             .successful(true)
         )
 
-      await(TestService.authoriseStandardService(agentCode, cgtRef, Service.CapitalGains.id, mtdAuthDetails))
+      await(TestService.authoriseStandardService(agentCode, cgtRef, Service.CapitalGains, mtdAuthDetails))
     }
   }
 

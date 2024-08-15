@@ -55,7 +55,7 @@ class AuthorisationController @Inject() (
     Action.async { implicit request: Request[_] =>
       withAgentAuthorised(AgentCode(agentCode)) { authDetails =>
         def standardAuth(service: Service, taxId: TaxIdentifier): Future[AccessResponse] =
-          esAuthorisationService.authoriseStandardService(AgentCode(agentCode), taxId, service.id, authDetails)
+          esAuthorisationService.authoriseStandardService(AgentCode(agentCode), taxId, service, authDetails)
         val urnPattern = "^((?i)[a-z]{2}trust[0-9]{8})$"
         val utrPattern = "^\\d{10}$"
 
@@ -72,8 +72,9 @@ class AuthorisationController @Inject() (
           case "afi-auth" =>
             authorisationService.isAuthorisedForAfi(AgentCode(agentCode), Nino(clientId), authDetails)
           // Standard cases
-          case "mtd-it-auth"  => standardAuth(Service.MtdIt, MtdItId(clientId))
-          case "mtd-vat-auth" => standardAuth(Service.Vat, Vrn(clientId))
+          case "mtd-it-auth"      => standardAuth(Service.MtdIt, MtdItId(clientId))
+          case "mtd-it-auth-supp" => standardAuth(Service.MtdItSupp, MtdItId(clientId))
+          case "mtd-vat-auth"     => standardAuth(Service.Vat, Vrn(clientId))
           case "trust-auth" if clientId.matches(utrPattern) =>
             standardAuth(Service.Trust, Utr(clientId))
           case "trust-auth" if clientId.matches(urnPattern) =>

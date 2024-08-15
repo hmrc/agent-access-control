@@ -23,6 +23,7 @@ import uk.gov.hmrc.agentaccesscontrol.stubs.AgentClientRelationshipStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
 import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
+import uk.gov.hmrc.agentmtdidentifiers.model.Service
 import uk.gov.hmrc.http.HeaderCarrier
 
 class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSupport with AgentClientRelationshipStub {
@@ -35,7 +36,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdItAgentClientRelationship(testArn, testMtdItId)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testMtdItId)) shouldBe true
+      await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdIt)) shouldBe true
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
     }
 
@@ -43,7 +44,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdItAgentClientRelationship(testArn, testMtdItId)(NOT_FOUND)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testMtdItId)) shouldBe false
+      await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdIt)) shouldBe false
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
     }
 
@@ -52,7 +53,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       cleanMetricRegistry()
 
       intercept[Exception] {
-        await(connector.relationshipExists(testArn, None, testMtdItId))
+        await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdIt))
       }.getMessage should include("300")
     }
 
@@ -60,7 +61,43 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdItAgentClientRelationship(testArn, testMtdItId)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testMtdItId))
+      await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdIt))
+
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
+    }
+  }
+
+  "relationshipExists for HMRC-MTD-IT-SUPP" should {
+    "return true when relationship exists" in {
+      stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdItSupp)) shouldBe true
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
+    }
+
+    "return false when relationship does not exist" in {
+      stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(NOT_FOUND)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdItSupp)) shouldBe false
+      timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
+    }
+
+    "throw exception when unexpected status code encountered" in {
+      stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(MULTIPLE_CHOICES)
+      cleanMetricRegistry()
+
+      intercept[Exception] {
+        await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdItSupp))
+      }.getMessage should include("300")
+    }
+
+    "record metrics" in {
+      stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(OK)
+      cleanMetricRegistry()
+
+      await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdItSupp))
 
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckMtdItId-GET")
     }
@@ -71,7 +108,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdVatAgentClientRelationship(testArn, testVrn)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testVrn)) shouldBe true
+      await(connector.relationshipExists(testArn, None, testVrn, Service.Vat)) shouldBe true
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckVrn-GET")
     }
 
@@ -79,7 +116,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdVatAgentClientRelationship(testArn, testVrn)(NOT_FOUND)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testVrn)) shouldBe false
+      await(connector.relationshipExists(testArn, None, testVrn, Service.Vat)) shouldBe false
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckVrn-GET")
     }
 
@@ -88,7 +125,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       cleanMetricRegistry()
 
       intercept[Exception] {
-        await(connector.relationshipExists(testArn, None, testVrn))
+        await(connector.relationshipExists(testArn, None, testVrn, Service.Vat))
       }.getMessage should include("300")
     }
 
@@ -96,7 +133,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdVatAgentClientRelationship(testArn, testVrn)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testVrn))
+      await(connector.relationshipExists(testArn, None, testVrn, Service.Vat))
 
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckVrn-GET")
     }
@@ -107,7 +144,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubTersAgentClientRelationship(testArn, testUtr)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testUtr)) shouldBe true
+      await(connector.relationshipExists(testArn, None, testUtr, Service.Trust)) shouldBe true
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUtr-GET")
     }
 
@@ -115,7 +152,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubTersAgentClientRelationship(testArn, testUtr)(NOT_FOUND)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testUtr)) shouldBe false
+      await(connector.relationshipExists(testArn, None, testUtr, Service.Trust)) shouldBe false
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUtr-GET")
     }
 
@@ -124,7 +161,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       cleanMetricRegistry()
 
       intercept[Exception] {
-        await(connector.relationshipExists(testArn, None, testUtr))
+        await(connector.relationshipExists(testArn, None, testUtr, Service.Trust))
       }.getMessage should include("300")
     }
 
@@ -132,7 +169,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubTersAgentClientRelationship(testArn, testUtr)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testUtr))
+      await(connector.relationshipExists(testArn, None, testUtr, Service.Trust))
 
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUtr-GET")
     }
@@ -143,7 +180,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubTersntAgentClientRelationship(testArn, testUrn)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testUrn)) shouldBe true
+      await(connector.relationshipExists(testArn, None, testUrn, Service.TrustNT)) shouldBe true
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUrn-GET")
     }
 
@@ -151,7 +188,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubTersntAgentClientRelationship(testArn, testUrn)(NOT_FOUND)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testUrn)) shouldBe false
+      await(connector.relationshipExists(testArn, None, testUrn, Service.TrustNT)) shouldBe false
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUrn-GET")
     }
 
@@ -160,7 +197,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       cleanMetricRegistry()
 
       intercept[Exception] {
-        await(connector.relationshipExists(testArn, None, testUrn))
+        await(connector.relationshipExists(testArn, None, testUrn, Service.TrustNT))
       }.getMessage should include("300")
     }
 
@@ -168,7 +205,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubTersntAgentClientRelationship(testArn, testUrn)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testUrn))
+      await(connector.relationshipExists(testArn, None, testUrn, Service.TrustNT))
 
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckUrn-GET")
     }
@@ -179,7 +216,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testCgtRef)) shouldBe true
+      await(connector.relationshipExists(testArn, None, testCgtRef, Service.CapitalGains)) shouldBe true
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCgtRef-GET")
     }
 
@@ -187,7 +224,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubCgtAgentClientRelationship(testArn, testCgtRef)(NOT_FOUND)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testCgtRef)) shouldBe false
+      await(connector.relationshipExists(testArn, None, testCgtRef, Service.CapitalGains)) shouldBe false
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCgtRef-GET")
     }
 
@@ -196,7 +233,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       cleanMetricRegistry()
 
       intercept[Exception] {
-        await(connector.relationshipExists(testArn, None, testCgtRef))
+        await(connector.relationshipExists(testArn, None, testCgtRef, Service.CapitalGains))
       }.getMessage should include("300")
     }
 
@@ -204,7 +241,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testCgtRef))
+      await(connector.relationshipExists(testArn, None, testCgtRef, Service.CapitalGains))
 
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCgtRef-GET")
     }
@@ -215,7 +252,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubPptAgentClientRelationship(testArn, testPptRef)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testPptRef)) shouldBe true
+      await(connector.relationshipExists(testArn, None, testPptRef, Service.Ppt)) shouldBe true
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPptRef-GET")
     }
 
@@ -223,7 +260,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubPptAgentClientRelationship(testArn, testPptRef)(NOT_FOUND)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testPptRef)) shouldBe false
+      await(connector.relationshipExists(testArn, None, testPptRef, Service.Ppt)) shouldBe false
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPptRef-GET")
     }
 
@@ -232,7 +269,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       cleanMetricRegistry()
 
       intercept[Exception] {
-        await(connector.relationshipExists(testArn, None, testPptRef))
+        await(connector.relationshipExists(testArn, None, testPptRef, Service.Ppt))
       }.getMessage should include("300")
     }
 
@@ -240,7 +277,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubPptAgentClientRelationship(testArn, testPptRef)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testPptRef))
+      await(connector.relationshipExists(testArn, None, testPptRef, Service.Ppt))
 
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPptRef-GET")
     }
@@ -251,7 +288,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubCbcIdAgentClientRelationship(testArn, testCbcId)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testCbcId)) shouldBe true
+      await(connector.relationshipExists(testArn, None, testCbcId, Service.Cbc)) shouldBe true
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCbcId-GET")
     }
 
@@ -259,7 +296,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubCbcIdAgentClientRelationship(testArn, testCbcId)(NOT_FOUND)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testCbcId)) shouldBe false
+      await(connector.relationshipExists(testArn, None, testCbcId, Service.Cbc)) shouldBe false
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCbcId-GET")
     }
 
@@ -268,7 +305,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       cleanMetricRegistry()
 
       intercept[Exception] {
-        await(connector.relationshipExists(testArn, None, testCbcId))
+        await(connector.relationshipExists(testArn, None, testCbcId, Service.Cbc))
       }.getMessage should include("300")
     }
 
@@ -276,7 +313,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubCbcIdAgentClientRelationship(testArn, testCbcId)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testCbcId))
+      await(connector.relationshipExists(testArn, None, testCbcId, Service.Cbc))
 
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckCbcId-GET")
     }
@@ -287,7 +324,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubPlrIdAgentClientRelationship(testArn, testPlrId)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testPlrId)) shouldBe true
+      await(connector.relationshipExists(testArn, None, testPlrId, Service.Pillar2)) shouldBe true
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPlrId-GET")
     }
 
@@ -295,7 +332,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubPlrIdAgentClientRelationship(testArn, testPlrId)(NOT_FOUND)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testPlrId)) shouldBe false
+      await(connector.relationshipExists(testArn, None, testPlrId, Service.Pillar2)) shouldBe false
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPlrId-GET")
     }
 
@@ -304,7 +341,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       cleanMetricRegistry()
 
       intercept[Exception] {
-        await(connector.relationshipExists(testArn, None, testPlrId))
+        await(connector.relationshipExists(testArn, None, testPlrId, Service.Pillar2))
       }.getMessage should include("300")
     }
 
@@ -312,7 +349,7 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubPlrIdAgentClientRelationship(testArn, testPlrId)(OK)
       cleanMetricRegistry()
 
-      await(connector.relationshipExists(testArn, None, testPlrId))
+      await(connector.relationshipExists(testArn, None, testPlrId, Service.Pillar2))
 
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPlrId-GET")
     }

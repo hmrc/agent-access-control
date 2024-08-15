@@ -43,6 +43,10 @@ class StandardServicesAuthorisationISpec
   private val mtdItRegime = "ITSA"
   private val mtdItIdUri  = s"/$mtdItAuth/agent/${testAgentCode.value}/client/${testMtdItId.value}"
 
+  private val mtdItSuppAuth   = "mtd-it-auth-supp"
+  private val mtdItSuppRegime = "ITSA"
+  private val mtdItSuppUri    = s"/$mtdItSuppAuth/agent/${testAgentCode.value}/client/${testMtdItId.value}"
+
   private val mtdVatAuth   = "mtd-vat-auth"
   private val mtdVatRegime = "VATC"
   private val mtdVatUri    = s"/$mtdVatAuth/agent/${testAgentCode.value}/client/${testVrn.value}"
@@ -195,6 +199,144 @@ class StandardServicesAuthorisationISpec
       result.status shouldBe 200
 
       timerShouldExistAndHasBeenUpdated(s"API-__${mtdItAuth}__agent__:__client__:-POST")
+    }
+  }
+
+  s"GET $mtdItSuppUri" should {
+    "grant access when the agency and client are subscribed to the appropriate services and have a relationship" in {
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, mtdItSuppRegime)
+      stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(OK)
+
+      val result = get(mtdItSuppUri)
+
+      result.status shouldBe 200
+    }
+
+    "not grant access" when {
+      "the agency is not subscribed to the appropriate service" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, mtdItSuppRegime)
+
+        val result = get(mtdItSuppUri)
+
+        result.status shouldBe 401
+        result.body should include(NoRelationship)
+      }
+
+      "there is no relationship between the agency and client" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, mtdItSuppRegime)
+        stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(NOT_FOUND)
+
+        val result = get(mtdItSuppUri)
+
+        result.status shouldBe 401
+        result.body should include(NoRelationship)
+      }
+
+      "there is a relationship between agency and client but access groups are enabled and user is not assigned to client" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, mtdItSuppRegime)
+        stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
+        stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(OK)
+        stubMtdItSuppAgentClientRelationshipToUser(testArn, testMtdItId, testProviderId)(NOT_FOUND)
+
+        val result = get(mtdItSuppUri)
+
+        result.status shouldBe 401
+        result.body should include(NoAssignment)
+      }
+
+    }
+
+    "record metrics for access control request" in {
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, mtdItSuppRegime)
+      stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(OK)
+      cleanMetricRegistry()
+
+      val result = get(mtdItSuppUri)
+
+      result.status shouldBe 200
+
+      timerShouldExistAndHasBeenUpdated(s"API-__${mtdItSuppAuth}__agent__:__client__:-GET")
+    }
+
+    "handle suspended for regime and return unauthorised" in {
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubAgentClientAuthorisationSuspensionStatus(testArn)(OK, isSuspended = true, mtdItSuppRegime)
+      stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(OK)
+      cleanMetricRegistry()
+
+      val result = get(mtdItSuppUri)
+
+      result.status shouldBe 401
+      result.body should include(NoRelationship)
+
+      timerShouldExistAndHasBeenUpdated(s"API-__${mtdItSuppAuth}__agent__:__client__:-GET")
+    }
+
+    "handle suspended for AGSV regime and return unauthorised" in {
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubAgentClientAuthorisationSuspensionStatus(testArn)(OK, isSuspended = true, "AGSV")
+      stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(OK)
+      cleanMetricRegistry()
+
+      val result = get(mtdItSuppUri)
+
+      result.status shouldBe 401
+      result.body should include(NoRelationship)
+
+      timerShouldExistAndHasBeenUpdated(s"API-__${mtdItSuppAuth}__agent__:__client__:-GET")
+    }
+  }
+
+  s"POST $mtdItSuppUri" should {
+    "grant access when the agency and client are subscribed to the appropriate services and have a relationship" in {
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, mtdItSuppRegime)
+      stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(OK)
+
+      val result = post(mtdItSuppUri)(Json.obj())
+
+      result.status shouldBe 200
+    }
+
+    "not grant access" when {
+      "the agency is not subscribed to the appropriate service" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, mtdItSuppRegime)
+
+        val result = post(mtdItSuppUri)(Json.obj())
+
+        result.status shouldBe 401
+        result.body should include(NoRelationship)
+      }
+
+      "there is no relationship between the agency and client" in {
+        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+        stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, mtdItSuppRegime)
+        stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(NOT_FOUND)
+
+        val result = post(mtdItSuppUri)(Json.obj())
+
+        result.status shouldBe 401
+        result.body should include(NoRelationship)
+      }
+    }
+
+    "record metrics for access control request" in {
+      stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
+      stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, mtdItSuppRegime)
+      stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(OK)
+      cleanMetricRegistry()
+
+      val result = post(mtdItSuppUri)(Json.obj())
+
+      result.status shouldBe 200
+
+      timerShouldExistAndHasBeenUpdated(s"API-__${mtdItSuppAuth}__agent__:__client__:-POST")
     }
   }
 
