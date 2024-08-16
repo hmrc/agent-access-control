@@ -1,3 +1,4 @@
+import CodeCoverageSettings.scoverageSettings
 import uk.gov.hmrc.DefaultBuildSettings
 
 ThisBuild / majorVersion := 1
@@ -24,6 +25,7 @@ lazy val microservice = (project in file("."))
     PlayKeys.playDefaultPort := 9431,
     resolvers ++= Seq(Resolver.typesafeRepo("releases")),
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
+    scoverageSettings,
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     Compile / scalafmtOnCompile := true,
     Test / scalafmtOnCompile := true,

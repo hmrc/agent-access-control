@@ -45,7 +45,7 @@ object Relationship {
 
 @ImplementedBy(classOf[RelationshipsConnectorImpl])
 trait RelationshipsConnector {
-  def relationshipExists(arn: Arn, maybeUserId: Option[String], identifier: TaxIdentifier)(
+  def relationshipExists(arn: Arn, maybeUserId: Option[String], identifier: TaxIdentifier, service: Service)(
       implicit ec: ExecutionContext,
       hc: HeaderCarrier
   ): Future[Boolean]
@@ -56,21 +56,12 @@ trait RelationshipsConnector {
 class RelationshipsConnectorImpl @Inject() (appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics)
     extends RelationshipsConnector {
 
-  def relationshipExists(arn: Arn, maybeUserId: Option[String], identifier: TaxIdentifier)(
+  def relationshipExists(arn: Arn, maybeUserId: Option[String], identifier: TaxIdentifier, service: Service)(
       implicit ec: ExecutionContext,
       hc: HeaderCarrier
   ): Future[Boolean] = {
-    /* TODO - Trying to deduce the service from the identifier type alone is discouraged - it is done here
-       for legacy reasons but should be avoided. Consider changing the API to explicitly pass the intended service */
+
     val identifierTypeId = ClientIdentifier(identifier).enrolmentId
-    val service = Service.supportedServices
-      .find(_.supportedClientIdType.enrolmentId == identifierTypeId)
-      .map {
-        case Service.CbcNonUk =>
-          Service.Cbc // treat both CBC types the same, leave it for ACR to determine which
-        case s => s
-      }
-      .getOrElse(throw new IllegalArgumentException(s"Tax identifier not supported by any service: $identifier"))
 
     val urlParam = maybeUserId.fold("")(userId => s"?userId=$userId")
     val relationshipUrl =
