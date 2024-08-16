@@ -76,6 +76,16 @@ authorised(
      .withDelegatedAuthRule("mtd-it-auth")) { /* your protected logic */ }
 ```
 
+##### GET /agent-access-control/mtd-it-auth-supp/agent/:agentCode/client/:mtdItId
+
+### Example usage
+```scala
+authorised(
+   Enrolment("HMRC-MTD-IT-SUPP")
+     .withIdentifier("MTDITID", "123")
+     .withDelegatedAuthRule("mtd-it-auth-supp")) { /* your protected logic */ }
+```
+
 ##### GET /agent-access-control/mtd-vat-auth/agent/:agentCode/client/:vrn
 
 ### Example usage
