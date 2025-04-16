@@ -198,6 +198,7 @@ class ESAuthorisationService @Inject() (
       // These tax service groups use a truncated key to indicate either type
       case "HMRC-TERS-ORG" | "HMRC-TERSNT-ORG"   => "HMRC-TERS"
       case "HMRC-CBC-ORG" | "HMRC-CBC-NONUK-ORG" => "HMRC-CBC"
+      case "HMRC-MTD-IT" | "HMRC-MTD-IT-SUPP"    => "HMRC-MTD-IT"
       case x                                     => x
     }
     agentPermissionsConnector
