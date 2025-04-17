@@ -79,7 +79,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
 
   private val templateTestDataSets: Seq[(Service, TaxIdentifier, String, String)] = Seq(
     (Service.MtdIt, MtdItId("clientId"), "ITSA", Service.MtdIt.id),
-    (Service.MtdItSupp, MtdItId("clientId"), "ITSA", Service.MtdItSupp.id),
+    (Service.MtdItSupp, MtdItId("clientId"), "ITSA", Service.MtdIt.id),
     (Service.Vat, Vrn("vrn"), "ALL", Service.Vat.id),
     (Service.Trust, Utr("utr"), "TRS", "HMRC-TERS"),
     (Service.TrustNT, Urn("urn"), "TRS", "HMRC-TERS"),
@@ -295,5 +295,4 @@ class ESAuthorisationServiceSpec extends UnitSpec {
       await(TestService.authoriseStandardService(agentCode, cgtRef, Service.CapitalGains, mtdAuthDetails))
     }
   }
-
 }

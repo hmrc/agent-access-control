@@ -17,11 +17,29 @@
 package uk.gov.hmrc.agentaccesscontrol.stubs
 
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
+import uk.gov.hmrc.agentaccesscontrol.utils.StandardServiceAuthorisationRequest
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockHelper
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockMethods
 import uk.gov.hmrc.agentmtdidentifiers.model._
+import uk.gov.hmrc.domain.TaxIdentifier
 
 trait AgentClientRelationshipStub extends WiremockMethods {
+
+  def stubAgentClientRelationship(arn: Arn, config: StandardServiceAuthorisationRequest)(status: Int): StubMapping =
+    when(
+      method = GET,
+      uri =
+        s"/agent-client-relationships/agent/${arn.value}/service/${config.service}/client/${config.taxIdentifierIdType}/${config.taxIdentifier.value}"
+    ).thenReturn(status)
+
+  def stubAgentClientRelationshipAssigned(arn: Arn, config: StandardServiceAuthorisationRequest, providerId: String)(
+      status: Int
+  ): StubMapping =
+    when(
+      method = GET,
+      uri =
+        s"/agent-client-relationships/agent/${arn.value}/service/${config.service}/client/${config.taxIdentifierIdType}/${config.taxIdentifier.value}\\?userId=$providerId"
+    ).thenReturn(status)
 
   def stubMtdItAgentClientRelationship(arn: Arn, mtdItId: MtdItId)(status: Int): StubMapping =
     when(
