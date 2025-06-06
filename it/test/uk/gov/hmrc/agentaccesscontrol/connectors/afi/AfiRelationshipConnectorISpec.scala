@@ -29,6 +29,7 @@ import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testArn
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testNino
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testProviderId
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.UpstreamErrorResponse
 
 class AfiRelationshipConnectorISpec
     extends ComponentSpecHelper
@@ -38,7 +39,7 @@ class AfiRelationshipConnectorISpec
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  val connector = app.injector.instanceOf[AfiRelationshipConnector]
+  val connector: AfiRelationshipConnector = app.injector.instanceOf[AfiRelationshipConnector]
 
   "hasRelationship" should {
     "return true when relationship exists" in {
@@ -59,9 +60,16 @@ class AfiRelationshipConnectorISpec
       stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
       stubAgentFiRelationship(testArn, testNino)(MULTIPLE_CHOICES)
 
-      intercept[Exception] {
+      val exception = the[UpstreamErrorResponse] thrownBy {
         await(connector.hasRelationship(testArn.value, testNino.value))
-      }.getMessage shouldBe "Error calling: http://localhost:11111/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/01234567890/client/AE123456C"
+      }
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error calling: http://localhost:11111/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/01234567890/client/AE123456C",
+        MULTIPLE_CHOICES,
+        MULTIPLE_CHOICES,
+        Map()
+      )
     }
   }
 }

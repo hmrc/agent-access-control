@@ -50,14 +50,22 @@ class AgentAssuranceConnectorISpec extends ComponentSpecHelper with AgentAssuran
 
     "throw a SuspensionDetailsNotFound exception when the status is 404" in {
       stubAgentAssuranceSuspensionStatus(404)
+      val exception = the[SuspensionDetailsNotFound] thrownBy await(connector.getSuspensionDetails)
 
-      intercept[SuspensionDetailsNotFound](await(connector.getSuspensionDetails))
+      exception shouldBe SuspensionDetailsNotFound("No record found for this agent")
     }
 
     "throw a UpstreamErrorResponse exception when the status is unexpected" in {
       stubAgentAssuranceSuspensionStatus(500)
 
-      intercept[UpstreamErrorResponse](await(connector.getSuspensionDetails))
+      val exception = the[UpstreamErrorResponse] thrownBy await(connector.getSuspensionDetails)
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error 500 unable to get suspension details",
+        500,
+        500,
+        Map()
+      )
     }
   }
 }

@@ -53,9 +53,16 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdItAgentClientRelationship(testArn, testMtdItId)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[UpstreamErrorResponse] {
+      val exception = the[UpstreamErrorResponse] thrownBy {
         await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdIt))
-      }.statusCode shouldBe 300
+      }
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error calling: http://localhost:11111/agent-client-relationships/agent/01234567890/service/HMRC-MTD-IT/client/MTDITID/C1111C",
+        MULTIPLE_CHOICES,
+        MULTIPLE_CHOICES,
+        Map()
+      )
     }
 
     "record metrics" in {
@@ -89,9 +96,16 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[UpstreamErrorResponse] {
+      val exception = the[UpstreamErrorResponse] thrownBy {
         await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdItSupp))
-      }.statusCode shouldBe 300
+      }
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error calling: http://localhost:11111/agent-client-relationships/agent/01234567890/service/HMRC-MTD-IT-SUPP/client/MTDITID/C1111C",
+        MULTIPLE_CHOICES,
+        MULTIPLE_CHOICES,
+        Map()
+      )
     }
 
     "record metrics" in {
@@ -125,9 +139,16 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdVatAgentClientRelationship(testArn, testVrn)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[UpstreamErrorResponse] {
+      val exception = the[UpstreamErrorResponse] thrownBy {
         await(connector.relationshipExists(testArn, None, testVrn, Service.Vat))
-      }.statusCode shouldBe 300
+      }
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error calling: http://localhost:11111/agent-client-relationships/agent/01234567890/service/HMRC-MTD-VAT/client/VRN/101747641",
+        MULTIPLE_CHOICES,
+        MULTIPLE_CHOICES,
+        Map()
+      )
     }
 
     "record metrics" in {
@@ -161,9 +182,16 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubTersAgentClientRelationship(testArn, testUtr)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[UpstreamErrorResponse] {
+      val exception = the[UpstreamErrorResponse] thrownBy {
         await(connector.relationshipExists(testArn, None, testUtr, Service.Trust))
-      }.statusCode shouldBe 300
+      }
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error calling: http://localhost:11111/agent-client-relationships/agent/01234567890/service/HMRC-TERS-ORG/client/SAUTR/5066836985",
+        MULTIPLE_CHOICES,
+        MULTIPLE_CHOICES,
+        Map()
+      )
     }
 
     "record metrics" in {
@@ -197,9 +225,16 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubTersntAgentClientRelationship(testArn, testUrn)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[UpstreamErrorResponse] {
+      val exception = the[UpstreamErrorResponse] thrownBy {
         await(connector.relationshipExists(testArn, None, testUrn, Service.TrustNT))
-      }.statusCode shouldBe 300
+      }
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error calling: http://localhost:11111/agent-client-relationships/agent/01234567890/service/HMRC-TERSNT-ORG/client/URN/XATRUST06683698",
+        MULTIPLE_CHOICES,
+        MULTIPLE_CHOICES,
+        Map()
+      )
     }
 
     "record metrics" in {
@@ -233,9 +268,16 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubCgtAgentClientRelationship(testArn, testCgtRef)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[UpstreamErrorResponse] {
+      val exception = the[UpstreamErrorResponse] thrownBy {
         await(connector.relationshipExists(testArn, None, testCgtRef, Service.CapitalGains))
-      }.statusCode shouldBe 300
+      }
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error calling: http://localhost:11111/agent-client-relationships/agent/01234567890/service/HMRC-CGT-PD/client/CGTPDRef/XMCGTP123456789",
+        MULTIPLE_CHOICES,
+        MULTIPLE_CHOICES,
+        Map()
+      )
     }
 
     "record metrics" in {
@@ -269,9 +311,16 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubPptAgentClientRelationship(testArn, testPptRef)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[UpstreamErrorResponse] {
+      val exception = the[UpstreamErrorResponse] thrownBy {
         await(connector.relationshipExists(testArn, None, testPptRef, Service.Ppt))
-      }.statusCode shouldBe 300
+      }
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error calling: http://localhost:11111/agent-client-relationships/agent/01234567890/service/HMRC-PPT-ORG/client/EtmpRegistrationNumber/XHPPT0006633194",
+        MULTIPLE_CHOICES,
+        MULTIPLE_CHOICES,
+        Map()
+      )
     }
 
     "record metrics" in {
@@ -305,9 +354,14 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubCbcIdAgentClientRelationship(testArn, testCbcId)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[UpstreamErrorResponse] {
+      val exception = the[UpstreamErrorResponse] thrownBy {
         await(connector.relationshipExists(testArn, None, testCbcId, Service.Cbc))
-      }.statusCode shouldBe 300
+      }
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error calling: http://localhost:11111/agent-client-relationships/agent/01234567890/service/HMRC-CBC-ORG/client/cbcId/XHCBC0006633194",
+        MULTIPLE_CHOICES
+      )
     }
 
     "record metrics" in {
@@ -341,9 +395,16 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubPlrIdAgentClientRelationship(testArn, testPlrId)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[UpstreamErrorResponse] {
+      val exception = the[UpstreamErrorResponse] thrownBy {
         await(connector.relationshipExists(testArn, None, testPlrId, Service.Pillar2))
-      }.statusCode shouldBe 300
+      }
+
+      exception shouldBe UpstreamErrorResponse(
+        "Error calling: http://localhost:11111/agent-client-relationships/agent/01234567890/service/HMRC-PILLAR2-ORG/client/PLRID/XDPLR6210917659",
+        MULTIPLE_CHOICES,
+        MULTIPLE_CHOICES,
+        Map()
+      )
     }
 
     "record metrics" in {
@@ -355,5 +416,4 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       timerShouldExistAndHasBeenUpdated(s"ConsumedAPI-AgentClientRelationships-CheckPlrId-GET")
     }
   }
-
 }
