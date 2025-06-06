@@ -61,7 +61,7 @@ class AfiRelationshipConnectorISpec
 
       intercept[Exception] {
         await(connector.hasRelationship(testArn.value, testNino.value))
-      }.getMessage shouldBe "Unsupported statusCode 300"
+      }.getMessage shouldBe "Error calling: http://localhost:11111/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/01234567890/client/AE123456C"
     }
   }
 }

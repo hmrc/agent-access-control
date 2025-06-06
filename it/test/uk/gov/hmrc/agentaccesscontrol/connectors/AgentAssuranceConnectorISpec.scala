@@ -16,17 +16,20 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import play.api.test.Helpers.{await, defaultAwaitTimeout}
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import play.api.test.Helpers.await
+import play.api.test.Helpers.defaultAwaitTimeout
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentAssuranceStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentmtdidentifiers.model.{SuspensionDetails, SuspensionDetailsNotFound}
-import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
-
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetails
+import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetailsNotFound
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.UpstreamErrorResponse
 
 class AgentAssuranceConnectorISpec extends ComponentSpecHelper with AgentAssuranceStub {
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val hc: HeaderCarrier         = HeaderCarrier()
   val connector: AgentAssuranceConnector = app.injector.instanceOf[AgentAssuranceConnector]
 
   "getSuspensionDetails" should {

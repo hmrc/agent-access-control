@@ -16,26 +16,34 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import play.api.http.Status.{NOT_FOUND, NO_CONTENT, OK}
+import javax.inject.Inject
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
+import play.api.http.Status.NOT_FOUND
+import play.api.http.Status.NO_CONTENT
+import play.api.http.Status.OK
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentmtdidentifiers.model.{SuspensionDetails, SuspensionDetailsNotFound}
+import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetails
+import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetailsNotFound
 import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
+import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.StringContextOps
+import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
-
-class AgentAssuranceConnector @Inject()(http: HttpClientV2)(
-  implicit val metrics: Metrics,
-  appConfig: AppConfig
+class AgentAssuranceConnector @Inject() (http: HttpClientV2)(
+    implicit val metrics: Metrics,
+    appConfig: AppConfig
 ) {
 
   def getSuspensionDetails(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SuspensionDetails] = {
 
-    val url = url"${appConfig.agentAssuranceBaseUrl}/agent-assurance/agent/verify-entity"
+    val url   = url"${appConfig.agentAssuranceBaseUrl}/agent-assurance/agent/verify-entity"
     val timer = metrics.defaultRegistry.timer("Timer-ConsumerAPI-AA-AgencySuspensionDetails-POST")
 
     timer.time()

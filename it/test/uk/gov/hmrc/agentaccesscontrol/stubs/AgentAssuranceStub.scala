@@ -17,7 +17,8 @@
 package uk.gov.hmrc.agentaccesscontrol.stubs
 
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
-import play.api.http.Status.{NO_CONTENT, OK}
+import play.api.http.Status.NO_CONTENT
+import play.api.http.Status.OK
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockMethods
 

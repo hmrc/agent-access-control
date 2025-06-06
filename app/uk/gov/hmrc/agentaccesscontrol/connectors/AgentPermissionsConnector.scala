@@ -30,10 +30,11 @@ import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agents.accessgroups.TaxGroup
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
@@ -50,7 +51,7 @@ trait AgentPermissionsConnector {
 }
 
 @Singleton
-class AgentPermissionsConnectorImpl @Inject() (http: HttpClient, metrics: Metrics)(implicit appConfig: AppConfig)
+class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2, metrics: Metrics)(implicit appConfig: AppConfig)
     extends AgentPermissionsConnector
     with Logging {
 
@@ -60,12 +61,12 @@ class AgentPermissionsConnectorImpl @Inject() (http: HttpClient, metrics: Metric
       arn: Arn
   )(implicit hc: HeaderCarrier, executionContext: ExecutionContext): Future[Boolean] = {
 
-    val url = new URL(agentPermissionsBaseUrl, s"/agent-permissions/arn/${arn.value}/optin-record-exists")
+    val url = url"$agentPermissionsBaseUrl/agent-permissions/arn/${arn.value}/optin-record-exists"
 
     val timer = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-AP-granularPermissionsOptinRecordExists-GET")
 
     timer.time()
-    http.GET[HttpResponse](url.toString).map { response =>
+    http.get(url).execute[HttpResponse].map { response =>
       timer.time().stop()
       response.status match {
         case Status.NO_CONTENT => true
@@ -83,13 +84,13 @@ class AgentPermissionsConnectorImpl @Inject() (http: HttpClient, metrics: Metric
       service: String
   )(implicit hc: HeaderCarrier, executionContext: ExecutionContext): Future[Option[TaxGroup]] = {
 
-    val url = new URL(agentPermissionsBaseUrl, s"/agent-permissions/arn/${arn.value}/tax-group/$service")
+    val url = url"$agentPermissionsBaseUrl/agent-permissions/arn/${arn.value}/tax-group/$service"
 
     val timer =
       metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-AP-getTaxServiceGroups-GET")
 
     timer.time()
-    http.GET[HttpResponse](url.toString).map { response =>
+    http.get(url).execute[HttpResponse].map { response =>
       timer.time().stop
       response.status match {
         case Status.NOT_FOUND => None

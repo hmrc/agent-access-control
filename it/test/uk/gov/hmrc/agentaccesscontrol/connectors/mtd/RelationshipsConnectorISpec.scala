@@ -25,6 +25,7 @@ import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 import uk.gov.hmrc.agentmtdidentifiers.model.Service
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.UpstreamErrorResponse
 
 class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSupport with AgentClientRelationshipStub {
 
@@ -52,9 +53,9 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdItAgentClientRelationship(testArn, testMtdItId)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[Exception] {
+      intercept[UpstreamErrorResponse] {
         await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdIt))
-      }.getMessage should include("300")
+      }.statusCode shouldBe 300
     }
 
     "record metrics" in {
@@ -88,9 +89,9 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdItSuppAgentClientRelationship(testArn, testMtdItId)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[Exception] {
+      intercept[UpstreamErrorResponse] {
         await(connector.relationshipExists(testArn, None, testMtdItId, Service.MtdItSupp))
-      }.getMessage should include("300")
+      }.statusCode shouldBe 300
     }
 
     "record metrics" in {
@@ -124,9 +125,9 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubMtdVatAgentClientRelationship(testArn, testVrn)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[Exception] {
+      intercept[UpstreamErrorResponse] {
         await(connector.relationshipExists(testArn, None, testVrn, Service.Vat))
-      }.getMessage should include("300")
+      }.statusCode shouldBe 300
     }
 
     "record metrics" in {
@@ -160,9 +161,9 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubTersAgentClientRelationship(testArn, testUtr)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[Exception] {
+      intercept[UpstreamErrorResponse] {
         await(connector.relationshipExists(testArn, None, testUtr, Service.Trust))
-      }.getMessage should include("300")
+      }.statusCode shouldBe 300
     }
 
     "record metrics" in {
@@ -196,9 +197,9 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubTersntAgentClientRelationship(testArn, testUrn)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[Exception] {
+      intercept[UpstreamErrorResponse] {
         await(connector.relationshipExists(testArn, None, testUrn, Service.TrustNT))
-      }.getMessage should include("300")
+      }.statusCode shouldBe 300
     }
 
     "record metrics" in {
@@ -232,9 +233,9 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubCgtAgentClientRelationship(testArn, testCgtRef)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[Exception] {
+      intercept[UpstreamErrorResponse] {
         await(connector.relationshipExists(testArn, None, testCgtRef, Service.CapitalGains))
-      }.getMessage should include("300")
+      }.statusCode shouldBe 300
     }
 
     "record metrics" in {
@@ -268,9 +269,9 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubPptAgentClientRelationship(testArn, testPptRef)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[Exception] {
+      intercept[UpstreamErrorResponse] {
         await(connector.relationshipExists(testArn, None, testPptRef, Service.Ppt))
-      }.getMessage should include("300")
+      }.statusCode shouldBe 300
     }
 
     "record metrics" in {
@@ -304,9 +305,9 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubCbcIdAgentClientRelationship(testArn, testCbcId)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[Exception] {
+      intercept[UpstreamErrorResponse] {
         await(connector.relationshipExists(testArn, None, testCbcId, Service.Cbc))
-      }.getMessage should include("300")
+      }.statusCode shouldBe 300
     }
 
     "record metrics" in {
@@ -340,9 +341,9 @@ class RelationshipsConnectorISpec extends ComponentSpecHelper with MetricTestSup
       stubPlrIdAgentClientRelationship(testArn, testPlrId)(MULTIPLE_CHOICES)
       cleanMetricRegistry()
 
-      intercept[Exception] {
+      intercept[UpstreamErrorResponse] {
         await(connector.relationshipExists(testArn, None, testPlrId, Service.Pillar2))
-      }.getMessage should include("300")
+      }.statusCode shouldBe 300
     }
 
     "record metrics" in {
