@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
-import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,11 +28,12 @@ import play.api.libs.json._
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model._
 import uk.gov.hmrc.domain.TaxIdentifier
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
@@ -53,7 +53,7 @@ trait RelationshipsConnector {
 }
 
 @Singleton
-class RelationshipsConnectorImpl @Inject() (appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics)
+class RelationshipsConnectorImpl @Inject() (appConfig: AppConfig, httpClient: HttpClientV2, metrics: Metrics)
     extends RelationshipsConnector {
 
   def relationshipExists(arn: Arn, maybeUserId: Option[String], identifier: TaxIdentifier, service: Service)(
@@ -65,16 +65,14 @@ class RelationshipsConnectorImpl @Inject() (appConfig: AppConfig, httpClient: Ht
 
     val urlParam = maybeUserId.fold("")(userId => s"?userId=$userId")
     val relationshipUrl =
-      new URL(
-        s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/${service.id}/client/$identifierTypeId/${identifier.value}$urlParam"
-      ).toString
+      s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/${service.id}/client/$identifierTypeId/${identifier.value}$urlParam"
 
     val timer = metrics.defaultRegistry.timer(
       s"Timer-ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET"
     )
 
     timer.time()
-    httpClient.GET[HttpResponse](relationshipUrl).map { response =>
+    httpClient.get(url"$relationshipUrl").execute[HttpResponse].map { response =>
       timer.time().stop()
       response.status match {
         case status if is2xx(status) => true

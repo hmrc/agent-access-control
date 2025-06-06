@@ -26,7 +26,7 @@ class AfiAuthorisationISpec
     extends ComponentSpecHelper
     with AuthStub
     with AgentFiRelationshipStub
-    with AgentClientAuthorisationStub {
+    with AgentAssuranceStub {
 
   private val uri: String    = s"/afi-auth/agent/${testAgentCode.value}/client/${testNino.value}"
   private val regime: String = "AGSV"
@@ -37,7 +37,7 @@ class AfiAuthorisationISpec
         "the client has authorised the agent and agent is not suspended" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
           stubAgentFiRelationship(testArn, testNino)(OK)
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, regime)
+          stubAgentNotSuspended
 
           val result = get(uri)
 
@@ -49,7 +49,7 @@ class AfiAuthorisationISpec
         "the client has authorised the agent but agent is suspended" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
           stubAgentFiRelationship(testArn, testNino)(OK)
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(OK, isSuspended = true, regime)
+          stubAgentIsSuspended(regime)
 
           val result = get(uri)
 
@@ -59,7 +59,7 @@ class AfiAuthorisationISpec
         "the client has not authorised the agent and agent is not suspended" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
           stubAgentFiRelationship(testArn, testNino)(NOT_FOUND)
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, regime)
+          stubAgentNotSuspended
 
           val result = get(uri)
 
@@ -73,7 +73,7 @@ class AfiAuthorisationISpec
         "the client has authorised the agent and agent is not suspended" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
           stubAgentFiRelationship(testArn, testNino)(OK)
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, regime)
+          stubAgentNotSuspended
 
           val result = post(uri)(Json.obj())
 
@@ -85,7 +85,7 @@ class AfiAuthorisationISpec
         "the client has authorised the agent but agent is suspended" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
           stubAgentFiRelationship(testArn, testNino)(OK)
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(OK, isSuspended = true, regime)
+          stubAgentIsSuspended(regime)
 
           val result = post(uri)(Json.obj())
 
@@ -95,7 +95,7 @@ class AfiAuthorisationISpec
         "the client has not authorised the agent and agent is not suspended" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
           stubAgentFiRelationship(testArn, testNino)(NOT_FOUND)
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, regime)
+          stubAgentNotSuspended
 
           val result = post(uri)(Json.obj())
 

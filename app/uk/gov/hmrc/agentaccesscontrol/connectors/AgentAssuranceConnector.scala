@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,50 +14,40 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
+package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import javax.inject.Inject
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-import com.google.inject.ImplementedBy
-import play.api.http.Status._
+import play.api.http.Status.NOT_FOUND
+import play.api.http.Status.NO_CONTENT
+import play.api.http.Status.OK
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetailsNotFound
-import uk.gov.hmrc.domain.TaxIdentifier
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-@ImplementedBy(classOf[AgentClientAuthorisationConnectorImpl])
-trait AgentClientAuthorisationConnector {
-  def getSuspensionDetails(
-      agentId: TaxIdentifier
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SuspensionDetails]
-}
-
-class AgentClientAuthorisationConnectorImpl @Inject() (http: HttpClient)(
+class AgentAssuranceConnector @Inject() (http: HttpClientV2)(
     implicit val metrics: Metrics,
     appConfig: AppConfig
-) extends AgentClientAuthorisationConnector {
+) {
 
-  def getSuspensionDetails(
-      agentId: TaxIdentifier
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SuspensionDetails] = {
+  def getSuspensionDetails(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SuspensionDetails] = {
 
-    val url =
-      s"${appConfig.acaBaseUrl}/agent-client-authorisation/client/suspension-details/${agentId.value}"
-
-    val timer = metrics.defaultRegistry.timer("Timer-ConsumerAPI-Get-AgencySuspensionDetails-GET")
+    val url   = url"${appConfig.agentAssuranceBaseUrl}/agent-assurance/agent/verify-entity"
+    val timer = metrics.defaultRegistry.timer("Timer-ConsumerAPI-AA-AgencySuspensionDetails-POST")
 
     timer.time()
-    http.GET[HttpResponse](url).map { response =>
+    http.post(url).execute[HttpResponse].map { response =>
       timer.time().stop()
       response.status match {
         case OK         => Json.parse(response.body).as[SuspensionDetails]

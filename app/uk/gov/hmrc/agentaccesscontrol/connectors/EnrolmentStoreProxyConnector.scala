@@ -30,19 +30,18 @@ import uk.gov.hmrc.domain.AgentUserId
 import uk.gov.hmrc.domain.EmpRef
 import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.domain.SaUtr
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 @Singleton
-class EnrolmentStoreProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics) {
-  private def pathES0(enrolmentKey: String, usersType: String): String =
-    new URL(
-      s"${appConfig.esProxyBaseUrl}/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=$usersType"
-    ).toString
+class EnrolmentStoreProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2, metrics: Metrics) {
+  private def pathES0(enrolmentKey: String, usersType: String): URL =
+    url"${appConfig.esProxyBaseUrl}/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=$usersType"
 
   def getIRSAAGENTPrincipalUserIdsFor(
       saAgentReference: SaAgentReference
@@ -74,7 +73,7 @@ class EnrolmentStoreProxyConnector @Inject() (appConfig: AppConfig, httpClient: 
       metrics.defaultRegistry.timer("Timer-ConsumedAPI-EnrolmentStoreProxy-ES0-GET")
 
     timer.time()
-    httpClient.GET[HttpResponse](url).map { response =>
+    httpClient.get(url).execute[HttpResponse].map { response =>
       timer.time().stop()
       response.status match {
         case OK =>

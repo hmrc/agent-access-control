@@ -26,8 +26,8 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.AgentClientAuthorisationConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.AgentAssuranceConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
@@ -49,8 +49,8 @@ class ESAuthorisationServiceSpec extends UnitSpec {
       mock[RelationshipsConnector]
     protected val mockDesAgentClientApiConnector: DesAgentClientApiConnector =
       mock[DesAgentClientApiConnector]
-    protected val mockAgentClientAuthorisationConnector: AgentClientAuthorisationConnector =
-      mock[AgentClientAuthorisationConnector]
+    protected val mockAgentAssuranceConnector: AgentAssuranceConnector =
+      mock[AgentAssuranceConnector]
     protected val mockAgentPermissionsConnector: AgentPermissionsConnector =
       mock[AgentPermissionsConnector]
     protected val mockAppConfig: AppConfig = mock[AppConfig]
@@ -59,7 +59,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
         extends ESAuthorisationService(
           mockRelationshipsConnector,
           mockDesAgentClientApiConnector,
-          mockAgentClientAuthorisationConnector,
+          mockAgentAssuranceConnector,
           mockAgentPermissionsConnector,
           mockAuditService,
           mockAppConfig
@@ -114,8 +114,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
         mockRelationshipsConnector
           .relationshipExists(arn, Some(mtdAuthDetails.ggCredentialId), testData._2, testData._1)
           .returns(Future.successful(true))
-        mockAgentClientAuthorisationConnector
-          .getSuspensionDetails(arn)
+        mockAgentAssuranceConnector.getSuspensionDetails
           .returns(Future.successful(SuspensionDetails.notSuspended))
 
         val result: AccessResponse =
@@ -159,8 +158,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
         mockRelationshipsConnector
           .relationshipExists(arn, None, testData._2, testData._1)
           .returns(Future.successful(false))
-        mockAgentClientAuthorisationConnector
-          .getSuspensionDetails(arn)
+        mockAgentAssuranceConnector.getSuspensionDetails
           .returns(Future.successful(SuspensionDetails.notSuspended))
 
         val result: AccessResponse =
@@ -186,8 +184,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
         mockRelationshipsConnector
           .relationshipExists(arn, Some(mtdAuthDetails.ggCredentialId), testData._2, testData._1)
           .returns(Future.successful(false))
-        mockAgentClientAuthorisationConnector
-          .getSuspensionDetails(arn)
+        mockAgentAssuranceConnector.getSuspensionDetails
           .returns(Future.successful(SuspensionDetails.notSuspended))
         mockAppConfig.enableGranularPermissions.returns(true)
         mockAgentPermissionsConnector
@@ -204,8 +201,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
       }
 
       "handle suspended agents" in new Setup {
-        mockAgentClientAuthorisationConnector
-          .getSuspensionDetails(arn)
+        mockAgentAssuranceConnector.getSuspensionDetails
           .returns(
             Future.successful(
               SuspensionDetails(suspensionStatus = true, Some(Set(testData._3)))
@@ -233,8 +229,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
           *[Seq[(String, Any)]]
         )
         .returns(Future.successful(Success))
-      mockAgentClientAuthorisationConnector
-        .getSuspensionDetails(arn)
+      mockAgentAssuranceConnector.getSuspensionDetails
         .returns(Future.successful(SuspensionDetails.notSuspended))
       mockAgentPermissionsConnector
         .granularPermissionsOptinRecordExists(arn)
@@ -276,8 +271,7 @@ class ESAuthorisationServiceSpec extends UnitSpec {
           *[Seq[(String, Any)]]
         )
         .returns(Future.successful(Success))
-      mockAgentClientAuthorisationConnector
-        .getSuspensionDetails(arn)
+      mockAgentAssuranceConnector.getSuspensionDetails
         .returns(Future.successful(SuspensionDetails.notSuspended))
       mockAgentPermissionsConnector
         .granularPermissionsOptinRecordExists(arn)

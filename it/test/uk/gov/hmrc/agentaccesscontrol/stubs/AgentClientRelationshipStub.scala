@@ -21,7 +21,6 @@ import uk.gov.hmrc.agentaccesscontrol.utils.StandardServiceAuthorisationRequest
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockHelper
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockMethods
 import uk.gov.hmrc.agentmtdidentifiers.model._
-import uk.gov.hmrc.domain.TaxIdentifier
 
 trait AgentClientRelationshipStub extends WiremockMethods {
 

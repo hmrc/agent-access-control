@@ -28,7 +28,7 @@ class GranularPermissionsAuthorisationISpec
     extends ComponentSpecHelper
     with MetricTestSupport
     with AuthStub
-    with AgentClientAuthorisationStub
+    with AgentAssuranceStub
     with AgentClientRelationshipStub
     with AgentPermissionsStub
     with DataStreamStub {
@@ -38,8 +38,6 @@ class GranularPermissionsAuthorisationISpec
 
   private val uri                      = s"/cgt-auth/agent/${testAgentCode.value}/client/${testCgtRef.value}"
   private def trustUri(taxRef: String) = s"/trust-auth/agent/${testAgentCode.value}/client/$taxRef"
-  private val cgtRegime                = "CGT"
-  private val trustRegime              = "TRUST"
 
   // Using CGT as a sample, not checking this individually for all services
   s"GET $uri" should {
@@ -47,7 +45,7 @@ class GranularPermissionsAuthorisationISpec
       "agency and client have a relationship, the agency is opted-in to GP," +
         "user is not in a tax service group but the client is assigned directly to the user" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, cgtRegime)
+          stubAgentNotSuspended
           stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
           stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(OK)
           stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
@@ -61,7 +59,7 @@ class GranularPermissionsAuthorisationISpec
       "agency and client have a relationship, agency is opted-in to GP," +
         "agent user IS in the relevant tax service group (even if client not assigned to agent user)" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, cgtRegime)
+          stubAgentNotSuspended
           stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
           stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(OK)
           stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(OK, testCgtTaxGroup())
@@ -76,7 +74,7 @@ class GranularPermissionsAuthorisationISpec
       "agency and client have a relationship, agency is opted-in to GP," +
         "agent user IS in the relevant tax service group (special case for HMRC-TERS-ORG)" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, trustRegime)
+          stubAgentNotSuspended
           stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
           stubTersAgentClientRelationship(testArn, testUtr)(OK)
           stubTersAgentClientRelationshipToUser(testArn, testUtr, testProviderId)(NOT_FOUND)
@@ -88,7 +86,7 @@ class GranularPermissionsAuthorisationISpec
       "agency and client have a relationship, agency is opted-in to GP," +
         "agent user IS in the relevant tax service group (special case for HMRC-TERSNT-ORG)" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, trustRegime)
+          stubAgentNotSuspended
           stubTersntAgentClientRelationship(testArn, testUrn)(OK)
           stubTersntAgentClientRelationshipToUser(testArn, testUrn, testProviderId)(NOT_FOUND)
           stubGetAgentPermissionTaxGroup(testArn, "HMRC-TERS")(OK, testTrustTaxGroup)
@@ -100,7 +98,7 @@ class GranularPermissionsAuthorisationISpec
 
       "the agency and client have a relationship and the agency is opted-out of granular permissions (even if the client is not assigned to the user)" in {
         stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-        stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, cgtRegime)
+        stubAgentNotSuspended
         stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
         stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, "otherProviderId")(OK)
         stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(OK, testCgtTaxGroup())
@@ -115,7 +113,7 @@ class GranularPermissionsAuthorisationISpec
     "not grant access" when {
       "agency and client have a relationship, agency is opted-in to GP but client is not assigned to the agent user" in {
         stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-        stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, cgtRegime)
+        stubAgentNotSuspended
         stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
         stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, "otherProviderId")(OK)
         stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
@@ -130,7 +128,7 @@ class GranularPermissionsAuthorisationISpec
       }
       "there is no relationship between the agency and client" in {
         stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-        stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, cgtRegime)
+        stubAgentNotSuspended
         stubCgtAgentClientRelationship(testArn, testCgtRef)(NOT_FOUND)
         stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
 
@@ -140,7 +138,7 @@ class GranularPermissionsAuthorisationISpec
       }
       "agency and client have a relationship, agency is opted-in to GP, agent user IS in a tax service group but for a different service" in {
         stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-        stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, cgtRegime)
+        stubAgentNotSuspended
         stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
         stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(NOT_FOUND)
         stubGetAgentPermissionTaxGroup(testArn, testMtdVatEnrolmentKey)(OK, testMtdVatTaxGroup)
@@ -157,7 +155,7 @@ class GranularPermissionsAuthorisationISpec
       "agency and client have a relationship, agency is opted-in to GP," +
         "there is a tax service group for the right service but agent user is not part of it" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, cgtRegime)
+          stubAgentNotSuspended
           stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
           stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(NOT_FOUND)
           stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(OK, testCgtTaxGroup("otherProviderId"))
@@ -174,7 +172,7 @@ class GranularPermissionsAuthorisationISpec
       "agency and client have a relationship, agency is opted-in to GP," +
         "agent user is in the relevant tax service group but client is excluded from group" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, cgtRegime)
+          stubAgentNotSuspended
           stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
           stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(NOT_FOUND)
           stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(
@@ -192,7 +190,7 @@ class GranularPermissionsAuthorisationISpec
         }
       "GP enabled, agent user IS in the relevant tax service group but there is no agency-level relationship" in {
         stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-        stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, cgtRegime)
+        stubAgentNotSuspended
         stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
         stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(NOT_FOUND)
         stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(OK, testCgtTaxGroup())

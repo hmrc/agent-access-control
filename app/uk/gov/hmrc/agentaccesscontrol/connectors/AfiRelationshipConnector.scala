@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import java.net.URL
 import javax.inject.Inject
 
 import scala.concurrent.ExecutionContext
@@ -24,15 +23,16 @@ import scala.concurrent.Future
 
 import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-class AfiRelationshipConnector @Inject() (appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics) {
+class AfiRelationshipConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2, metrics: Metrics) {
 
   def hasRelationship(
       arn: String,
@@ -43,12 +43,10 @@ class AfiRelationshipConnector @Inject() (appConfig: AppConfig, httpClient: Http
       metrics.defaultRegistry.timer("Timer-ConsumedAPI-AgentFiRelationship-Check-GET")
 
     val afiRelationshipUrl =
-      new URL(
-        s"${appConfig.afiBaseUrl}/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId"
-      ).toString
+      url"${appConfig.afiBaseUrl}/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId"
 
     timer.time()
-    httpClient.GET[HttpResponse](afiRelationshipUrl).map { response =>
+    httpClient.get(afiRelationshipUrl).execute[HttpResponse].map { response =>
       timer.time().stop()
       response.status match {
         case status if is2xx(status) => true

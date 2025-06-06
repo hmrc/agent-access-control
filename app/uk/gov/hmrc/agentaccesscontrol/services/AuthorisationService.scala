@@ -30,7 +30,6 @@ import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors._
-import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.AgentClientAuthorisationConnector
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
@@ -45,7 +44,7 @@ class AuthorisationService @Inject() (
     auditService: AuditService,
     mappingConnector: MappingConnector,
     afiRelationshipConnector: AfiRelationshipConnector,
-    val agentClientAuthorisationConnector: AgentClientAuthorisationConnector
+    val agentAssuranceConnector: AgentAssuranceConnector
 ) extends AgentSuspensionChecker
     with Logging {
 
