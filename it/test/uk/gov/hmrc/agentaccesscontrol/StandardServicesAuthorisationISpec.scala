@@ -21,7 +21,7 @@ import play.api.libs.json.Json
 import play.api.test.Helpers.NOT_FOUND
 import play.api.test.Helpers.NO_CONTENT
 import play.api.test.Helpers.OK
-import uk.gov.hmrc.agentaccesscontrol.stubs.AgentClientAuthorisationStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.AgentAssuranceStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentClientRelationshipStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentPermissionsStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
@@ -34,7 +34,7 @@ class StandardServicesAuthorisationISpec
     extends ComponentSpecHelper
     with MetricTestSupport
     with AuthStub
-    with AgentClientAuthorisationStub
+    with AgentAssuranceStub
     with AgentClientRelationshipStub
     with AgentPermissionsStub {
 
@@ -50,7 +50,7 @@ class StandardServicesAuthorisationISpec
         "agent is not opted-in to access groups" should {
           "return 200 when the agent has been allocated the client's enrolment" in {
             stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-            stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, serviceConfig.regime)
+            stubAgentNotSuspended
             stubAgentClientRelationship(testArn, serviceConfig)(OK)
             stubAgentPermissionsOptInRecordExists(testArn)(NOT_FOUND)
 
@@ -65,7 +65,7 @@ class StandardServicesAuthorisationISpec
           }
           "return 401 when the agent has not been allocated the client's enrolment" in {
             stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-            stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, serviceConfig.regime)
+            stubAgentNotSuspended
             stubAgentPermissionsOptInRecordExists(testArn)(NOT_FOUND)
             stubAgentClientRelationship(testArn, serviceConfig)(NOT_FOUND)
 
@@ -83,7 +83,7 @@ class StandardServicesAuthorisationISpec
         "agent has opted-in to access groups" should {
           "return 200 when the agent has been allocated the client's enrolment and a tax service group exists" in {
             stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-            stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, serviceConfig.regime)
+            stubAgentNotSuspended
             stubAgentPermissionsOptInRecordExists(testArn)(OK)
             stubAgentClientRelationship(testArn, serviceConfig)(OK)
             stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(OK, serviceConfig.taxGroup)
@@ -100,7 +100,7 @@ class StandardServicesAuthorisationISpec
 
           "return 200 when the agent has been allocated the client's enrolment and assigned to the user" in {
             stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-            stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, serviceConfig.regime)
+            stubAgentNotSuspended
             stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
             stubAgentClientRelationship(testArn, serviceConfig)(OK)
             stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(NOT_FOUND, serviceConfig.taxGroup)
@@ -117,7 +117,7 @@ class StandardServicesAuthorisationISpec
 
           "return 401 when the agent has been allocated the client's enrolment but it's not assigned to the user" in {
             stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-            stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, serviceConfig.regime)
+            stubAgentNotSuspended
             stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
             stubAgentClientRelationship(testArn, serviceConfig)(OK)
             stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(NOT_FOUND, serviceConfig.taxGroup)
@@ -135,7 +135,7 @@ class StandardServicesAuthorisationISpec
 
           "record metrics for access control request" in {
             stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-            stubAgentClientAuthorisationSuspensionStatus(testArn)(NO_CONTENT, isSuspended = false, serviceConfig.regime)
+            stubAgentNotSuspended
             stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
             stubAgentClientRelationship(testArn, serviceConfig)(OK)
             stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(OK, serviceConfig.taxGroup)
@@ -155,7 +155,7 @@ class StandardServicesAuthorisationISpec
         }
         "handle suspended for regime and return unauthorised" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(OK, isSuspended = true, serviceConfig.regime)
+          stubAgentIsSuspended(serviceConfig.regime)
           cleanMetricRegistry()
 
           val result = {
@@ -173,7 +173,7 @@ class StandardServicesAuthorisationISpec
 
         "handle suspended for AGSV regime and return unauthorised" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-          stubAgentClientAuthorisationSuspensionStatus(testArn)(OK, isSuspended = true, "AGSV")
+          stubAgentIsSuspended("AGSV")
           cleanMetricRegistry()
 
           val result = {

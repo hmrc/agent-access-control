@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,28 @@
 package uk.gov.hmrc.agentaccesscontrol.stubs
 
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
+import play.api.http.Status.{NO_CONTENT, OK}
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockMethods
-import uk.gov.hmrc.domain.TaxIdentifier
 
-trait AgentClientAuthorisationStub extends WiremockMethods {
-  def stubAgentClientAuthorisationSuspensionStatus(
-      taxId: TaxIdentifier
-  )(status: Int, isSuspended: Boolean, regime: String): StubMapping =
+trait AgentAssuranceStub extends WiremockMethods {
+
+  def stubAgentNotSuspended: StubMapping = stubAgentAssuranceSuspensionStatus(NO_CONTENT)
+
+  def stubAgentAssuranceSuspensionStatus(responseStatus: Int): StubMapping =
     when(
-      method = GET,
-      uri = s"/agent-client-authorisation/client/suspension-details/${taxId.value}"
+      method = POST,
+      uri = "/agent-assurance/agent/verify-entity"
     ).thenReturn(
-      status = status,
-      body = Json.obj("suspensionStatus" -> isSuspended, "regimes" -> Json.arr(regime)).toString
+      status = responseStatus
     )
 
+  def stubAgentIsSuspended(regime: String): StubMapping =
+    when(
+      method = POST,
+      uri = "/agent-assurance/agent/verify-entity"
+    ).thenReturn(
+      status = OK,
+      body = Json.obj("suspensionStatus" -> true, "regimes" -> Json.arr(regime))
+    )
 }

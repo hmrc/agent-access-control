@@ -20,7 +20,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 import play.api.Logging
-import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.AgentClientAuthorisationConnector
+import uk.gov.hmrc.agentaccesscontrol.connectors.AgentAssuranceConnector
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetailsNotFound
 import uk.gov.hmrc.domain.TaxIdentifier
@@ -28,22 +28,20 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 trait AgentSuspensionChecker { this: Logging =>
 
-  val agentClientAuthorisationConnector: AgentClientAuthorisationConnector
+  val agentAssuranceConnector: AgentAssuranceConnector
 
   def withSuspensionCheck(agentId: TaxIdentifier, regime: String)(
       proceed: => Future[AccessResponse]
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AccessResponse] = {
 
-    agentClientAuthorisationConnector
-      .getSuspensionDetails(agentId)
-      .flatMap {
-        case suspensionDetails =>
-          val isSuspended = suspensionDetails.suspensionStatus && suspensionDetails.suspendedRegimes
-            .contains(regime)
-          if (isSuspended) {
-            logger.warn(s"agent with id : ${agentId.value} is suspended for regime $regime")
-            Future.successful(AccessResponse.AgentSuspended)
-          } else proceed
+    agentAssuranceConnector.getSuspensionDetails
+      .flatMap { suspensionDetails =>
+        val isSuspended = suspensionDetails.suspensionStatus && suspensionDetails.suspendedRegimes
+          .contains(regime)
+        if (isSuspended) {
+          logger.warn(s"agent with id : ${agentId.value} is suspended for regime $regime")
+          Future.successful(AccessResponse.AgentSuspended)
+        } else proceed
       }
       .recover {
         case _: SuspensionDetailsNotFound =>

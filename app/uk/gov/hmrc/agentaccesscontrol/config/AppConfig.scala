@@ -53,7 +53,7 @@ class AppConfig @Inject() (servicesConfig: ServicesConfig) {
 
   lazy val agentMappingBaseUrl: String = baseUrl("agent-mapping")
 
-  lazy val acaBaseUrl: String = baseUrl("agent-client-authorisation")
+  lazy val agentAssuranceBaseUrl: String = baseUrl("agent-assurance")
 
   def enableGranularPermissions: Boolean =
     servicesConfig.getBoolean("features.enable-granular-permissions")
