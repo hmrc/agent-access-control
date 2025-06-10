@@ -28,13 +28,14 @@ import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMappings
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 @Singleton
-class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics) extends Logging {
+class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2, metrics: Metrics) extends Logging {
 
   def getAgentMappings(
       key: String,
@@ -46,7 +47,8 @@ class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClient, 
 
     timer.time()
     httpClient
-      .GET[AgentReferenceMappings](genMappingUrl(key, arn).toString)
+      .get(genMappingUrl(key, arn))
+      .execute[AgentReferenceMappings]
       .map { response =>
         timer.time().stop()
         response
@@ -59,6 +61,6 @@ class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClient, 
       }
   }
 
-  def genMappingUrl(key: String, arn: Arn): URL =
-    new URL(s"${appConfig.agentMappingBaseUrl}/agent-mapping/mappings/key/$key/arn/${arn.value}")
+  private def genMappingUrl(key: String, arn: Arn): URL =
+    url"${appConfig.agentMappingBaseUrl}/agent-mapping/mappings/key/$key/arn/${arn.value}"
 }

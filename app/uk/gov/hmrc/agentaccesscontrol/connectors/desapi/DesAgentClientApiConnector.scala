@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors.desapi
 
-import java.net.URL
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,14 +28,10 @@ import play.api.http.Status._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentaccesscontrol.models.PayeDesAgentClientFlagsApiResponse
-import uk.gov.hmrc.agentaccesscontrol.models.PayeFoundResponse
-import uk.gov.hmrc.agentaccesscontrol.models.PayeNotFoundResponse
-import uk.gov.hmrc.agentaccesscontrol.models.SaDesAgentClientFlagsApiResponse
-import uk.gov.hmrc.agentaccesscontrol.models.SaFoundResponse
-import uk.gov.hmrc.agentaccesscontrol.models.SaNotFoundResponse
+import uk.gov.hmrc.agentaccesscontrol.models._
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
@@ -54,14 +49,13 @@ trait DesAgentClientApiConnector {
 }
 
 @Singleton
-class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics)
+class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient: HttpClientV2, metrics: Metrics)
     extends DesAgentClientApiConnector {
 
-  val desBaseUrl         = appConfig.desUrl
-  val desBaseUrlPaye     = appConfig.desPayeUrl
-  val desBaseUrlSa       = appConfig.desSAUrl
-  val authorizationToken = appConfig.desToken
-  val environment        = appConfig.desEnv
+  private val desBaseUrlPaye     = appConfig.desPayeUrl
+  private val desBaseUrlSa       = appConfig.desSAUrl
+  private val authorizationToken = appConfig.desToken
+  private val environment        = appConfig.desEnv
 
   private val _Environment   = "Environment"
   private val _CorrelationId = "CorrelationId"
@@ -86,12 +80,14 @@ class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse] = {
     import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 
-    val url   = new URL(s"$desBaseUrlSa/sa/agents/${saAgentReference.value}/client/$saUtr")
+    val url   = url"$desBaseUrlSa/sa/agents/${saAgentReference.value}/client/$saUtr"
     val timer = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
 
     timer.time()
     httpClient
-      .GET(url.toString, headers = explicitDesHeaders)(readRaw, hc, ec)
+      .get(url)
+      .setHeader(explicitDesHeaders: _*)
+      .execute[HttpResponse]
       .map { response =>
         timer.time().stop()
         response.status match {
@@ -120,27 +116,29 @@ class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient
       authorization = Some(Authorization(s"Bearer $authorizationToken")),
       extraHeaders = hc.extraHeaders :+ _Environment -> environment
     )
-    val url = new URL(
-      s"$desBaseUrlPaye/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
-    )
+    val url =
+      url"$desBaseUrlPaye/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
     val timer = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
 
     timer.time()
-    httpClient.GET(url.toString)(readRaw, desHeaderCarrier, ec).map { response =>
-      timer.time().stop()
-      response.status match {
-        case status if is2xx(status) =>
-          payeFoundResponseReads.reads(Json.parse(response.body)).get
-        case NOT_FOUND => PayeNotFoundResponse
-        case _ =>
-          throw UpstreamErrorResponse(
-            s"Error calling in getPayeAgentClientRelationship at: $url",
-            response.status,
-            if (response.status == INTERNAL_SERVER_ERROR) BAD_GATEWAY
-            else response.status
-          )
+    httpClient
+      .get(url)(desHeaderCarrier)
+      .execute[HttpResponse]
+      .map { response =>
+        timer.time().stop()
+        response.status match {
+          case status if is2xx(status) =>
+            payeFoundResponseReads.reads(Json.parse(response.body)).get
+          case NOT_FOUND => PayeNotFoundResponse
+          case _ =>
+            throw UpstreamErrorResponse(
+              s"Error calling in getPayeAgentClientRelationship at: $url",
+              response.status,
+              if (response.status == INTERNAL_SERVER_ERROR) BAD_GATEWAY
+              else response.status
+            )
+        }
       }
-    }
   }
 
 }

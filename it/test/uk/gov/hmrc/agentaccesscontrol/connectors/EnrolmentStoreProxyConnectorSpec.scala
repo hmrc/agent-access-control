@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
+import play.api.http.Status.BAD_GATEWAY
 import play.api.libs.json.JsResultException
 import play.api.libs.json.Json
 import play.api.test.Helpers._
@@ -77,7 +78,15 @@ class EnrolmentStoreProxyConnectorSpec extends ComponentSpecHelper with Enrolmen
       "throw exception when HTTP error" in {
         stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(INTERNAL_SERVER_ERROR, Json.obj())
 
-        an[UpstreamErrorResponse] should be thrownBy await(connector.getIRSADelegatedUserIdsFor(testSaUtr))
+        val exception = the[UpstreamErrorResponse] thrownBy await(connector.getIRSADelegatedUserIdsFor(testSaUtr))
+
+        exception shouldBe UpstreamErrorResponse(
+          "Error calling in getSaAgentClientRelationship at: http://localhost:11111/enrolment-store-proxy/" +
+            "enrolment-store/enrolments/IR-SA~UTR~1234567890/users?type=delegated",
+          INTERNAL_SERVER_ERROR,
+          BAD_GATEWAY,
+          Map()
+        )
       }
 
       "record metrics for outbound call" in {
@@ -123,7 +132,15 @@ class EnrolmentStoreProxyConnectorSpec extends ComponentSpecHelper with Enrolmen
       "throw exception when HTTP error" in {
         stubQueryUsersAssignedEnrolmentsDelegatedPaye(testEmpRef)(INTERNAL_SERVER_ERROR, Json.obj())
 
-        an[UpstreamErrorResponse] should be thrownBy await(connector.getIRPAYEDelegatedUserIdsFor(testEmpRef))
+        val exception = the[UpstreamErrorResponse] thrownBy await(connector.getIRPAYEDelegatedUserIdsFor(testEmpRef))
+
+        exception shouldBe UpstreamErrorResponse(
+          "Error calling in getSaAgentClientRelationship at: http://localhost:11111/enrolment-store-proxy/" +
+            "enrolment-store/enrolments/IR-PAYE~TaxOfficeNumber~123~TaxOfficeReference~4567890/users?type=delegated",
+          INTERNAL_SERVER_ERROR,
+          BAD_GATEWAY,
+          Map()
+        )
       }
 
       "record metrics for outbound call" in {
