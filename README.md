@@ -42,6 +42,10 @@ curl -v -H'Authorization: Bearer Token' http://localhost:9431/agent-access-contr
 
 Alternatively create the relationship via UI (Please speak to team about this).
 
+### Automated testing
+This service is tested by the following automated test repositories:
+- [agent-access-control-performance-tests](https://github.com/hmrc/agent-access-control-performance-tests/)
+
 ### Endpoints
 
 ##### GET /agent-access-control/epaye-auth/agent/:agentCode/client/:empRef
