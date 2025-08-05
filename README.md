@@ -1,30 +1,22 @@
 # agent-access-control
 
-Delegated auth rules for [auth-client](https://github.com/hmrc/auth-client) library to allow access
-to agents to their clients's data. Currently supports:
+Provides **delegated auth rules** for [auth-client](https://github.com/hmrc/auth-client) library to allow Agent users access
+to their clients' data. Teams wishing to support auth for Agent users for any of the following tax services should integrate via auth-client, not directly with agent-access-control.
+
 * PAYE (IR-PAYE)
 * Self-Assessment (IR-SA)
 * MTD Self-Assessment (MTDITID)
 * MTD Value Added Tax (VAT)
-* MTD Income Record Viewer (AFI)
-* MTD Trusts (TERS)
-* MTD Non-Taxable-Trusts (TERSNT)
-* MTD Capital Gains (CGT)
-* MTD Plastic Packaging Tax (PPT)
+* Income Record Viewer (IRV)
+* Trusts (TERS)
+* Non-Taxable-Trusts (TERSNT)
+* Capital Gains for Property Disposals (CGT-PD)
+* Plastic Packaging Tax (PPT)
 * Country by country reporting (CBC)
 * Pillar2 (PILLAR2)
 
-### Agent access groups
-
-The rules for access control have changed with agent access groups. If an agency has opted to turn on access groups then the agent user will be granted access to a client if
- * the client has a relationship with the agency
- * the client and the agent user belong to the same access group or the client does not belong to any access group
-
-If the agency has opted to turn off access groups then the agent user will be granted access provided the client has a relationship with the agency.
-
-
 ### Testing
-In Terminal, Run the following profile:
+In a terminal, Run the following profile:
 ```
 sm --start AGENT_AUTHORISATION -r
 ```
@@ -50,7 +42,7 @@ This service is tested by the following automated test repositories:
 
 ##### GET /agent-access-control/epaye-auth/agent/:agentCode/client/:empRef
 
-### Example usage
+### Example usage i.e. via auth-client
 ```scala
 authorised(
    Enrolment("IR-PAYE")
@@ -173,28 +165,25 @@ authorised(
 )
 ```
 
+### Agent access groups
+
+If an agent has opted to turn on access groups, the agent user will be granted access to a client if
+ * the client has a relationship with the agent AND
+ *    the client and the agent user are associated by either a Custom Access Group or a Tax Service Group OR the client does not belong to any access group
+
+If the agent has not turned on access groups, the agent user will be granted access provided the client has a relationship with the agent.
+
 
 ### Response
-Headers: need to contain a valid `Authorization` header.
 
 Each API Will Respond with the following:
 
 code | scenario
 ---- | ---
 200 | _{client identifier}_ is assigned to logged in agent for {Supported Service} (Enrolment Store Proxy check) AND the logged in user's agency (_agentCode_) has a valid authorisation to act on behalf of _{client identifier}_ for dealing with {Supported Service} (HODs check).
-401 | The conditions are not met.
+401 | The conditions are not met. Note, in these cases auth-client will respond with InsufficientEnrolments(s"$reason, $enrolments.key") where reason is one of "NO_RELATIONSHIP" or "NO_ASSIGNMENT"
 502 | In case of any error responses in downstream services.
 504 | In case of a timeout while querying downstream services.
 
-##### GET /ping/ping
 
-Always `200` with empty body.
-
-##### GET /admin/metrics
-
-Displays metrics as JSON.
-
-##### GET /admin/details
-
-Displays `META-INF/MANIFEST.MF` as JSON.
 
