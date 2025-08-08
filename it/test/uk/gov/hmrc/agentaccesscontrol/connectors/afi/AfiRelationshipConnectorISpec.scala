@@ -23,7 +23,6 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.AfiRelationshipConnector
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentFiRelationshipStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testAgentCode
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testArn
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testNino
@@ -31,11 +30,7 @@ import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testProviderId
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.UpstreamErrorResponse
 
-class AfiRelationshipConnectorISpec
-    extends ComponentSpecHelper
-    with MetricTestSupport
-    with AuthStub
-    with AgentFiRelationshipStub {
+class AfiRelationshipConnectorISpec extends ComponentSpecHelper with AuthStub with AgentFiRelationshipStub {
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 

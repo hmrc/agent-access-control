@@ -28,15 +28,14 @@ import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.agents.accessgroups.TaxGroup
+import uk.gov.hmrc.agentaccesscontrol.models.accessgroups.TaxGroup
+import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
-import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 @ImplementedBy(classOf[AgentPermissionsConnectorImpl])
 trait AgentPermissionsConnector {
@@ -51,7 +50,7 @@ trait AgentPermissionsConnector {
 }
 
 @Singleton
-class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2, metrics: Metrics)(implicit appConfig: AppConfig)
+class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2)(implicit appConfig: AppConfig)
     extends AgentPermissionsConnector
     with Logging {
 
@@ -63,11 +62,7 @@ class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2, metrics: Metr
 
     val url = url"$agentPermissionsBaseUrl/agent-permissions/arn/${arn.value}/optin-record-exists"
 
-    val timer = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-AP-granularPermissionsOptinRecordExists-GET")
-
-    timer.time()
     http.get(url).execute[HttpResponse].map { response =>
-      timer.time().stop()
       response.status match {
         case Status.NO_CONTENT => true
         case Status.NOT_FOUND  => false
@@ -86,12 +81,7 @@ class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2, metrics: Metr
 
     val url = url"$agentPermissionsBaseUrl/agent-permissions/arn/${arn.value}/tax-group/$service"
 
-    val timer =
-      metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-AP-getTaxServiceGroups-GET")
-
-    timer.time()
     http.get(url).execute[HttpResponse].map { response =>
-      timer.time().stop
       response.status match {
         case Status.NOT_FOUND => None
         case Status.OK =>

@@ -22,8 +22,8 @@ import scala.concurrent.Future
 import play.api.mvc.Result
 import play.api.mvc.Results
 import play.api.Logging
+import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.agentCode

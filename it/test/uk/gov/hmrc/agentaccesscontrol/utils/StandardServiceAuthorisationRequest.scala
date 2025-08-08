@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentaccesscontrol.utils
 
-import uk.gov.hmrc.agents.accessgroups.TaxGroup
+import uk.gov.hmrc.agentaccesscontrol.models.accessgroups.TaxGroup
 import uk.gov.hmrc.domain.TaxIdentifier
 
 trait StandardServiceAuthorisationRequest {
