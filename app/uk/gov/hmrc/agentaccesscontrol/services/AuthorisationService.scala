@@ -31,8 +31,8 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors._
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
+import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult

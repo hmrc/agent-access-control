@@ -17,10 +17,18 @@
 package uk.gov.hmrc.agentaccesscontrol.stubs
 
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
+import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.CbcId
+import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.CgtRef
+import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.MtdItId
+import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.PlrId
+import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.PptRef
+import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.Urn
+import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.Utr
+import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.Vrn
+import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.utils.StandardServiceAuthorisationRequest
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockHelper
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockMethods
-import uk.gov.hmrc.agentmtdidentifiers.model._
 
 trait AgentClientRelationshipStub extends WiremockMethods {
 

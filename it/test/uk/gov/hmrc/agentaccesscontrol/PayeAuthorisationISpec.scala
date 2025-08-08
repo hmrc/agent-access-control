@@ -24,7 +24,6 @@ import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.DesStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.EnrolmentStoreProxyStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testAgentCode
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testArn
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testEmpRef
@@ -32,7 +31,6 @@ import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testProviderId
 
 class PayeAuthorisationISpec
     extends ComponentSpecHelper
-    with MetricTestSupport
     with AuthStub
     with DataStreamStub
     with DesStub
@@ -107,12 +105,10 @@ class PayeAuthorisationISpec
       stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
       stubQueryUsersAssignedEnrolmentsDelegatedPaye(testEmpRef)(OK, successfulResponseDelegated(Seq(testProviderId)))
       stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
-      cleanMetricRegistry()
 
       val result = post(uri)(Json.obj())
 
       result.status shouldBe OK
-      timerShouldExistAndHasBeenUpdated("API-__epaye-auth__agent__:__client__:-POST")
     }
   }
 

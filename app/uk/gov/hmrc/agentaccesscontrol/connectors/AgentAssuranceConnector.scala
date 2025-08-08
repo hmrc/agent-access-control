@@ -26,29 +26,24 @@ import play.api.http.Status.NO_CONTENT
 import play.api.http.Status.OK
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetails
-import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetailsNotFound
+import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetails
+import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetailsNotFound
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
-import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 class AgentAssuranceConnector @Inject() (http: HttpClientV2)(
-    implicit val metrics: Metrics,
     appConfig: AppConfig
 ) {
 
   def getSuspensionDetails(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SuspensionDetails] = {
 
-    val url   = url"${appConfig.agentAssuranceBaseUrl}/agent-assurance/agent/verify-entity"
-    val timer = metrics.defaultRegistry.timer("Timer-ConsumerAPI-AA-AgencySuspensionDetails-POST")
+    val url = url"${appConfig.agentAssuranceBaseUrl}/agent-assurance/agent/verify-entity"
 
-    timer.time()
     http.post(url).execute[HttpResponse].map { response =>
-      timer.time().stop()
       response.status match {
         case OK         => Json.parse(response.body).as[SuspensionDetails]
         case NO_CONTENT => SuspensionDetails(suspensionStatus = false, None)

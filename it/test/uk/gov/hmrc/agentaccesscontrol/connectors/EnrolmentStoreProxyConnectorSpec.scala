@@ -24,7 +24,6 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentaccesscontrol.stubs.EnrolmentStoreProxyStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testEmpRef
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testProviderId
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testSaUtr
@@ -32,7 +31,7 @@ import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.UpstreamErrorResponse
 
-class EnrolmentStoreProxyConnectorSpec extends ComponentSpecHelper with EnrolmentStoreProxyStub with MetricTestSupport {
+class EnrolmentStoreProxyConnectorSpec extends ComponentSpecHelper with EnrolmentStoreProxyStub {
 
   val agentCode  = AgentCode("A1234567890A")
   val providerId = "12345-credId"
@@ -93,7 +92,6 @@ class EnrolmentStoreProxyConnectorSpec extends ComponentSpecHelper with Enrolmen
         stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
 
         await(connector.getIRSADelegatedUserIdsFor(testSaUtr))
-        timerShouldExistAndHasBeenUpdated("ConsumedAPI-EnrolmentStoreProxy-ES0-GET")
       }
     }
 
@@ -147,7 +145,6 @@ class EnrolmentStoreProxyConnectorSpec extends ComponentSpecHelper with Enrolmen
         stubQueryUsersAssignedEnrolmentsDelegatedPaye(testEmpRef)(OK, successfulResponseDelegated(Seq(testProviderId)))
 
         await(connector.getIRPAYEDelegatedUserIdsFor(testEmpRef))
-        timerShouldExistAndHasBeenUpdated("ConsumedAPI-EnrolmentStoreProxy-ES0-GET")
       }
     }
   }

@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol.models
 
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.CredentialRole
 import uk.gov.hmrc.domain.SaAgentReference
 

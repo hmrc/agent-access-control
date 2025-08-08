@@ -26,13 +26,11 @@ import uk.gov.hmrc.agentaccesscontrol.stubs.AgentClientRelationshipStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentPermissionsStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
 import uk.gov.hmrc.agentaccesscontrol.utils.StandardServiceAuthorisationRequest
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 
 class StandardServicesAuthorisationISpec
     extends ComponentSpecHelper
-    with MetricTestSupport
     with AuthStub
     with AgentAssuranceStub
     with AgentClientRelationshipStub
@@ -139,7 +137,6 @@ class StandardServicesAuthorisationISpec
             stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
             stubAgentClientRelationship(testArn, serviceConfig)(OK)
             stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(OK, serviceConfig.taxGroup)
-            cleanMetricRegistry()
 
             val result = {
               requestMethod match {
@@ -149,14 +146,11 @@ class StandardServicesAuthorisationISpec
             }
 
             result.status shouldBe 200
-
-            timerShouldExistAndHasBeenUpdated(s"API-__${serviceConfig.authRule}__agent__:__client__:-$requestMethod")
           }
         }
         "handle suspended for regime and return unauthorised" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
           stubAgentIsSuspended(serviceConfig.regime)
-          cleanMetricRegistry()
 
           val result = {
             requestMethod match {
@@ -167,14 +161,11 @@ class StandardServicesAuthorisationISpec
 
           result.status shouldBe 401
           result.body should include(NoRelationship)
-
-          timerShouldExistAndHasBeenUpdated(s"API-__${serviceConfig.authRule}__agent__:__client__:-$requestMethod")
         }
 
         "handle suspended for AGSV regime and return unauthorised" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
           stubAgentIsSuspended("AGSV")
-          cleanMetricRegistry()
 
           val result = {
             requestMethod match {
@@ -185,8 +176,6 @@ class StandardServicesAuthorisationISpec
 
           result.status shouldBe 401
           result.body should include(NoRelationship)
-
-          timerShouldExistAndHasBeenUpdated(s"API-__${serviceConfig.authRule}__agent__:__client__:-$requestMethod")
         }
       }
     }

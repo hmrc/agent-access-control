@@ -20,10 +20,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import play.api.test.Helpers.await
 import play.api.test.Helpers.defaultAwaitTimeout
+import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetails
+import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetailsNotFound
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentAssuranceStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetails
-import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetailsNotFound
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.UpstreamErrorResponse
 

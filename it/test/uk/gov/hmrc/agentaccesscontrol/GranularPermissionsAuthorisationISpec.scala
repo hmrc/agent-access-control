@@ -21,12 +21,10 @@ import play.api.test.Helpers.NO_CONTENT
 import play.api.test.Helpers.OK
 import uk.gov.hmrc.agentaccesscontrol.stubs._
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 
 class GranularPermissionsAuthorisationISpec
     extends ComponentSpecHelper
-    with MetricTestSupport
     with AuthStub
     with AgentAssuranceStub
     with AgentClientRelationshipStub

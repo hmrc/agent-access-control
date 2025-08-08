@@ -36,10 +36,9 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
-import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 @Singleton
-class EnrolmentStoreProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2, metrics: Metrics) {
+class EnrolmentStoreProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2) {
   private def pathES0(enrolmentKey: String, usersType: String): URL =
     url"${appConfig.esProxyBaseUrl}/enrolment-store-proxy/enrolment-store/enrolments/$enrolmentKey/users?type=$usersType"
 
@@ -69,12 +68,7 @@ class EnrolmentStoreProxyConnector @Inject() (appConfig: AppConfig, httpClient: 
 
     val url = pathES0(enrolmentKey, usersType)
 
-    val timer =
-      metrics.defaultRegistry.timer("Timer-ConsumedAPI-EnrolmentStoreProxy-ES0-GET")
-
-    timer.time()
     httpClient.get(url).execute[HttpResponse].map { response =>
-      timer.time().stop()
       response.status match {
         case OK =>
           usersType match {

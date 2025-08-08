@@ -18,7 +18,6 @@ package uk.gov.hmrc.agentaccesscontrol.models
 
 import play.api.libs.json.Json
 import play.api.libs.json.OFormat
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 
 case class EnrolmentIdentifier(key: String, value: String)

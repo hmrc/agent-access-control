@@ -31,9 +31,9 @@ import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMapping
 import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMappings
+import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.agentmtdidentifiers.model.SuspensionDetails
+import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetails
 import uk.gov.hmrc.auth.core.User
 import uk.gov.hmrc.domain._
 import uk.gov.hmrc.http.BadRequestException

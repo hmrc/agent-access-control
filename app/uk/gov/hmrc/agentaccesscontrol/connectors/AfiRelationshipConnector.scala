@@ -30,24 +30,18 @@ import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
-import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-class AfiRelationshipConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2, metrics: Metrics) {
+class AfiRelationshipConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2) {
 
   def hasRelationship(
       arn: String,
       clientId: String
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
-    val timer =
-      metrics.defaultRegistry.timer("Timer-ConsumedAPI-AgentFiRelationship-Check-GET")
-
     val afiRelationshipUrl =
       url"${appConfig.afiBaseUrl}/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId"
 
-    timer.time()
     httpClient.get(afiRelationshipUrl).execute[HttpResponse].map { response =>
-      timer.time().stop()
       response.status match {
         case status if is2xx(status) => true
         case NOT_FOUND               => false

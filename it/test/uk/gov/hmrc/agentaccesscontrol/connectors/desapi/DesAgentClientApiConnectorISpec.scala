@@ -29,16 +29,10 @@ import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.DesStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 import uk.gov.hmrc.http.HeaderCarrier
 
-class DesAgentClientApiConnectorISpec
-    extends ComponentSpecHelper
-    with MetricTestSupport
-    with AuthStub
-    with DataStreamStub
-    with DesStub {
+class DesAgentClientApiConnectorISpec extends ComponentSpecHelper with AuthStub with DataStreamStub with DesStub {
 
   implicit val headerCarrier: HeaderCarrier       = HeaderCarrier()
   implicit val ec: ExecutionContextExecutor       = ExecutionContext.global
@@ -51,11 +45,9 @@ class DesAgentClientApiConnectorISpec
         OK,
         successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
       )
-      cleanMetricRegistry()
 
       val response = await(desApiConnector.getSaAgentClientRelationship(testSaAgentReference, testSaUtr))
       response shouldBe SaFoundResponse(auth64_8 = true, authI64_8 = true)
-      timerShouldExistAndHasBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
     }
 
     "pass along 64-8 and i64-8 information" when {
@@ -131,13 +123,11 @@ class DesAgentClientApiConnectorISpec
         OK,
         successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
       )
-      cleanMetricRegistry()
 
       await(desApiConnector.getSaAgentClientRelationship(testSaAgentReference, testSaUtr)) shouldBe SaFoundResponse(
         auth64_8 = true,
         authI64_8 = true
       )
-      timerShouldExistAndHasBeenUpdated("ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
     }
   }
 
@@ -145,11 +135,9 @@ class DesAgentClientApiConnectorISpec
     "request DES API with the correct auth tokens" in {
       stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
       stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
-      cleanMetricRegistry()
 
       val response = await(desApiConnector.getPayeAgentClientRelationship(testAgentCode, testEmpRef))
       response shouldBe PayeFoundResponse(auth64_8 = true)
-      timerShouldExistAndHasBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
     }
 
     "pass along 64-8 and i64-8 information" when {
@@ -188,12 +176,10 @@ class DesAgentClientApiConnectorISpec
     "log metrics for outbound call" in {
       stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
       stubDesPayeAgentClientRelationship(testAgentCode, testEmpRef)(OK, successfulDesPayeResponse(auth_64_8 = true))
-      cleanMetricRegistry()
 
       await(desApiConnector.getPayeAgentClientRelationship(testAgentCode, testEmpRef)) shouldBe PayeFoundResponse(
         auth64_8 = true
       )
-      timerShouldExistAndHasBeenUpdated("ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
     }
   }
 }
