@@ -26,7 +26,9 @@ import com.google.inject.ImplementedBy
 import play.api.http.Status.NOT_FOUND
 import play.api.libs.json._
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentmtdidentifiers.model._
+import uk.gov.hmrc.agentaccesscontrol.models.Arn
+import uk.gov.hmrc.agentaccesscontrol.models.ClientIdentifier
+import uk.gov.hmrc.agentaccesscontrol.models.Service
 import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
@@ -35,7 +37,6 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
-import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 case class Relationship(arn: String, clientId: String)
 
@@ -53,7 +54,7 @@ trait RelationshipsConnector {
 }
 
 @Singleton
-class RelationshipsConnectorImpl @Inject() (appConfig: AppConfig, httpClient: HttpClientV2, metrics: Metrics)
+class RelationshipsConnectorImpl @Inject() (appConfig: AppConfig, httpClient: HttpClientV2)
     extends RelationshipsConnector {
 
   def relationshipExists(arn: Arn, maybeUserId: Option[String], identifier: TaxIdentifier, service: Service)(
@@ -67,13 +68,7 @@ class RelationshipsConnectorImpl @Inject() (appConfig: AppConfig, httpClient: Ht
     val relationshipUrl =
       s"${appConfig.acrBaseUrl}/agent-client-relationships/agent/${arn.value}/service/${service.id}/client/$identifierTypeId/${identifier.value}$urlParam"
 
-    val timer = metrics.defaultRegistry.timer(
-      s"Timer-ConsumedAPI-AgentClientRelationships-Check${identifier.getClass.getSimpleName}-GET"
-    )
-
-    timer.time()
     httpClient.get(url"$relationshipUrl").execute[HttpResponse].map { response =>
-      timer.time().stop()
       response.status match {
         case status if is2xx(status) => true
         case NOT_FOUND               => false

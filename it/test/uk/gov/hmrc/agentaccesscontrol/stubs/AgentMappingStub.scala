@@ -20,8 +20,8 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import play.api.libs.json.JsObject
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
+import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockMethods
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.domain.SaAgentReference
 
 trait AgentMappingStub extends WiremockMethods {

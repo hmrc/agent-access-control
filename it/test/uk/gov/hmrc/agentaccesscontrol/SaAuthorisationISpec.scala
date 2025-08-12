@@ -23,13 +23,11 @@ import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.DesStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.EnrolmentStoreProxyStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.MetricTestSupport
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 import uk.gov.hmrc.domain.SaAgentReference
 
 class SaAuthorisationISpec
     extends ComponentSpecHelper
-    with MetricTestSupport
     with AuthStub
     with EnrolmentStoreProxyStub
     with DesStub
@@ -321,11 +319,8 @@ class SaAuthorisationISpec
           successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
         )
 
-        cleanMetricRegistry()
-
         val result = get(url)
         result.status shouldBe OK
-        timerShouldExistAndHasBeenUpdated("API-__sa-auth__agent__:__client__:-GET")
       }
     }
   }
@@ -614,11 +609,8 @@ class SaAuthorisationISpec
           successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
         )
 
-        cleanMetricRegistry()
-
         val result = post(url)(Json.obj())
         result.status shouldBe OK
-        timerShouldExistAndHasBeenUpdated("API-__sa-auth__agent__:__client__:-POST")
       }
     }
   }

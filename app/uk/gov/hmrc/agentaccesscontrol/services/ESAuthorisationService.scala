@@ -32,9 +32,9 @@ import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.AgentAssuranceConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
+import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.agentmtdidentifiers.model.Service
+import uk.gov.hmrc.agentaccesscontrol.models.Service
 import uk.gov.hmrc.auth.core.CredentialRole
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.domain.TaxIdentifier

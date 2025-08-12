@@ -27,35 +27,28 @@ import scala.util.control.NonFatal
 import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMappings
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.StringContextOps
-import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 @Singleton
-class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2, metrics: Metrics) extends Logging {
+class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2) extends Logging {
 
   def getAgentMappings(
       key: String,
       arn: Arn
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AgentReferenceMappings] = {
 
-    val timer =
-      metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-AgentMapping-Check-$key-GET")
-
-    timer.time()
     httpClient
       .get(genMappingUrl(key, arn))
       .execute[AgentReferenceMappings]
       .map { response =>
-        timer.time().stop()
         response
       }
       .recover {
         case NonFatal(_) =>
-          timer.time().stop()
           logger.warn("Something went wrong")
           AgentReferenceMappings.apply(List.empty)
       }
