@@ -181,10 +181,9 @@ class SaAuthorisationISpec
           successfulResponsePrincipal(Seq(testProviderId, "78741987654329", "78741987654322"))
         )
         stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
-        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
-          OK,
-          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = false)
-        )
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(NOT_FOUND)
+        stubDesSaAgentClientRelationship(SaAgentReference("SA6012"), testSaUtr)(NOT_FOUND)
+        stubDesSaAgentClientRelationship(SaAgentReference("A1709A"), testSaUtr)(NOT_FOUND)
 
         val result = get(url)
         result.status shouldBe UNAUTHORIZED
@@ -291,6 +290,14 @@ class SaAuthorisationISpec
         )
         stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
         stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
+        stubDesSaAgentClientRelationship(SaAgentReference("SA6012"), testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
+        stubDesSaAgentClientRelationship(SaAgentReference("A1709A"), testSaUtr)(
           OK,
           successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
         )
@@ -471,10 +478,9 @@ class SaAuthorisationISpec
           successfulResponsePrincipal(Seq(testProviderId, "78741987654329", "78741987654322"))
         )
         stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
-        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
-          OK,
-          successfulDesSaResponse(auth_64_8 = false, auth_i64_8 = false)
-        )
+        stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(NOT_FOUND)
+        stubDesSaAgentClientRelationship(SaAgentReference("SA6012"), testSaUtr)(NOT_FOUND)
+        stubDesSaAgentClientRelationship(SaAgentReference("A1709A"), testSaUtr)(NOT_FOUND)
 
         val result = post(url)(Json.obj())
         result.status shouldBe UNAUTHORIZED
@@ -581,6 +587,14 @@ class SaAuthorisationISpec
         )
         stubQueryUsersAssignedEnrolmentsDelegatedSa(testSaUtr)(OK, successfulResponseDelegated(Seq(testProviderId)))
         stubDesSaAgentClientRelationship(testSaAgentReference, testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
+        stubDesSaAgentClientRelationship(SaAgentReference("SA6012"), testSaUtr)(
+          OK,
+          successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
+        )
+        stubDesSaAgentClientRelationship(SaAgentReference("A1709A"), testSaUtr)(
           OK,
           successfulDesSaResponse(auth_64_8 = true, auth_i64_8 = true)
         )

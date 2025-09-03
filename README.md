@@ -159,7 +159,7 @@ authorised(
 
 ```scala
 authorised(
-  Enrolment("HMRC-PILLAR2")
+  Enrolment("HMRC-PILLAR2-ORG")
     .withIdentifier("PLRID", "XYPILLAR21234567890")
     .withDelegatedAuthRule("pillar2-auth") { /* your protected logic */  }
 )
