@@ -39,7 +39,7 @@ trait DesStub extends WiremockMethods {
   def stubDesSaAgentClientRelationship(
       saAgentReference: SaAgentReference,
       saUtr: SaUtr
-  )(status: Int, body: JsValue): StubMapping =
+  )(status: Int, body: JsValue = Json.obj()): StubMapping =
     when(
       method = GET,
       uri = s"/sa/agents/${saAgentReference.value}/client/${saUtr.value}",

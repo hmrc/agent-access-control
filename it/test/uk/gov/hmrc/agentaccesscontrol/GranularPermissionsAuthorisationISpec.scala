@@ -19,6 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol
 import play.api.test.Helpers.NOT_FOUND
 import play.api.test.Helpers.NO_CONTENT
 import play.api.test.Helpers.OK
+import uk.gov.hmrc.agentaccesscontrol.models.Service
 import uk.gov.hmrc.agentaccesscontrol.stubs._
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
@@ -47,6 +48,7 @@ class GranularPermissionsAuthorisationISpec
           stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
           stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(OK)
           stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
+          stubGetAgentPermissionTaxGroupNotFound(testArn, Service.HMRCCGTPD)
 
           val result = get(uri)
           result.status shouldBe 200
@@ -60,7 +62,7 @@ class GranularPermissionsAuthorisationISpec
           stubAgentNotSuspended
           stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
           stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(OK)
-          stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(OK, testCgtTaxGroup())
+          stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(testCgtTaxGroup())
           stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
 
           val result = get(uri)
@@ -76,7 +78,7 @@ class GranularPermissionsAuthorisationISpec
           stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
           stubTersAgentClientRelationship(testArn, testUtr)(OK)
           stubTersAgentClientRelationshipToUser(testArn, testUtr, testProviderId)(NOT_FOUND)
-          stubGetAgentPermissionTaxGroup(testArn, "HMRC-TERS")(OK, testTrustTaxGroup)
+          stubGetAgentPermissionTaxGroup(testArn, "HMRC-TERS")(testTrustTaxGroup)
 
           val result = get(trustUri(testUtr.value))
           result.status shouldBe 200
@@ -87,7 +89,7 @@ class GranularPermissionsAuthorisationISpec
           stubAgentNotSuspended
           stubTersntAgentClientRelationship(testArn, testUrn)(OK)
           stubTersntAgentClientRelationshipToUser(testArn, testUrn, testProviderId)(NOT_FOUND)
-          stubGetAgentPermissionTaxGroup(testArn, "HMRC-TERS")(OK, testTrustTaxGroup)
+          stubGetAgentPermissionTaxGroup(testArn, "HMRC-TERS")(testTrustTaxGroup)
           stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
 
           val result = get(trustUri(testUrn.value))
@@ -99,7 +101,7 @@ class GranularPermissionsAuthorisationISpec
         stubAgentNotSuspended
         stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
         stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, "otherProviderId")(OK)
-        stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(OK, testCgtTaxGroup())
+        stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(testCgtTaxGroup())
         stubAgentPermissionsOptInRecordExists(testArn)(NOT_FOUND)
 
         val result = get(uri)
@@ -113,8 +115,9 @@ class GranularPermissionsAuthorisationISpec
         stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
         stubAgentNotSuspended
         stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
-        stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, "otherProviderId")(OK)
+        stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(NOT_FOUND)
         stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
+        stubGetAgentPermissionTaxGroupNotFound(testArn, Service.HMRCCGTPD)
 
         val result = get(uri)
 
@@ -134,30 +137,14 @@ class GranularPermissionsAuthorisationISpec
         result.status shouldBe 401
         result.body should include(NoRelationship)
       }
-      "agency and client have a relationship, agency is opted-in to GP, agent user IS in a tax service group but for a different service" in {
-        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-        stubAgentNotSuspended
-        stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
-        stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(NOT_FOUND)
-        stubGetAgentPermissionTaxGroup(testArn, testMtdVatEnrolmentKey)(OK, testMtdVatTaxGroup)
-        // tax service group is for vat, not cgt - shouldn't grant access
-        stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
-
-        val result = get(uri)
-        result.status shouldBe 401
-        result.body should include(NoAssignment)
-
-        // Check that we have called agent-client-relationships specifying for which agent user to check the relationship
-        verifyCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(timesCalled = 1)
-      }
       "agency and client have a relationship, agency is opted-in to GP," +
         "there is a tax service group for the right service but agent user is not part of it" in {
           stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
           stubAgentNotSuspended
           stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
           stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(NOT_FOUND)
-          stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(OK, testCgtTaxGroup("otherProviderId"))
           // the agent user is not part of this tax service group - shouldn't grant access
+          stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(testCgtTaxGroup("otherProviderId"))
           stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
 
           val result = get(uri)
@@ -174,7 +161,6 @@ class GranularPermissionsAuthorisationISpec
           stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
           stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(NOT_FOUND)
           stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(
-            OK,
             testCgtTaxGroup(excludedClients = Set(testCgtClient))
           )
           stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
@@ -186,18 +172,6 @@ class GranularPermissionsAuthorisationISpec
           // Check that we have called agent-client-relationships to check for the user assignment (as the tax service group check should have failed)
           verifyCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(timesCalled = 1)
         }
-      "GP enabled, agent user IS in the relevant tax service group but there is no agency-level relationship" in {
-        stubAuth(OK, successfulAuthResponse(testAgentCode.value, testProviderId, Some(testArn), None))
-        stubAgentNotSuspended
-        stubCgtAgentClientRelationship(testArn, testCgtRef)(OK)
-        stubCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(NOT_FOUND)
-        stubGetAgentPermissionTaxGroup(testArn, testCgtEnrolmentKey)(OK, testCgtTaxGroup())
-        stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
-
-        val result = get(s"/cgt-auth/agent/${testAgentCode.value}/client/XMCGTP987654321")
-        result.status shouldBe 401
-        result.body should include(NoRelationship)
-      }
     }
   }
 

@@ -84,7 +84,7 @@ class StandardServicesAuthorisationISpec
             stubAgentNotSuspended
             stubAgentPermissionsOptInRecordExists(testArn)(OK)
             stubAgentClientRelationship(testArn, serviceConfig)(OK)
-            stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(OK, serviceConfig.taxGroup)
+            stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(serviceConfig.taxGroup)
 
             val result = {
               requestMethod match {
@@ -101,7 +101,7 @@ class StandardServicesAuthorisationISpec
             stubAgentNotSuspended
             stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
             stubAgentClientRelationship(testArn, serviceConfig)(OK)
-            stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(NOT_FOUND, serviceConfig.taxGroup)
+            stubGetAgentPermissionTaxGroupNotFound(testArn, serviceConfig.taxGroup.service)
             stubAgentClientRelationshipAssigned(testArn, serviceConfig, testProviderId)(OK)
 
             val result = {
@@ -118,7 +118,7 @@ class StandardServicesAuthorisationISpec
             stubAgentNotSuspended
             stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
             stubAgentClientRelationship(testArn, serviceConfig)(OK)
-            stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(NOT_FOUND, serviceConfig.taxGroup)
+            stubGetAgentPermissionTaxGroupNotFound(testArn, serviceConfig.taxGroup.service)
             stubAgentClientRelationshipAssigned(testArn, serviceConfig, testProviderId)(NOT_FOUND)
 
             val result = {
@@ -136,7 +136,7 @@ class StandardServicesAuthorisationISpec
             stubAgentNotSuspended
             stubAgentPermissionsOptInRecordExists(testArn)(NO_CONTENT)
             stubAgentClientRelationship(testArn, serviceConfig)(OK)
-            stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(OK, serviceConfig.taxGroup)
+            stubGetAgentPermissionTaxGroup(testArn, serviceConfig.taxGroup.service)(serviceConfig.taxGroup)
 
             val result = {
               requestMethod match {

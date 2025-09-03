@@ -17,6 +17,8 @@
 package uk.gov.hmrc.agentaccesscontrol.stubs
 
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
+import play.api.http.Status.NOT_FOUND
+import play.api.http.Status.OK
 import uk.gov.hmrc.agentaccesscontrol.models.accessgroups.TaxGroup
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockMethods
@@ -29,10 +31,16 @@ trait AgentPermissionsStub extends WiremockMethods {
       uri = s"/agent-permissions/arn/${arn.value}/optin-record-exists"
     ).thenReturn(status)
 
-  def stubGetAgentPermissionTaxGroup(arn: Arn, taxService: String)(status: Int, taxGroup: TaxGroup): StubMapping =
+  def stubGetAgentPermissionTaxGroup(arn: Arn, taxService: String)(taxGroup: TaxGroup): StubMapping =
     when(
       method = GET,
       uri = s"/agent-permissions/arn/${arn.value}/tax-group/$taxService"
-    ).thenReturn(status, taxGroup)
+    ).thenReturn(OK, taxGroup)
+
+  def stubGetAgentPermissionTaxGroupNotFound(arn: Arn, taxService: String): StubMapping =
+    when(
+      method = GET,
+      uri = s"/agent-permissions/arn/${arn.value}/tax-group/$taxService"
+    ).thenReturn(NOT_FOUND)
 
 }

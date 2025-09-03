@@ -122,7 +122,7 @@ class ESAuthorisationService @Inject() (
       case "HMRC-CGT-PD"                         => "CGT"
       case "HMRC-PPT-ORG"                        => "PPT"
       case "HMRC-CBC-ORG" | "HMRC-CBC-NONUK-ORG" => "CBC"
-      case "HMRC-PILLAR2-ORG"                    => "PILLAR2"
+      case "HMRC-PILLAR2-ORG"                    => "PLR"
     }
   }
 
