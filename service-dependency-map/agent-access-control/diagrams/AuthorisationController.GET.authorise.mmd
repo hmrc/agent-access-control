@@ -1,0 +1,55 @@
+sequenceDiagram
+    autonumber
+    participant Upstream
+    participant agent-access-control
+    participant auth
+    participant agent-assurance
+    participant enrolment-store-proxy
+    participant des
+    participant agent-fi-relationship
+    participant agent-client-relationships
+    participant agent-mapping
+    participant agent-permissions
+    participant datastream
+
+    Upstream->>+agent-access-control: GET /:authType/agent/:agentCode/client/:clientId
+    agent-access-control->>+auth: POST /auth/authorise
+    auth-->>-agent-access-control: Agent Credentials (ARN, SA Agent Ref, etc.)
+    
+    agent-access-control->>+agent-assurance: POST /agent-assurance/agent/verify-entity
+    agent-assurance-->>-agent-access-control: Suspension Status
+    
+    Note over agent-access-control: Route based on authType
+    
+    alt SA Auth (sa-auth)
+        agent-access-control->>+enrolment-store-proxy: GET /enrolment-store/enrolments/IR-SA~UTR~{saUtr}/users?type=delegated
+        enrolment-store-proxy-->>-agent-access-control: Delegated Users
+        agent-access-control->>+des: GET /sa/agents/{saAgentRef}/client/{saUtr}
+        des-->>-agent-access-control: SA Relationship Status
+        opt MTD Agent
+            agent-access-control->>+agent-mapping: GET /agent-mapping/mappings/sa/{arn}
+            agent-mapping-->>-agent-access-control: SA Agent Reference Mapping
+        end
+    else PAYE Auth (epaye-auth)
+        agent-access-control->>+enrolment-store-proxy: GET /enrolment-store/enrolments/IR-PAYE~{empRef}/users?type=delegated
+        enrolment-store-proxy-->>-agent-access-control: Delegated Users
+        agent-access-control->>+des: GET /agents/regime/PAYE/agent/{agentCode}/client/{empRef}
+        des-->>-agent-access-control: PAYE Relationship Status
+    else AFI Auth (afi-auth)
+        agent-access-control->>+agent-fi-relationship: GET /relationships/PERSONAL-INCOME-RECORD/agent/{arn}/client/{nino}
+        agent-fi-relationship-->>-agent-access-control: AFI Relationship Status
+    else Standard Service Auth (mtd-it-auth, mtd-vat-auth, trust-auth, cgt-auth, ppt-auth, cbc-auth, pillar2-auth)
+        agent-access-control->>+agent-client-relationships: GET /agent/{arn}/service/{service}/client/{clientIdType}/{clientId}
+        agent-client-relationships-->>-agent-access-control: Modern Relationship Status
+        alt If ACR check fails
+            agent-access-control->>+des: GET /registration/relationship/arn/{arn}
+            des-->>-agent-access-control: Legacy Relationship Status
+        end
+        opt Granular Permissions Enabled
+            agent-access-control->>+agent-permissions: GET /arn/{arn}/client/{clientId}
+            agent-permissions-->>-agent-access-control: Permission Status
+        end
+    end
+    
+    agent-access-control->>datastream: Audit Event (AgentAccessControlDecision)
+    agent-access-control-->>-Upstream: 200 OK | 401 Unauthorized
