@@ -1,0 +1,184 @@
+openapi: 3.0.0
+info:
+  title: "agent-access-control API"
+  description: |
+    API for authorising agent access to client data across multiple HMRC tax regimes.
+
+    This service acts as a central authorization point, checking if an agent is permitted to access 
+    a specific client's data for a given tax service. It supports both legacy (SA, PAYE) and modern 
+    (MTD-IT, MTD-VAT, Trust, CGT, PPT, CBC, Pillar2) tax regimes.
+
+    ## Authentication
+
+    All endpoints require the calling service to be authenticated. The agent's credentials are 
+    validated through the platform's authentication service.
+
+    ## Client ID Formats
+
+    Different auth types require different client ID formats:
+    - **sa-auth**: Self Assessment UTR (10 digits)
+    - **epaye-auth**: Employer Reference (office number + reference)
+    - **afi-auth**: National Insurance Number (NINO)
+    - **mtd-it-auth**: MTD IT ID
+    - **mtd-vat-auth**: VAT Registration Number (VRN)
+    - **trust-auth**: UTR (10 digits) or URN (e.g., XXTRUST12345678)
+    - **cgt-auth**: Capital Gains Tax Reference
+    - **ppt-auth**: Plastic Packaging Tax Reference
+    - **cbc-auth**: Country-by-Country Reporting ID
+    - **pillar2-auth**: Pillar 2 ID
+  version: "v1.25.0"
+servers:
+  - url: "http://localhost:9431"
+    description: Local development server
+
+paths:
+  /{authType}/agent/{agentCode}/client/{clientId}:
+    get:
+      summary: "Authorise Agent for Client"
+      description: "Authorises an agent for a client based on the specified auth type. Supports multiple tax regimes including SA, PAYE, MTD-IT, MTD-VAT, Trust, CGT, PPT, CBC, and Pillar2."
+      tags:
+        - "Authorisation"
+      parameters:
+        - name: authType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - "sa-auth"
+              - "epaye-auth"
+              - "afi-auth"
+              - "mtd-it-auth"
+              - "mtd-it-auth-supp"
+              - "mtd-vat-auth"
+              - "trust-auth"
+              - "cgt-auth"
+              - "ppt-auth"
+              - "cbc-auth"
+              - "pillar2-auth"
+          description: "The type of authorisation being requested."
+        - name: agentCode
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "The unique code identifying the agent."
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "The unique identifier for the client. Format depends on authType: NINO for AFI, UTR/URN for Trust, VRN for VAT, etc."
+      responses:
+        "200":
+          description: "The agent is authorised for the client."
+        "400":
+          description: "Bad request - invalid authType or invalid clientId format."
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                invalidAuthType:
+                  value: "Unexpected auth type: invalid-auth"
+                invalidTrustId:
+                  value: "invalid trust tax identifier ABC123"
+        "401":
+          description: "The agent is not authorised for the client."
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                noRelationship:
+                  value: "NO_RELATIONSHIP"
+                noAssignment:
+                  value: "NO_ASSIGNMENT"
+        "500":
+          description: "An internal server error occurred."
+    post:
+      summary: "Authorise Agent for Client"
+      description: "Authorises an agent for a client based on the specified auth type. Identical functionality to GET endpoint but uses POST method. Supports multiple tax regimes including SA, PAYE, MTD-IT, MTD-VAT, Trust, CGT, PPT, CBC, and Pillar2."
+      tags:
+        - "Authorisation"
+      parameters:
+        - name: authType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - "sa-auth"
+              - "epaye-auth"
+              - "afi-auth"
+              - "mtd-it-auth"
+              - "mtd-it-auth-supp"
+              - "mtd-vat-auth"
+              - "trust-auth"
+              - "cgt-auth"
+              - "ppt-auth"
+              - "cbc-auth"
+              - "pillar2-auth"
+          description: "The type of authorisation being requested."
+        - name: agentCode
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "The unique code identifying the agent."
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "The unique identifier for the client. Format depends on authType: NINO for AFI, UTR/URN for Trust, VRN for VAT, etc."
+      responses:
+        "200":
+          description: "The agent is authorised for the client."
+        "400":
+          description: "Bad request - invalid authType or invalid clientId format."
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                invalidAuthType:
+                  value: "Unexpected auth type: invalid-auth"
+                invalidTrustId:
+                  value: "invalid trust tax identifier ABC123"
+        "401":
+          description: "The agent is not authorised for the client."
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                noRelationship:
+                  value: "NO_RELATIONSHIP"
+                noAssignment:
+                  value: "NO_ASSIGNMENT"
+        "500":
+          description: "An internal server error occurred."
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: "Bearer token for agent authentication"
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: "Error code"
+        message:
+          type: string
+          description: "Human readable error message"
+      required:
+        - code
+        - message
+
+security:
+  - bearerAuth: []

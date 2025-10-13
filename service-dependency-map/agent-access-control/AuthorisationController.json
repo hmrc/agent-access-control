@@ -1,0 +1,238 @@
+{
+    "microservice": "agent-access-control",
+    "controller": "AuthorisationController",
+    "apis": [
+        {
+            "endpoint": "GET /:authType/agent/:agentCode/client/:clientId",
+            "description": "Authorises an agent for a client based on the specified auth type. Supports multiple tax regimes including SA, PAYE, MTD-IT, MTD-VAT, Trust, CGT, PPT, CBC, and Pillar2.",
+            "interactions": [
+                {
+                    "step": 1,
+                    "type": "API Call",
+                    "service": "auth",
+                    "method": "POST",
+                    "path": "/auth/authorise",
+                    "database": null,
+                    "operation": null,
+                    "description": "Authenticates the agent and retrieves their credentials (ARN, SA Agent Reference, etc.)"
+                },
+                {
+                    "step": 2,
+                    "type": "API Call",
+                    "service": "agent-assurance",
+                    "method": "POST",
+                    "path": "/agent-assurance/agent/verify-entity",
+                    "database": null,
+                    "operation": null,
+                    "description": "Checks if the agent is suspended"
+                },
+                {
+                    "step": 3,
+                    "type": "API Call",
+                    "service": "enrolment-store-proxy",
+                    "method": "GET",
+                    "path": "/enrolment-store-proxy/enrolment-store/enrolments/{enrolmentKey}/users",
+                    "database": null,
+                    "operation": null,
+                    "description": "For SA/PAYE: Checks delegated users for IR-SA or IR-PAYE enrolments"
+                },
+                {
+                    "step": 4,
+                    "type": "API Call",
+                    "service": "des",
+                    "method": "GET",
+                    "path": "/sa/agents/{saAgentReference}/client/{saUtr}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For SA: Checks legacy SA agent-client relationship in DES"
+                },
+                {
+                    "step": 5,
+                    "type": "API Call",
+                    "service": "des",
+                    "method": "GET",
+                    "path": "/agents/regime/PAYE/agent/{agentCode}/client/{empRef}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For PAYE: Checks legacy PAYE agent-client relationship in DES"
+                },
+                {
+                    "step": 6,
+                    "type": "API Call",
+                    "service": "agent-fi-relationship",
+                    "method": "GET",
+                    "path": "/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/{arn}/client/{nino}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For AFI: Checks agent-client relationship for personal income record"
+                },
+                {
+                    "step": 7,
+                    "type": "API Call",
+                    "service": "agent-client-relationships",
+                    "method": "GET",
+                    "path": "/agent-client-relationships/agent/{arn}/service/{service}/client/{clientIdType}/{clientId}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For standard services (MTD-IT, MTD-VAT, Trust, CGT, PPT, CBC, Pillar2): Checks modern agent-client relationships"
+                },
+                {
+                    "step": 8,
+                    "type": "API Call",
+                    "service": "des",
+                    "method": "GET",
+                    "path": "/registration/relationship/arn/{arn}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For standard services: Falls back to DES relationship check if ACR check fails"
+                },
+                {
+                    "step": 9,
+                    "type": "API Call",
+                    "service": "agent-mapping",
+                    "method": "GET",
+                    "path": "/agent-mapping/mappings/sa/{arn}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For SA with MTD agents: Gets SA agent reference mapping"
+                },
+                {
+                    "step": 10,
+                    "type": "API Call",
+                    "service": "agent-permissions",
+                    "method": "GET",
+                    "path": "/agent-permissions/arn/{arn}/client/{clientId}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For standard services: Checks granular permissions if enabled"
+                },
+                {
+                    "step": 11,
+                    "type": "Audit Event",
+                    "service": "datastream",
+                    "method": null,
+                    "path": null,
+                    "database": null,
+                    "operation": null,
+                    "description": "Audits the access control decision with details of the outcome"
+                }
+            ]
+        },
+        {
+            "endpoint": "POST /:authType/agent/:agentCode/client/:clientId",
+            "description": "Authorises an agent for a client based on the specified auth type. Identical functionality to GET endpoint but uses POST method. Supports multiple tax regimes including SA, PAYE, MTD-IT, MTD-VAT, Trust, CGT, PPT, CBC, and Pillar2.",
+            "interactions": [
+                {
+                    "step": 1,
+                    "type": "API Call",
+                    "service": "auth",
+                    "method": "POST",
+                    "path": "/auth/authorise",
+                    "database": null,
+                    "operation": null,
+                    "description": "Authenticates the agent and retrieves their credentials (ARN, SA Agent Reference, etc.)"
+                },
+                {
+                    "step": 2,
+                    "type": "API Call",
+                    "service": "agent-assurance",
+                    "method": "POST",
+                    "path": "/agent-assurance/agent/verify-entity",
+                    "database": null,
+                    "operation": null,
+                    "description": "Checks if the agent is suspended"
+                },
+                {
+                    "step": 3,
+                    "type": "API Call",
+                    "service": "enrolment-store-proxy",
+                    "method": "GET",
+                    "path": "/enrolment-store-proxy/enrolment-store/enrolments/{enrolmentKey}/users",
+                    "database": null,
+                    "operation": null,
+                    "description": "For SA/PAYE: Checks delegated users for IR-SA or IR-PAYE enrolments"
+                },
+                {
+                    "step": 4,
+                    "type": "API Call",
+                    "service": "des",
+                    "method": "GET",
+                    "path": "/sa/agents/{saAgentReference}/client/{saUtr}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For SA: Checks legacy SA agent-client relationship in DES"
+                },
+                {
+                    "step": 5,
+                    "type": "API Call",
+                    "service": "des",
+                    "method": "GET",
+                    "path": "/agents/regime/PAYE/agent/{agentCode}/client/{empRef}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For PAYE: Checks legacy PAYE agent-client relationship in DES"
+                },
+                {
+                    "step": 6,
+                    "type": "API Call",
+                    "service": "agent-fi-relationship",
+                    "method": "GET",
+                    "path": "/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/{arn}/client/{nino}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For AFI: Checks agent-client relationship for personal income record"
+                },
+                {
+                    "step": 7,
+                    "type": "API Call",
+                    "service": "agent-client-relationships",
+                    "method": "GET",
+                    "path": "/agent-client-relationships/agent/{arn}/service/{service}/client/{clientIdType}/{clientId}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For standard services (MTD-IT, MTD-VAT, Trust, CGT, PPT, CBC, Pillar2): Checks modern agent-client relationships"
+                },
+                {
+                    "step": 8,
+                    "type": "API Call",
+                    "service": "des",
+                    "method": "GET",
+                    "path": "/registration/relationship/arn/{arn}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For standard services: Falls back to DES relationship check if ACR check fails"
+                },
+                {
+                    "step": 9,
+                    "type": "API Call",
+                    "service": "agent-mapping",
+                    "method": "GET",
+                    "path": "/agent-mapping/mappings/sa/{arn}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For SA with MTD agents: Gets SA agent reference mapping"
+                },
+                {
+                    "step": 10,
+                    "type": "API Call",
+                    "service": "agent-permissions",
+                    "method": "GET",
+                    "path": "/agent-permissions/arn/{arn}/client/{clientId}",
+                    "database": null,
+                    "operation": null,
+                    "description": "For standard services: Checks granular permissions if enabled"
+                },
+                {
+                    "step": 11,
+                    "type": "Audit Event",
+                    "service": "datastream",
+                    "method": null,
+                    "path": null,
+                    "database": null,
+                    "operation": null,
+                    "description": "Audits the access control decision with details of the outcome"
+                }
+            ]
+        }
+    ]
+}
