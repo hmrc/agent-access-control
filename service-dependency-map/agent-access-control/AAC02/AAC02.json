@@ -1,0 +1,383 @@
+{
+  "apiId": "AAC02",
+  "method": "POST",
+  "path": "/{authType}/agent/{agentCode}/client/{clientId}",
+  "description": "Establishes or modifies the access permissions for a given agent to represent a client, based on the provided authentication type.",
+  "audience": "internal",
+  "interaction": "synchronous",
+  "interactions": [
+    {
+      "step": 1,
+      "participant": "Upstream",
+      "action": "Sends POST /{authType}/agent/{agentCode}/client/{clientId}",
+      "target": "agent-access-control",
+      "description": "Initial request to create or modify agent-client relationship",
+      "mandatory": true
+    },
+    {
+      "step": 2,
+      "participant": "agent-access-control",
+      "action": "POST /auth/authorise",
+      "target": "auth",
+      "description": "Authenticates agent and extracts credentials (ARN, SA Agent Ref, PAYE Agent Code, etc.)",
+      "mandatory": true,
+      "responseData": "Agent Credentials (ARN, SA Agent Reference, PAYE Agent Code, etc.)"
+    },
+    {
+      "step": 3,
+      "participant": "agent-access-control",
+      "action": "POST /agent-assurance/agent/verify-entity",
+      "target": "agent-assurance",
+      "description": "Verifies agent is not currently suspended before allowing relationship creation",
+      "mandatory": true,
+      "responseData": "Suspension Status"
+    },
+    {
+      "step": 4,
+      "participant": "agent-access-control",
+      "action": "Route based on authType parameter",
+      "target": "internal",
+      "description": "Determines which relationship creation path to follow based on authentication type",
+      "mandatory": true,
+      "routingPaths": [
+        {
+          "authType": "sa-auth",
+          "description": "Self Assessment relationship creation path",
+          "steps": [
+            {
+              "step": "4a",
+              "action": "GET /enrolment-store/enrolments/IR-SA~UTR~{saUtr}/users?type=delegated",
+              "target": "enrolment-store-proxy",
+              "description": "Verifies existing SA delegated enrolments",
+              "mandatory": true,
+              "responseData": "Delegated Users"
+            },
+            {
+              "step": "4b",
+              "action": "GET /sa/agents/{saAgentRef}/client/{saUtr}",
+              "target": "des",
+              "description": "Creates or updates SA relationship in DES",
+              "mandatory": true,
+              "responseData": "SA Relationship Status",
+              "writeOperation": true
+            },
+            {
+              "step": "4c",
+              "action": "GET /agent-mapping/mappings/sa/{arn}",
+              "target": "agent-mapping",
+              "description": "Ensures proper mapping exists for MTD ARN to SA Agent Reference (MTD agents only)",
+              "mandatory": false,
+              "condition": "MTD Agent",
+              "responseData": "SA Agent Reference Mapping"
+            }
+          ]
+        },
+        {
+          "authType": "epaye-auth",
+          "description": "PAYE relationship creation path",
+          "steps": [
+            {
+              "step": "4a",
+              "action": "GET /enrolment-store/enrolments/IR-PAYE~{empRef}/users?type=delegated",
+              "target": "enrolment-store-proxy",
+              "description": "Verifies existing PAYE delegated enrolments",
+              "mandatory": true,
+              "responseData": "Delegated Users"
+            },
+            {
+              "step": "4b",
+              "action": "GET /agents/regime/PAYE/agent/{agentCode}/client/{empRef}",
+              "target": "des",
+              "description": "Creates or updates PAYE relationship in DES",
+              "mandatory": true,
+              "responseData": "PAYE Relationship Status",
+              "writeOperation": true
+            }
+          ]
+        },
+        {
+          "authType": "afi-auth",
+          "description": "Agent for Individuals relationship creation path",
+          "steps": [
+            {
+              "step": "4a",
+              "action": "GET /relationships/PERSONAL-INCOME-RECORD/agent/{arn}/client/{nino}",
+              "target": "agent-fi-relationship",
+              "description": "Creates or updates Personal Income Record relationship and validates NINO",
+              "mandatory": true,
+              "responseData": "AFI Relationship Status",
+              "writeOperation": true
+            }
+          ]
+        },
+        {
+          "authType": "mtd-it-auth|mtd-vat-auth|trust-auth|cgt-auth|ppt-auth|cbc-auth|pillar2-auth",
+          "description": "Modern MTD services relationship creation path",
+          "steps": [
+            {
+              "step": "4a",
+              "action": "GET /agent/{arn}/service/{service}/client/{clientIdType}/{clientId}",
+              "target": "agent-client-relationships",
+              "description": "Creates or updates relationship in modern relationship store (primary)",
+              "mandatory": true,
+              "responseData": "Modern Relationship Status",
+              "writeOperation": true
+            },
+            {
+              "step": "4b",
+              "action": "GET /registration/relationship/arn/{arn}",
+              "target": "des",
+              "description": "Fallback relationship creation in legacy DES if ACR creation fails",
+              "mandatory": false,
+              "condition": "If agent-client-relationships creation fails or for legacy agents",
+              "responseData": "Legacy Relationship Status",
+              "writeOperation": true
+            },
+            {
+              "step": "4c",
+              "action": "GET /arn/{arn}/client/{clientId}",
+              "target": "agent-permissions",
+              "description": "Creates permission entries for fine-grained access control",
+              "mandatory": false,
+              "condition": "Granular Permissions feature flag enabled",
+              "responseData": "Permission Status",
+              "writeOperation": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 5,
+      "participant": "agent-access-control",
+      "action": "Audit Event (AgentAccessControlDecision)",
+      "target": "datastream",
+      "description": "Records relationship creation/modification decision for compliance and monitoring",
+      "mandatory": true,
+      "auditData": {
+        "eventType": "AgentAccessControlDecision",
+        "includes": [
+          "Timestamp of the operation",
+          "Agent identifier",
+          "Client identifier",
+          "Authentication type",
+          "Success or failure status",
+          "Backend systems updated",
+          "Any validation failures",
+          "Operation type (create/update)"
+        ]
+      }
+    },
+    {
+      "step": 6,
+      "participant": "agent-access-control",
+      "action": "Returns relationship creation response",
+      "target": "Upstream",
+      "description": "Returns final operation result",
+      "mandatory": true,
+      "possibleResponses": [
+        {
+          "status": "200 OK",
+          "description": "Relationship successfully created or updated"
+        },
+        {
+          "status": "201 Created",
+          "description": "New relationship successfully established"
+        },
+        {
+          "status": "401 Unauthorized",
+          "description": "Creation failed - agent authentication failed, agent is suspended, or authorization is missing"
+        },
+        {
+          "status": "403 Forbidden",
+          "description": "Agent does not have permission to create this relationship"
+        },
+        {
+          "status": "409 Conflict",
+          "description": "Relationship already exists or conflicts with existing data"
+        }
+      ]
+    }
+  ],
+  "dependencies": {
+    "core": [
+      {
+        "service": "auth",
+        "purpose": "Authentication and authorization service",
+        "endpoints": ["POST /auth/authorise"],
+        "mandatory": true
+      },
+      {
+        "service": "agent-assurance",
+        "purpose": "Agent verification and suspension management",
+        "endpoints": ["POST /agent-assurance/agent/verify-entity"],
+        "mandatory": true
+      },
+      {
+        "service": "datastream",
+        "purpose": "Audit logging service for relationship operations",
+        "endpoints": ["Audit Event Stream"],
+        "mandatory": true
+      }
+    ],
+    "legacyServices": [
+      {
+        "service": "enrolment-store-proxy",
+        "purpose": "Enrolment delegation service for SA and PAYE",
+        "endpoints": [
+          "GET /enrolment-store/enrolments/IR-SA~UTR~{saUtr}/users?type=delegated",
+          "GET /enrolment-store/enrolments/IR-PAYE~{empRef}/users?type=delegated"
+        ],
+        "mandatory": false,
+        "usedFor": ["sa-auth", "epaye-auth"],
+        "operationType": "read"
+      },
+      {
+        "service": "des",
+        "purpose": "Data Exchange Service (legacy relationship store - write operations)",
+        "endpoints": [
+          "GET /sa/agents/{saAgentRef}/client/{saUtr}",
+          "GET /agents/regime/PAYE/agent/{agentCode}/client/{empRef}",
+          "GET /registration/relationship/arn/{arn}"
+        ],
+        "mandatory": false,
+        "usedFor": ["sa-auth", "epaye-auth", "fallback for MTD services"],
+        "operationType": "write"
+      },
+      {
+        "service": "agent-mapping",
+        "purpose": "Maps MTD ARNs to legacy SA Agent References",
+        "endpoints": ["GET /agent-mapping/mappings/sa/{arn}"],
+        "mandatory": false,
+        "usedFor": ["sa-auth (MTD agents only)"],
+        "operationType": "read"
+      }
+    ],
+    "modernServices": [
+      {
+        "service": "agent-fi-relationship",
+        "purpose": "Financial Information relationship store (write operations)",
+        "endpoints": ["GET /relationships/PERSONAL-INCOME-RECORD/agent/{arn}/client/{nino}"],
+        "mandatory": false,
+        "usedFor": ["afi-auth"],
+        "operationType": "write"
+      },
+      {
+        "service": "agent-client-relationships",
+        "purpose": "Primary relationship store for modern MTD services (write operations)",
+        "endpoints": ["GET /agent/{arn}/service/{service}/client/{clientIdType}/{clientId}"],
+        "mandatory": false,
+        "usedFor": ["mtd-it-auth", "mtd-vat-auth", "trust-auth", "cgt-auth", "ppt-auth", "cbc-auth", "pillar2-auth"],
+        "operationType": "write"
+      },
+      {
+        "service": "agent-permissions",
+        "purpose": "Granular permissions service (write operations)",
+        "endpoints": ["GET /arn/{arn}/client/{clientId}"],
+        "mandatory": false,
+        "usedFor": ["Modern MTD services when feature flag enabled"],
+        "operationType": "write"
+      }
+    ]
+  },
+  "supportedAuthTypes": [
+    {
+      "authType": "sa-auth",
+      "service": "Self Assessment",
+      "agentCodeFormat": "SA Agent Reference or ARN",
+      "clientIdFormat": "SA UTR",
+      "relationshipStore": "DES + enrolment-store-proxy",
+      "writeTarget": "DES"
+    },
+    {
+      "authType": "epaye-auth",
+      "service": "PAYE",
+      "agentCodeFormat": "PAYE Agent Code or ARN",
+      "clientIdFormat": "Employer Reference",
+      "relationshipStore": "DES + enrolment-store-proxy",
+      "writeTarget": "DES"
+    },
+    {
+      "authType": "afi-auth",
+      "service": "Agent for Individuals",
+      "agentCodeFormat": "ARN",
+      "clientIdFormat": "NINO",
+      "relationshipStore": "agent-fi-relationship",
+      "writeTarget": "agent-fi-relationship"
+    },
+    {
+      "authType": "mtd-it-auth",
+      "service": "Making Tax Digital - Income Tax",
+      "agentCodeFormat": "ARN",
+      "clientIdFormat": "MTD IT ID",
+      "relationshipStore": "agent-client-relationships + DES fallback",
+      "writeTarget": "agent-client-relationships (primary), DES (fallback)"
+    },
+    {
+      "authType": "mtd-vat-auth",
+      "service": "Making Tax Digital - VAT",
+      "agentCodeFormat": "ARN",
+      "clientIdFormat": "VRN",
+      "relationshipStore": "agent-client-relationships + DES fallback",
+      "writeTarget": "agent-client-relationships (primary), DES (fallback)"
+    },
+    {
+      "authType": "trust-auth",
+      "service": "Trust Registration",
+      "agentCodeFormat": "ARN",
+      "clientIdFormat": "Trust URN or UTR",
+      "relationshipStore": "agent-client-relationships + DES fallback",
+      "writeTarget": "agent-client-relationships (primary), DES (fallback)"
+    },
+    {
+      "authType": "cgt-auth",
+      "service": "Capital Gains Tax",
+      "agentCodeFormat": "ARN",
+      "clientIdFormat": "CGT Reference",
+      "relationshipStore": "agent-client-relationships + DES fallback",
+      "writeTarget": "agent-client-relationships (primary), DES (fallback)"
+    },
+    {
+      "authType": "ppt-auth",
+      "service": "Plastic Packaging Tax",
+      "agentCodeFormat": "ARN",
+      "clientIdFormat": "PPT Reference",
+      "relationshipStore": "agent-client-relationships + DES fallback",
+      "writeTarget": "agent-client-relationships (primary), DES (fallback)"
+    },
+    {
+      "authType": "cbc-auth",
+      "service": "Country-by-Country Reporting",
+      "agentCodeFormat": "ARN",
+      "clientIdFormat": "CBC ID",
+      "relationshipStore": "agent-client-relationships + DES fallback",
+      "writeTarget": "agent-client-relationships (primary), DES (fallback)"
+    },
+    {
+      "authType": "pillar2-auth",
+      "service": "Pillar 2",
+      "agentCodeFormat": "ARN",
+      "clientIdFormat": "Pillar 2 ID",
+      "relationshipStore": "agent-client-relationships + DES fallback",
+      "writeTarget": "agent-client-relationships (primary), DES (fallback)"
+    }
+  ],
+  "operationCharacteristics": {
+    "operationType": "write",
+    "idempotent": true,
+    "transactional": false,
+    "multiStoreWrites": true,
+    "description": "Creates or updates agent-client relationships across multiple backend stores based on authentication type"
+  },
+  "performanceCharacteristics": {
+    "bestCaseLatency": "300-400ms",
+    "worstCaseLatency": "1000-1500ms",
+    "typicalLatency": "500-800ms",
+    "notes": "Write operations are typically slower than reads due to persistence requirements",
+    "cachingStrategy": {
+      "authentication": "May be cached by auth service",
+      "suspensionStatus": "Not cached - real-time enforcement",
+      "relationshipWrites": "Persisted immediately to backing stores"
+    }
+  }
+}
