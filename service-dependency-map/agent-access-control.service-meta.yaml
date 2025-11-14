@@ -1,0 +1,112 @@
+service: agent-access-control
+repository: https://github.com/hmrc/agent-access-control
+capabilities:
+- agent-client-authorization
+- agent-relationship-validation
+- multi-regime-support
+audience:
+- internal
+interaction: synchronous
+criticality: high
+lifecycle: active
+dependencies:
+  consumes:
+  - service: auth
+    purpose: Authentication and authorization of agent credentials
+    criticality: mandatory
+  - service: agent-assurance
+    purpose: Agent suspension verification and entity validation
+    criticality: mandatory
+  - service: enrolment-store-proxy
+    purpose: Enrolment delegation service for SA and PAYE
+    criticality: conditional
+    condition: Used for sa-auth and epaye-auth types
+  - service: des
+    purpose: Data Exchange Service (legacy relationship store and fallback)
+    criticality: conditional
+    condition: Used for SA, PAYE, and as fallback for MTD services
+  - service: agent-fi-relationship
+    purpose: Financial Information relationship store for AFI
+    criticality: conditional
+    condition: Used for afi-auth type
+  - service: agent-client-relationships
+    purpose: Primary relationship store for modern MTD services
+    criticality: conditional
+    condition: Used for MTD services (IT, VAT, Trust, CGT, PPT, CBC, Pillar2)
+  - service: agent-mapping
+    purpose: Maps MTD ARNs to legacy SA Agent References
+    criticality: conditional
+    condition: Used for sa-auth with MTD agents
+  - service: agent-permissions
+    purpose: Granular permissions service for fine-grained access control
+    criticality: conditional
+    condition: Used when granular permissions feature flag is enabled
+  produces:
+  - service: datastream
+    purpose: Audit events for agent access control decisions
+    eventType: AgentAccessControlDecision
+tags:
+- agent-authorization
+- multi-regime
+- relationship-management
+apis:
+- id: AAC01
+  method: GET
+  path: /{authType}/agent/{agentCode}/client/{clientId}
+  description: 'Fetches the current access permissions for a given agent (`{agentCode}`)
+    to act on behalf of a client (`{clientId}`), using the specified authentication
+    type (`{authType}`). This endpoint validates agent-client relationships through
+    comprehensive checks including agent authentication, suspension status verification,
+    relationship validation across multiple backend stores, and optional granular
+    permissions assessment.
+
+    Supported auth types: sa-auth, epaye-auth, afi-auth, mtd-it-auth, mtd-vat-auth,
+    trust-auth, cgt-auth, ppt-auth, cbc-auth, pillar2-auth.
+
+    Response codes: 200 OK (authorized), 401 Unauthorized (denied - agent lacks permissions,
+    is suspended, or relationship does not exist).
+    '
+  audience: internal
+  interaction: synchronous
+  consumes:
+  - auth
+  - agent-assurance
+  - enrolment-store-proxy
+  - des
+  - agent-fi-relationship
+  - agent-client-relationships
+  - agent-mapping
+  - agent-permissions
+  produces:
+  - datastream
+- id: AAC02
+  method: POST
+  path: /{authType}/agent/{agentCode}/client/{clientId}
+  description: 'Establishes or modifies the access permissions for a given agent (`{agentCode}`)
+    to represent a client (`{clientId}`), based on the provided authentication type
+    (`{authType}`). This endpoint performs write operations to create or update agent-client
+    relationships across multiple backend systems. It validates agent authentication,
+    checks suspension status, and then creates or updates the relationship in the
+    appropriate backend store based on the authentication type. Multiple backend stores
+    may be updated depending on the service type.
+
+    Supported auth types: sa-auth, epaye-auth, afi-auth, mtd-it-auth, mtd-vat-auth,
+    trust-auth, cgt-auth, ppt-auth, cbc-auth, pillar2-auth.
+
+    Response codes: 200 OK (updated), 201 Created (new relationship), 401 Unauthorized
+    (auth failed), 403 Forbidden (no permission), 409 Conflict (already exists or
+    conflicts).
+    '
+  audience: internal
+  interaction: synchronous
+  consumes:
+  - auth
+  - agent-assurance
+  - enrolment-store-proxy
+  - des
+  - agent-fi-relationship
+  - agent-client-relationships
+  - agent-mapping
+  - agent-permissions
+  produces:
+  - datastream
