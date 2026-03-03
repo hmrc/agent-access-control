@@ -46,6 +46,7 @@ class ESAuthorisationService @Inject() (
     relationshipsConnector: RelationshipsConnector,
     val desAgentClientApiConnector: DesAgentClientApiConnector,
     val agentAssuranceConnector: AgentAssuranceConnector,
+    val getAgentRecordService: AgentRecordService,
     agentPermissionsConnector: AgentPermissionsConnector,
     auditService: AuditService,
     appConfig: AppConfig

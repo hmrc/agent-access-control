@@ -21,9 +21,10 @@ import play.api.libs.json.Json
 import play.api.test.Helpers.NOT_FOUND
 import play.api.test.Helpers.NO_CONTENT
 import play.api.test.Helpers.OK
-import uk.gov.hmrc.agentaccesscontrol.stubs.AgentAssuranceStub
+import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentClientRelationshipStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentPermissionsStub
+import uk.gov.hmrc.agentaccesscontrol.stubs.AgentServicesAccountStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
 import uk.gov.hmrc.agentaccesscontrol.utils.StandardServiceAuthorisationRequest
@@ -32,9 +33,11 @@ import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 class StandardServicesAuthorisationISpec
     extends ComponentSpecHelper
     with AuthStub
-    with AgentAssuranceStub
+    with AgentServicesAccountStub
     with AgentClientRelationshipStub
     with AgentPermissionsStub {
+
+  val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
   private val NoRelationship = "NO_RELATIONSHIP"
   private val NoAssignment   = "NO_ASSIGNMENT"

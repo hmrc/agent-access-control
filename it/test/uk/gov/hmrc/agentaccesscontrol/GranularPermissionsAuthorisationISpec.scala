@@ -19,6 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol
 import play.api.test.Helpers.NOT_FOUND
 import play.api.test.Helpers.NO_CONTENT
 import play.api.test.Helpers.OK
+import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.models.Service
 import uk.gov.hmrc.agentaccesscontrol.stubs._
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
@@ -27,10 +28,12 @@ import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
 class GranularPermissionsAuthorisationISpec
     extends ComponentSpecHelper
     with AuthStub
-    with AgentAssuranceStub
+    with AgentServicesAccountStub
     with AgentClientRelationshipStub
     with AgentPermissionsStub
     with DataStreamStub {
+
+  val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
   private val NoRelationship = "NO_RELATIONSHIP"
   private val NoAssignment   = "NO_ASSIGNMENT"

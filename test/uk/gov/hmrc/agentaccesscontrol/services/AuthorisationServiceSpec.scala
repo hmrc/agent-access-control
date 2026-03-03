@@ -55,6 +55,8 @@ class AuthorisationServiceSpec extends UnitSpec {
       mock[AfiRelationshipConnector]
     protected val mockAgentAssuranceConnector: AgentAssuranceConnector =
       mock[AgentAssuranceConnector]
+    protected val mockSuspensionStatusCheck: AgentRecordService =
+      mock[AgentRecordService]
 
     object TestService
         extends AuthorisationService(
@@ -63,7 +65,8 @@ class AuthorisationServiceSpec extends UnitSpec {
           mockAuditService,
           mockMappingConnector,
           mockAfiRelationshipConnector,
-          mockAgentAssuranceConnector
+          mockAgentAssuranceConnector,
+          mockSuspensionStatusCheck
         )
   }
 
@@ -632,7 +635,7 @@ class AuthorisationServiceSpec extends UnitSpec {
   "AuthorisationService.isAuthorisedForAfi" when {
     "the agent is suspended" should {
       "return AgentSuspended" in new Setup {
-        mockAgentAssuranceConnector.getSuspensionDetails
+        mockSuspensionStatusCheck.getAgentRecord
           .returns(Future.successful(SuspensionDetails(suspensionStatus = true, Some(Set("AGSV")))))
 
         val result: AccessResponse = await(
@@ -655,7 +658,7 @@ class AuthorisationServiceSpec extends UnitSpec {
             *[Seq[(String, Any)]]
           )
           .returns(Future.successful(Success))
-        mockAgentAssuranceConnector.getSuspensionDetails
+        mockSuspensionStatusCheck.getAgentRecord
           .returns(Future.successful(SuspensionDetails.notSuspended))
         mockAfiRelationshipConnector
           .hasRelationship(arn.value, nino.value)
@@ -682,7 +685,7 @@ class AuthorisationServiceSpec extends UnitSpec {
             *[Seq[(String, Any)]]
           )
           .returns(Future.successful(Success))
-        mockAgentAssuranceConnector.getSuspensionDetails
+        mockSuspensionStatusCheck.getAgentRecord
           .returns(Future.successful(SuspensionDetails.notSuspended))
         mockAfiRelationshipConnector
           .hasRelationship(arn.value, nino.value)
@@ -701,7 +704,7 @@ class AuthorisationServiceSpec extends UnitSpec {
     }
     "an error is thrown whilst checking for agent suspension" should {
       "return an AccessResponse Error" in new Setup {
-        mockAgentAssuranceConnector.getSuspensionDetails
+        mockSuspensionStatusCheck.getAgentRecord
           .returns(failedResponse)
 
         val result: AccessResponse = await(
@@ -715,7 +718,7 @@ class AuthorisationServiceSpec extends UnitSpec {
     }
     "an error is thrown whilst checking for an Agent-Fi relationship" should {
       "return an AccessResponse Error" in new Setup {
-        mockAgentAssuranceConnector.getSuspensionDetails
+        mockSuspensionStatusCheck.getAgentRecord
           .returns(Future.successful(SuspensionDetails.notSuspended))
         mockAfiRelationshipConnector.hasRelationship(arn.value, nino.value).returns(failedResponse)
 

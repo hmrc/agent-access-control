@@ -29,12 +29,13 @@ import uk.gov.hmrc.http.HeaderCarrier
 trait AgentSuspensionChecker { this: Logging =>
 
   val agentAssuranceConnector: AgentAssuranceConnector
+  val getAgentRecordService: AgentRecordService
 
   def withSuspensionCheck(agentId: TaxIdentifier, regime: String)(
       proceed: => Future[AccessResponse]
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AccessResponse] = {
 
-    agentAssuranceConnector.getSuspensionDetails
+    getAgentRecordService.getAgentRecord
       .flatMap { suspensionDetails =>
         val isSuspended = suspensionDetails.suspensionStatus && suspensionDetails.suspendedRegimes
           .contains(regime)
