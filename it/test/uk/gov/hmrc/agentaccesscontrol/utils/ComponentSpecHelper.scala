@@ -73,7 +73,9 @@ trait ComponentSpecHelper
     "microservice.services.agent-permissions.host"          -> mockHost,
     "microservice.services.agent-permissions.port"          -> mockPort,
     "microservice.services.agent-assurance.host"            -> mockHost,
-    "microservice.services.agent-assurance.port"            -> mockPort
+    "microservice.services.agent-assurance.port"            -> mockPort,
+    "microservice.services.agent-services-account.host"     -> mockHost,
+    "microservice.services.agent-services-account.port"     -> mockPort
   )
 
   implicit val ws: WSClient = app.injector.instanceOf[WSClient]

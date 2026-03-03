@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import play.api.libs.json.Json
 import play.api.test.Helpers._
+import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.stubs._
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
@@ -26,7 +27,9 @@ class AfiAuthorisationISpec
     extends ComponentSpecHelper
     with AuthStub
     with AgentFiRelationshipStub
-    with AgentAssuranceStub {
+    with AgentServicesAccountStub {
+
+  val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
   private val uri: String    = s"/afi-auth/agent/${testAgentCode.value}/client/${testNino.value}"
   private val regime: String = "AGSV"

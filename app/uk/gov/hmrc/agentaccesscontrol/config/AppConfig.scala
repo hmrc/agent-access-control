@@ -55,6 +55,11 @@ class AppConfig @Inject() (servicesConfig: ServicesConfig) {
 
   lazy val agentAssuranceBaseUrl: String = baseUrl("agent-assurance")
 
+  lazy val agentServicesAccountBaseUrl: String = baseUrl("agent-services-account")
+
   def enableGranularPermissions: Boolean =
     servicesConfig.getBoolean("features.enable-granular-permissions")
+
+  def enableGetAgentSuspensionStatusServiceViaASA: Boolean =
+    servicesConfig.getBoolean("features.enable-get-suspension-check-via-asa")
 }
