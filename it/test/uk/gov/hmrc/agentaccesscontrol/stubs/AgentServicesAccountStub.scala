@@ -40,6 +40,6 @@ trait AgentServicesAccountStub extends WiremockMethods {
       uri = "/agent-services-account/agent-record-with-checks"
     ).thenReturn(
       status = OK,
-      body = Json.obj("suspensionStatus" -> true, "regimes" -> Json.arr(regime))
+      body = Json.obj("suspensionDetails" -> Json.obj("suspensionStatus" -> true, "regimes" -> Json.arr(regime)))
     )
 }
