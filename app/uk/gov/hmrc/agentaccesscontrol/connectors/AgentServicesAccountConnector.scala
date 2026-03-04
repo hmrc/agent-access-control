@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentaccesscontrol.connectors
 
-import java.net.URL
 import javax.inject.Inject
 
 import scala.concurrent.ExecutionContext
@@ -25,13 +24,14 @@ import scala.concurrent.Future
 import play.api.http.Status.NOT_FOUND
 import play.api.http.Status.NO_CONTENT
 import play.api.http.Status.OK
-import play.api.libs.json.Json
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetails
 import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetailsNotFound
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
 
 class AgentServicesAccountConnector @Inject() (http: HttpClientV2)(
@@ -39,19 +39,17 @@ class AgentServicesAccountConnector @Inject() (http: HttpClientV2)(
     val ec: ExecutionContext
 ) {
 
-  val url: String = s"${appConfig.agentServicesAccountBaseUrl}/agent-services-account"
-
-  import uk.gov.hmrc.http.HttpReads.Implicits._
+  val baseUrl: String = s"${appConfig.agentServicesAccountBaseUrl}/agent-services-account"
 
   def getSuspensionDetails(
       implicit hc: HeaderCarrier
   ): Future[SuspensionDetails] =
     http
-      .get(new URL(s"$url/agent-record-with-checks"))
+      .get(url"$baseUrl/agent-record-with-checks")
       .execute[HttpResponse]
       .map(response =>
         response.status match {
-          case OK         => Json.parse(response.body).as[SuspensionDetails]
+          case OK         => (response.json \ "suspensionDetails").as[SuspensionDetails]
           case NO_CONTENT => SuspensionDetails(suspensionStatus = false, None)
           case NOT_FOUND =>
             throw SuspensionDetailsNotFound("No record found for this agent")
