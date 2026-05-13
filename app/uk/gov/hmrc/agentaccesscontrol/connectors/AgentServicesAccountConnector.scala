@@ -22,7 +22,6 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 import play.api.http.Status.NOT_FOUND
-import play.api.http.Status.NO_CONTENT
 import play.api.http.Status.OK
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetails
@@ -49,8 +48,10 @@ class AgentServicesAccountConnector @Inject() (http: HttpClientV2)(
       .execute[HttpResponse]
       .map(response =>
         response.status match {
-          case OK         => (response.json \ "suspensionDetails").as[SuspensionDetails]
-          case NO_CONTENT => SuspensionDetails(suspensionStatus = false, None)
+          case OK =>
+            (response.json \ "suspensionDetails")
+              .asOpt[SuspensionDetails]
+              .getOrElse(SuspensionDetails(suspensionStatus = false, None))
           case NOT_FOUND =>
             throw SuspensionDetailsNotFound("No record found for this agent")
           case _ =>
