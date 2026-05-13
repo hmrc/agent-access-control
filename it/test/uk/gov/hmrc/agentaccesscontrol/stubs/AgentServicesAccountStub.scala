@@ -24,7 +24,14 @@ import uk.gov.hmrc.agentaccesscontrol.utils.WiremockMethods
 
 trait AgentServicesAccountStub extends WiremockMethods {
 
-  def stubAgentNotSuspended: StubMapping = stubAgentServicesAccountSuspensionStatus(NO_CONTENT)
+  def stubAgentNotSuspended: StubMapping =
+    when(
+      method = GET,
+      uri = "/agent-services-account/agent-record-with-checks"
+    ).thenReturn(
+      status = OK,
+      body = Json.obj("otherDetails" -> "test")
+    )
 
   def stubAgentServicesAccountSuspensionStatus(responseStatus: Int): StubMapping =
     when(

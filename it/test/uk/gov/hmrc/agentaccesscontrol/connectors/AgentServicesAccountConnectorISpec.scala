@@ -39,7 +39,7 @@ class AgentServicesAccountConnectorISpec extends ComponentSpecHelper with AgentS
       result shouldBe SuspensionDetails(suspensionStatus = true, Some(Set("HMRC-MTD-VAT")))
     }
 
-    "return a SuspensionDetails model with default details when the status is 204 (not suspended)" in {
+    "return a SuspensionDetails model with default details when the response is 200 without suspension details" in {
       stubAgentNotSuspended
       val result = await(connector.getSuspensionDetails)
 
