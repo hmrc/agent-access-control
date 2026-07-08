@@ -60,6 +60,4 @@ class AppConfig @Inject() (servicesConfig: ServicesConfig) {
   def enableGranularPermissions: Boolean =
     servicesConfig.getBoolean("features.enable-granular-permissions")
 
-  def enableGetAgentSuspensionStatusServiceViaASA: Boolean =
-    servicesConfig.getBoolean("features.enable-get-suspension-check-via-asa")
 }

@@ -40,9 +40,8 @@ class AgentRecordServiceSpec extends PlaySpec with IdiomaticMockito {
 
     object TestService
         extends AgentRecordService(
-          mockAgentAssuranceConnector,
           mockAgentServicesAccountConnector
-        )(mockAppConfig)
+        )
   }
 
   val suspensionDetails: SuspensionDetails = SuspensionDetails(suspensionStatus = false, None)
@@ -52,25 +51,7 @@ class AgentRecordServiceSpec extends PlaySpec with IdiomaticMockito {
 
   "AgentRecordService" should {
 
-    "Get agent suspension status from agent assurance when feature flag is false" in new Setup {
-
-      mockAppConfig.enableGetAgentSuspensionStatusServiceViaASA
-        .returns(false)
-
-      mockAgentAssuranceConnector
-        .getSuspensionDetails(*[HeaderCarrier], ec)
-        .returns(Future.successful(suspensionDetails))
-
-      val result = TestService.getAgentRecord.futureValue
-
-      result mustBe suspensionDetails
-
-    }
-
-    "Get agent suspension status from agent services account when feature flag is true" in new Setup {
-
-      mockAppConfig.enableGetAgentSuspensionStatusServiceViaASA
-        .returns(true)
+    "Get agent suspension status from agent services account" in new Setup {
 
       mockAgentServicesAccountConnector
         .getSuspensionDetails(*[HeaderCarrier])
