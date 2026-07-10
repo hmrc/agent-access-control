@@ -44,7 +44,6 @@ class AuthorisationService @Inject() (
     auditService: AuditService,
     mappingConnector: MappingConnector,
     afiRelationshipConnector: AfiRelationshipConnector,
-    val agentAssuranceConnector: AgentAssuranceConnector,
     val getAgentRecordService: AgentRecordService
 ) extends AgentSuspensionChecker
     with Logging {

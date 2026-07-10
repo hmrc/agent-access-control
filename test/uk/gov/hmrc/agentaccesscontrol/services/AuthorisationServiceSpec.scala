@@ -25,7 +25,6 @@ import play.api.test.Helpers.await
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlEvent
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.AfiRelationshipConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.AgentAssuranceConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.MappingConnector
 import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
@@ -53,8 +52,6 @@ class AuthorisationServiceSpec extends UnitSpec {
       mock[MappingConnector]
     protected val mockAfiRelationshipConnector: AfiRelationshipConnector =
       mock[AfiRelationshipConnector]
-    protected val mockAgentAssuranceConnector: AgentAssuranceConnector =
-      mock[AgentAssuranceConnector]
     protected val mockSuspensionStatusCheck: AgentRecordService =
       mock[AgentRecordService]
 
@@ -65,7 +62,6 @@ class AuthorisationServiceSpec extends UnitSpec {
           mockAuditService,
           mockMappingConnector,
           mockAfiRelationshipConnector,
-          mockAgentAssuranceConnector,
           mockSuspensionStatusCheck
         )
   }

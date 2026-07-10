@@ -27,7 +27,6 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.AgentAssuranceConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.helpers.UnitSpec
 import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.CbcId
@@ -58,8 +57,6 @@ class ESAuthorisationServiceSpec extends UnitSpec {
       mock[RelationshipsConnector]
     protected val mockDesAgentClientApiConnector: DesAgentClientApiConnector =
       mock[DesAgentClientApiConnector]
-    protected val mockAgentAssuranceConnector: AgentAssuranceConnector =
-      mock[AgentAssuranceConnector]
     protected val mockSuspensionStatusCheck: AgentRecordService =
       mock[AgentRecordService]
     protected val mockAgentPermissionsConnector: AgentPermissionsConnector =
@@ -70,7 +67,6 @@ class ESAuthorisationServiceSpec extends UnitSpec {
         extends ESAuthorisationService(
           mockRelationshipsConnector,
           mockDesAgentClientApiConnector,
-          mockAgentAssuranceConnector,
           mockSuspensionStatusCheck,
           mockAgentPermissionsConnector,
           mockAuditService,

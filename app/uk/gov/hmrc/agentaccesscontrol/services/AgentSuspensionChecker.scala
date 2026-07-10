@@ -20,7 +20,6 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 import play.api.Logging
-import uk.gov.hmrc.agentaccesscontrol.connectors.AgentAssuranceConnector
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetailsNotFound
 import uk.gov.hmrc.domain.TaxIdentifier
@@ -28,7 +27,6 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 trait AgentSuspensionChecker { this: Logging =>
 
-  val agentAssuranceConnector: AgentAssuranceConnector
   val getAgentRecordService: AgentRecordService
 
   def withSuspensionCheck(agentId: TaxIdentifier, regime: String)(
