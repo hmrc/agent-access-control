@@ -16,28 +16,19 @@
 
 package uk.gov.hmrc.agentaccesscontrol.services
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
-import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentaccesscontrol.connectors.AgentAssuranceConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.AgentServicesAccountConnector
 import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetails
 import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class AgentRecordService @Inject() (
-    agentAssuranceConnector: AgentAssuranceConnector,
     agentServicesAccountConnector: AgentServicesAccountConnector
-)(
-    implicit appConfig: AppConfig
 ) {
 
-  def getAgentRecord(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SuspensionDetails] =
-    if (appConfig.enableGetAgentSuspensionStatusServiceViaASA)
-      agentServicesAccountConnector.getSuspensionDetails
-    else
-      agentAssuranceConnector.getSuspensionDetails
+  def getAgentRecord(implicit hc: HeaderCarrier): Future[SuspensionDetails] =
+    agentServicesAccountConnector.getSuspensionDetails
 }

@@ -22,8 +22,6 @@ import scala.concurrent.Future
 import org.mockito.scalatest.IdiomaticMockito
 import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.scalatestplus.play.PlaySpec
-import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentaccesscontrol.connectors.AgentAssuranceConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.AgentServicesAccountConnector
 import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetails
 import uk.gov.hmrc.http.HeaderCarrier
@@ -31,18 +29,13 @@ import uk.gov.hmrc.http.HeaderCarrier
 class AgentRecordServiceSpec extends PlaySpec with IdiomaticMockito {
 
   trait Setup {
-    protected val mockAgentAssuranceConnector: AgentAssuranceConnector =
-      mock[AgentAssuranceConnector]
     protected val mockAgentServicesAccountConnector: AgentServicesAccountConnector =
       mock[AgentServicesAccountConnector]
-    protected val mockAppConfig: AppConfig =
-      mock[AppConfig]
 
     object TestService
         extends AgentRecordService(
-          mockAgentAssuranceConnector,
           mockAgentServicesAccountConnector
-        )(mockAppConfig)
+        )
   }
 
   val suspensionDetails: SuspensionDetails = SuspensionDetails(suspensionStatus = false, None)
@@ -52,25 +45,7 @@ class AgentRecordServiceSpec extends PlaySpec with IdiomaticMockito {
 
   "AgentRecordService" should {
 
-    "Get agent suspension status from agent assurance when feature flag is false" in new Setup {
-
-      mockAppConfig.enableGetAgentSuspensionStatusServiceViaASA
-        .returns(false)
-
-      mockAgentAssuranceConnector
-        .getSuspensionDetails(*[HeaderCarrier], ec)
-        .returns(Future.successful(suspensionDetails))
-
-      val result = TestService.getAgentRecord.futureValue
-
-      result mustBe suspensionDetails
-
-    }
-
-    "Get agent suspension status from agent services account when feature flag is true" in new Setup {
-
-      mockAppConfig.enableGetAgentSuspensionStatusServiceViaASA
-        .returns(true)
+    "Get agent suspension status from agent services account" in new Setup {
 
       mockAgentServicesAccountConnector
         .getSuspensionDetails(*[HeaderCarrier])

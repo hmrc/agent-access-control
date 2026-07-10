@@ -29,7 +29,6 @@ import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.mtd.RelationshipsConnector
-import uk.gov.hmrc.agentaccesscontrol.connectors.AgentAssuranceConnector
 import uk.gov.hmrc.agentaccesscontrol.connectors.AgentPermissionsConnector
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
@@ -45,7 +44,6 @@ import uk.gov.hmrc.play.audit.http.connector.AuditResult
 class ESAuthorisationService @Inject() (
     relationshipsConnector: RelationshipsConnector,
     val desAgentClientApiConnector: DesAgentClientApiConnector,
-    val agentAssuranceConnector: AgentAssuranceConnector,
     val getAgentRecordService: AgentRecordService,
     agentPermissionsConnector: AgentPermissionsConnector,
     auditService: AuditService,
