@@ -26,11 +26,10 @@ case class AuthEnrolment(key: String, identifiers: Seq[EnrolmentIdentifier], sta
     identifiers.find(_.key == key).map(_.value)
 }
 
-object AuthEnrolment {
+object AuthEnrolment:
   given idformat: OFormat[EnrolmentIdentifier] =
     Json.format[EnrolmentIdentifier]
   given format: OFormat[AuthEnrolment] = Json.format[AuthEnrolment]
-}
 
 case class Enrolments(enrolments: Set[AuthEnrolment]) {
 

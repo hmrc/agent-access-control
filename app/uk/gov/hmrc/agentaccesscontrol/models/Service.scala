@@ -109,12 +109,11 @@ sealed abstract class ClientIdType[+T <: TaxIdentifier](
   def isValid(value: String): Boolean
 }
 
-object ClientIdType {
+object ClientIdType:
   val supportedTypes =
     Seq(NinoType, MtdItIdType, VrnType, UtrType, UrnType, CgtRefType, PptRefType, CbcIdType, PlrIdType)
   def forId(id: String) =
     supportedTypes.find(_.id == id).getOrElse(throw new IllegalArgumentException("Invalid id:" + id))
-}
 
 case object NinoType extends ClientIdType(classOf[Nino], "ni", "NINO", Nino.apply) {
   override def isValid(value: String): Boolean = Nino.isValid(value)
@@ -166,7 +165,7 @@ case class ClientIdentifier[T <: TaxIdentifier](underlying: T) {
   override def toString: String = value
 }
 
-object ClientIdentifier {
+object ClientIdentifier:
   type ClientId = ClientIdentifier[? <: TaxIdentifier]
 
   def apply(value: String, typeId: String): ClientId = {
@@ -177,5 +176,3 @@ object ClientIdentifier {
 
     ClientIdentifier(underlying)
   }
-
-}

@@ -21,6 +21,5 @@ import play.api.libs.json.OFormat
 
 case class AgentUser(id: String, name: String)
 
-object AgentUser {
+object AgentUser:
   given format: OFormat[AgentUser] = Json.format[AgentUser]
-}

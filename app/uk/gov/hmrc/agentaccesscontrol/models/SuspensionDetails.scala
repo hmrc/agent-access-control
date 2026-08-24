@@ -68,7 +68,7 @@ case class SuspensionDetails(suspensionStatus: Boolean, regimes: Option[Set[Stri
 
 }
 
-object SuspensionDetails {
+object SuspensionDetails:
 
   lazy val serviceToRegime: Map[Service, String] = Map(
     MtdIt                -> "ITSA",
@@ -92,6 +92,5 @@ object SuspensionDetails {
   given formats: OFormat[SuspensionDetails] = Json.format
 
   val notSuspended: SuspensionDetails = SuspensionDetails(suspensionStatus = false, None)
-}
 
 case class SuspensionDetailsNotFound(message: String) extends Exception(message)

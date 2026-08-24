@@ -50,7 +50,7 @@ enum AccessResponse {
    */
 }
 
-object AccessResponse {
+object AccessResponse:
 
   def toReason(accessResponse: AccessResponse): Seq[(String, Any)] =
     accessResponse match {
@@ -59,4 +59,3 @@ object AccessResponse {
       case _ =>
         Seq(("reason", "NoRelationship"))
     }
-}

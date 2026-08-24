@@ -22,7 +22,7 @@ import uk.gov.hmrc.domain.TaxIdentifier
 
 case class Utr(value: String) extends TaxIdentifier with TrustTaxIdentifier
 
-object Utr {
+object Utr:
 
   private val utrPattern = "^\\d{10}$".r
 
@@ -34,4 +34,3 @@ object Utr {
 
   given utrReads: SimpleObjectReads[Utr]   = new SimpleObjectReads[Utr]("value", Utr.apply)
   given utrWrites: SimpleObjectWrites[Utr] = new SimpleObjectWrites[Utr](_.value)
-}
