@@ -24,7 +24,7 @@ import scala.concurrent.Future
 
 import com.google.inject.ImplementedBy
 import play.api.http.Status.NOT_FOUND
-import play.api.libs.json._
+import play.api.libs.json.*
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.ClientIdentifier
@@ -32,8 +32,8 @@ import uk.gov.hmrc.agentaccesscontrol.models.Service
 import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpErrorFunctions._
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpErrorFunctions.*
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
@@ -41,13 +41,13 @@ import uk.gov.hmrc.http.UpstreamErrorResponse
 case class Relationship(arn: String, clientId: String)
 
 object Relationship {
-  implicit val jsonReads: Reads[Relationship] = Json.reads[Relationship]
+  given jsonReads: Reads[Relationship] = Json.reads[Relationship]
 }
 
 @ImplementedBy(classOf[RelationshipsConnectorImpl])
 trait RelationshipsConnector {
   def relationshipExists(arn: Arn, maybeUserId: Option[String], identifier: TaxIdentifier, service: Service)(
-      implicit ec: ExecutionContext,
+      using ec: ExecutionContext,
       hc: HeaderCarrier
   ): Future[Boolean]
 
@@ -58,7 +58,7 @@ class RelationshipsConnectorImpl @Inject() (appConfig: AppConfig, httpClient: Ht
     extends RelationshipsConnector {
 
   def relationshipExists(arn: Arn, maybeUserId: Option[String], identifier: TaxIdentifier, service: Service)(
-      implicit ec: ExecutionContext,
+      using ec: ExecutionContext,
       hc: HeaderCarrier
   ): Future[Boolean] = {
 

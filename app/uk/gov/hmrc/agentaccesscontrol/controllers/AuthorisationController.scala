@@ -53,14 +53,15 @@ class AuthorisationController @Inject() (
     override val authConnector: AuthConnector,
     val esAuthorisationService: ESAuthorisationService,
     cc: ControllerComponents
-)(implicit val ec: ExecutionContext)
+)(using ec: ExecutionContext)
     extends BackendController(cc)
     with AuthAction
     with Logging {
 
   def authorise(authType: String, agentCode: String, clientId: String): Action[AnyContent] = {
 
-    Action.async { implicit request: Request[_] =>
+    Action.async { request =>
+      given Request[Any] = request
       withAgentAuthorised(AgentCode(agentCode)) { authDetails =>
         def standardAuth(service: Service, taxId: TaxIdentifier): Future[AccessResponse] =
           esAuthorisationService.authoriseStandardService(AgentCode(agentCode), taxId, service, authDetails)

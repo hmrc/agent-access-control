@@ -23,10 +23,11 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Writes
+import play.api.libs.ws.DefaultBodyWritables.*
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.WSRequest
 import play.api.libs.ws.WSResponse
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import play.api.Application
 
 trait ComponentSpecHelper
@@ -78,7 +79,7 @@ trait ComponentSpecHelper
     "microservice.services.agent-services-account.port"     -> mockPort
   )
 
-  implicit val ws: WSClient = app.injector.instanceOf[WSClient]
+  given ws: WSClient = app.injector.instanceOf[WSClient]
 
   override def beforeAll(): Unit = {
     startWiremock()
@@ -99,7 +100,7 @@ trait ComponentSpecHelper
     await(buildClient(uri).withHttpHeaders("Authorization" -> "Bearer 123").get())
   }
 
-  def post[T](uri: String)(body: T)(implicit writes: Writes[T]): WSResponse = {
+  def post[T](uri: String)(body: T)(using writes: Writes[T]): WSResponse = {
     await(
       buildClient(uri)
         .withHttpHeaders("Content-Type" -> "application/json", "Authorization" -> "Bearer 123")
@@ -107,7 +108,7 @@ trait ComponentSpecHelper
     )
   }
 
-  def put[T](uri: String)(body: T)(implicit writes: Writes[T]): WSResponse = {
+  def put[T](uri: String)(body: T)(using writes: Writes[T]): WSResponse = {
     await(
       buildClient(uri)
         .withHttpHeaders("Content-Type" -> "application/json", "Authorization" -> "Bearer 123")

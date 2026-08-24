@@ -12,4 +12,3 @@ addSbtPlugin("com.timushev.sbt"  % "sbt-updates"          % "0.6.4")  // provide
 addSbtPlugin("net.virtual-void"  % "sbt-dependency-graph" % "0.9.2")  // provides sbt command "dependencyTree"
 addSbtPlugin("org.scoverage"     % "sbt-scoverage"        % "2.4.4")
 addSbtPlugin("org.scalastyle"    % "scalastyle-sbt-plugin"% "1.0.0" exclude("org.scala-lang.modules", "scala-xml_2.12"))
-

@@ -31,7 +31,7 @@ trait AgentSuspensionChecker { this: Logging =>
 
   def withSuspensionCheck(agentId: TaxIdentifier, regime: String)(
       proceed: => Future[AccessResponse]
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AccessResponse] = {
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[AccessResponse] = {
 
     getAgentRecordService.getAgentRecord
       .flatMap { suspensionDetails =>

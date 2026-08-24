@@ -40,15 +40,15 @@ class AgentRecordServiceSpec extends PlaySpec with IdiomaticMockito {
 
   val suspensionDetails: SuspensionDetails = SuspensionDetails(suspensionStatus = false, None)
 
-  implicit val ec: ExecutionContext = mock[ExecutionContext]
-  implicit val hc: HeaderCarrier    = mock[HeaderCarrier]
+  given ec: ExecutionContext = mock[ExecutionContext]
+  given hc: HeaderCarrier    = mock[HeaderCarrier]
 
   "AgentRecordService" should {
 
     "Get agent suspension status from agent services account" in new Setup {
 
       mockAgentServicesAccountConnector
-        .getSuspensionDetails(*[HeaderCarrier])
+        .getSuspensionDetails(using *[HeaderCarrier])
         .returns(Future.successful(suspensionDetails))
 
       val result = TestService.getAgentRecord.futureValue

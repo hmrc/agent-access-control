@@ -20,7 +20,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContextExecutor
 
 import play.api.libs.json.Json
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.agentaccesscontrol.models.PayeFoundResponse
 import uk.gov.hmrc.agentaccesscontrol.models.PayeNotFoundResponse
 import uk.gov.hmrc.agentaccesscontrol.models.SaFoundResponse
@@ -29,13 +29,13 @@ import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.DataStreamStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.DesStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.*
 import uk.gov.hmrc.http.HeaderCarrier
 
 class DesAgentClientApiConnectorISpec extends ComponentSpecHelper with AuthStub with DataStreamStub with DesStub {
 
-  implicit val headerCarrier: HeaderCarrier       = HeaderCarrier()
-  implicit val ec: ExecutionContextExecutor       = ExecutionContext.global
+  given headerCarrier: HeaderCarrier              = HeaderCarrier()
+  given ec: ExecutionContextExecutor              = ExecutionContext.global
   val desApiConnector: DesAgentClientApiConnector = app.injector.instanceOf[DesAgentClientApiConnector]
 
   "getSaAgentClientRelationship" should {

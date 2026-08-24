@@ -18,17 +18,17 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.mtd
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.agentaccesscontrol.models.Service
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentClientRelationshipStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.*
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.UpstreamErrorResponse
 
 class RelationshipsConnectorISpec extends ComponentSpecHelper with AgentClientRelationshipStub {
 
-  implicit val hc: HeaderCarrier        = HeaderCarrier()
+  given hc: HeaderCarrier               = HeaderCarrier()
   val connector: RelationshipsConnector = app.injector.instanceOf[RelationshipsConnector]
 
   "relationshipExists for HMRC-MTD-IT" should {

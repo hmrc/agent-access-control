@@ -32,7 +32,7 @@ object Vrn {
       case _              => false
     }
 
-  implicit val vrnReads: SimpleObjectReads[Vrn]   = new SimpleObjectReads[Vrn]("value", Vrn.apply)
-  implicit val vrnWrites: SimpleObjectWrites[Vrn] = new SimpleObjectWrites[Vrn](_.value)
+  given vrnReads: SimpleObjectReads[Vrn]   = new SimpleObjectReads[Vrn]("value", Vrn.apply)
+  given vrnWrites: SimpleObjectWrites[Vrn] = new SimpleObjectWrites[Vrn](_.value)
 
 }

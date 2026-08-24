@@ -17,13 +17,13 @@
 package uk.gov.hmrc.agentaccesscontrol
 
 import play.api.libs.json.Json
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentMappingStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.DesStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.EnrolmentStoreProxyStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.*
 import uk.gov.hmrc.domain.SaAgentReference
 
 class SaAuthorisationISpec

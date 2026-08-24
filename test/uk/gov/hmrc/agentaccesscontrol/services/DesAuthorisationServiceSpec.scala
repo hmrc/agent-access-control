@@ -50,7 +50,7 @@ class DesAuthorisationServiceSpec extends UnitSpec {
   private val clientSaUtr = SaUtr("CLIENTSAUTR456")
   private val empRef      = EmpRef("123", "45676890")
 
-  implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
+  given headerCarrier: HeaderCarrier = HeaderCarrier()
 
   "isAuthorisedInCesa" should {
     "return false if the Agent or the relationship between the Agent and Client was not found in DES" in new Setup {

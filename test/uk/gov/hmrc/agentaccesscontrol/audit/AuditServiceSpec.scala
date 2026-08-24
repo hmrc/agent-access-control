@@ -43,17 +43,17 @@ class AuditServiceSpec extends UnitSpec {
     object TestService extends AuditService(mockAuditConnector)
   }
 
-  private implicit val hc: HeaderCarrier =
+  private given hc: HeaderCarrier =
     HeaderCarrier(
       authorization = Some(Authorization("dummy bearer token")),
       sessionId = Some(SessionId("dummy session id")),
       requestId = Some(RequestId("dummy request id"))
     )
 
-  private implicit val ec: ExecutionContext =
+  private given ec: ExecutionContext =
     concurrent.ExecutionContext.Implicits.global
 
-  private implicit val request: FakeRequest[Any] = FakeRequest("GET", "/path")
+  private given request: FakeRequest[Any] = FakeRequest("GET", "/path")
 
   "createAuditEvent" should {
     "create an event with the correct fields" in new Setup {

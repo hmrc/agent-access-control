@@ -16,14 +16,15 @@
 
 package uk.gov.hmrc.agentaccesscontrol
 
+import play.api.libs.ws.DefaultBodyReadables.*
 import play.api.test.Helpers.NOT_FOUND
 import play.api.test.Helpers.NO_CONTENT
 import play.api.test.Helpers.OK
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.models.Service
-import uk.gov.hmrc.agentaccesscontrol.stubs._
+import uk.gov.hmrc.agentaccesscontrol.stubs.*
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.*
 
 class GranularPermissionsAuthorisationISpec
     extends ComponentSpecHelper
@@ -125,7 +126,7 @@ class GranularPermissionsAuthorisationISpec
         val result = get(uri)
 
         result.status shouldBe 401
-        result.body should include(NoAssignment)
+        result.body[String].should(include(NoAssignment))
 
         // Check that we have called agent-client-relationships specifying for which agent user to check the relationship
         verifyCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(timesCalled = 1)
@@ -138,7 +139,7 @@ class GranularPermissionsAuthorisationISpec
 
         val result = get(uri)
         result.status shouldBe 401
-        result.body should include(NoRelationship)
+        result.body[String].should(include(NoRelationship))
       }
       "agency and client have a relationship, agency is opted-in to GP," +
         "there is a tax service group for the right service but agent user is not part of it" in {
@@ -152,7 +153,7 @@ class GranularPermissionsAuthorisationISpec
 
           val result = get(uri)
           result.status shouldBe 401
-          result.body should include(NoAssignment)
+          result.body[String].should(include(NoAssignment))
 
           // Check that we have called agent-client-relationships specifying for which agent user to check the relationship
           verifyCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(timesCalled = 1)
@@ -170,7 +171,7 @@ class GranularPermissionsAuthorisationISpec
 
           val result = get(uri)
           result.status shouldBe 401
-          result.body should include(NoAssignment)
+          result.body[String].should(include(NoAssignment))
 
           // Check that we have called agent-client-relationships to check for the user assignment (as the tax service group check should have failed)
           verifyCgtAgentClientRelationshipToUser(testArn, testCgtRef, testProviderId)(timesCalled = 1)

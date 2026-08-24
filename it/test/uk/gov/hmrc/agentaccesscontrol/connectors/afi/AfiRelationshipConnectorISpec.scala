@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors.afi
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.agentaccesscontrol.connectors.AfiRelationshipConnector
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentFiRelationshipStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
@@ -32,7 +32,7 @@ import uk.gov.hmrc.http.UpstreamErrorResponse
 
 class AfiRelationshipConnectorISpec extends ComponentSpecHelper with AuthStub with AgentFiRelationshipStub {
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  given hc: HeaderCarrier = HeaderCarrier()
 
   val connector: AfiRelationshipConnector = app.injector.instanceOf[AfiRelationshipConnector]
 

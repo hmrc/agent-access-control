@@ -89,7 +89,7 @@ object SuspensionDetails {
   lazy val validSuspensionRegimes: Set[String] =
     serviceToRegime.view.filterKeys(suspendableServices.contains(_)).values.toSet
 
-  implicit val formats: OFormat[SuspensionDetails] = Json.format
+  given formats: OFormat[SuspensionDetails] = Json.format
 
   val notSuspended: SuspensionDetails = SuspensionDetails(suspensionStatus = false, None)
 }

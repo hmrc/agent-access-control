@@ -40,7 +40,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentClientApiConnector) extends Logging {
 
   def isAuthorisedInCesa(agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)(
-      implicit ec: ExecutionContext,
+      using ec: ExecutionContext,
       hc: HeaderCarrier
   ): Future[Boolean] =
     desAgentClientApiConnector
@@ -50,7 +50,7 @@ class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentCli
   def isAuthorisedInEbs(
       agentCode: AgentCode,
       empRef: EmpRef
-  )(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
+  )(using ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] =
     desAgentClientApiConnector
       .getPayeAgentClientRelationship(agentCode, empRef)
       .map(handleEBSResponse(agentCode, empRef, _))

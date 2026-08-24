@@ -37,7 +37,7 @@ class EnrolmentStoreProxyAuthorisationService @Inject() (val enrolmentStoreProxy
   def isAuthorisedForSaInEnrolmentStoreProxy(
       ggCredentialId: String,
       saUtr: SaUtr
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
     getDelegatedAgentUserIdsFor(saUtr).map { assignedAgents =>
       assignedAgents.exists(_.value == ggCredentialId)
     }
@@ -45,7 +45,7 @@ class EnrolmentStoreProxyAuthorisationService @Inject() (val enrolmentStoreProxy
   def isAuthorisedForPayeInEnrolmentStoreProxy(
       ggCredentialId: String,
       empRef: EmpRef
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
     enrolmentStoreProxyConnector.getIRPAYEDelegatedUserIdsFor(empRef).map { assignedAgents =>
       val result = assignedAgents.exists(_.value == ggCredentialId)
       if (result) {
@@ -59,16 +59,16 @@ class EnrolmentStoreProxyAuthorisationService @Inject() (val enrolmentStoreProxy
 
   def getDelegatedAgentUserIdsFor(
       saUtr: SaUtr
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
     enrolmentStoreProxyConnector.getIRSADelegatedUserIdsFor(saUtr)
 
   def getAgentUserIdsFor(
       saAgentReference: SaAgentReference
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
     enrolmentStoreProxyConnector.getIRSAAGENTPrincipalUserIdsFor(saAgentReference)
 
   def getAgentUserIdsFor(
       saAgentReferences: Seq[SaAgentReference]
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[(SaAgentReference, Set[AgentUserId])]] =
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[(SaAgentReference, Set[AgentUserId])]] =
     Future.sequence(saAgentReferences.map(r => getAgentUserIdsFor(r).map((r, _))))
 }

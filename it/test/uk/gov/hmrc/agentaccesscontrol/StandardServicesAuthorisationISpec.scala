@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentaccesscontrol
 
 import play.api.http.Status.UNAUTHORIZED
 import play.api.libs.json.Json
+import play.api.libs.ws.DefaultBodyReadables.*
 import play.api.test.Helpers.NOT_FOUND
 import play.api.test.Helpers.NO_CONTENT
 import play.api.test.Helpers.OK
@@ -28,7 +29,7 @@ import uk.gov.hmrc.agentaccesscontrol.stubs.AgentServicesAccountStub
 import uk.gov.hmrc.agentaccesscontrol.stubs.AuthStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
 import uk.gov.hmrc.agentaccesscontrol.utils.StandardServiceAuthorisationRequest
-import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.*
 
 class StandardServicesAuthorisationISpec
     extends ComponentSpecHelper
@@ -78,7 +79,7 @@ class StandardServicesAuthorisationISpec
             }
 
             result.status shouldBe 401
-            result.body should include(NoRelationship)
+            result.body[String].should(include(NoRelationship))
           }
         }
         "agent has opted-in to access groups" should {
@@ -131,7 +132,7 @@ class StandardServicesAuthorisationISpec
               }
             }
             result.status shouldBe UNAUTHORIZED
-            result.body should include(NoAssignment)
+            result.body[String].should(include(NoAssignment))
           }
 
           "record metrics for access control request" in {
@@ -163,7 +164,7 @@ class StandardServicesAuthorisationISpec
           }
 
           result.status shouldBe 401
-          result.body should include(NoRelationship)
+          result.body[String].should(include(NoRelationship))
         }
 
         "handle suspended for AGSV regime and return unauthorised" in {
@@ -178,7 +179,7 @@ class StandardServicesAuthorisationISpec
           }
 
           result.status shouldBe 401
-          result.body should include(NoRelationship)
+          result.body[String].should(include(NoRelationship))
         }
       }
     }

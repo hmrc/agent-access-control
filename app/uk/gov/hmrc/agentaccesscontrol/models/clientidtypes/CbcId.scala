@@ -22,7 +22,7 @@ import uk.gov.hmrc.domain.TaxIdentifier
 
 case class CbcId(value: String) extends TaxIdentifier
 
-object CbcId {
+object CbcId:
 
   private val pattern = "^X[A-Z]CBC[0-9]{10}$".r
 
@@ -32,6 +32,5 @@ object CbcId {
       case _           => false
     }
 
-  implicit val reads: SimpleObjectReads[CbcId]   = new SimpleObjectReads[CbcId]("value", CbcId.apply)
-  implicit val writes: SimpleObjectWrites[CbcId] = new SimpleObjectWrites[CbcId](_.value)
-}
+  given reads: SimpleObjectReads[CbcId]   = new SimpleObjectReads[CbcId]("value", CbcId.apply)
+  given writes: SimpleObjectWrites[CbcId] = new SimpleObjectWrites[CbcId](_.value)

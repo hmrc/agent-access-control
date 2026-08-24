@@ -23,7 +23,7 @@ import javax.inject.Singleton
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-import play.api.http.Status._
+import play.api.http.Status.*
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.domain.AgentUserId
@@ -32,7 +32,7 @@ import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.domain.SaUtr
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
@@ -44,17 +44,17 @@ class EnrolmentStoreProxyConnector @Inject() (appConfig: AppConfig, httpClient: 
 
   def getIRSAAGENTPrincipalUserIdsFor(
       saAgentReference: SaAgentReference
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
     getES0(s"IR-SA-AGENT~IRAgentReference~${saAgentReference.value}", "principal")
 
   def getIRSADelegatedUserIdsFor(
       utr: SaUtr
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] =
     getES0(s"IR-SA~UTR~$utr", "delegated")
 
   def getIRPAYEDelegatedUserIdsFor(
       empRef: EmpRef
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] = {
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] = {
     val enrolmentKey =
       s"IR-PAYE~TaxOfficeNumber~${empRef.taxOfficeNumber}~TaxOfficeReference~${empRef.taxOfficeReference}"
 
@@ -64,7 +64,7 @@ class EnrolmentStoreProxyConnector @Inject() (appConfig: AppConfig, httpClient: 
   private def getES0(
       enrolmentKey: String,
       usersType: String
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] = {
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Set[AgentUserId]] = {
 
     val url = pathES0(enrolmentKey, usersType)
 

@@ -30,7 +30,7 @@ import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMappings
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.StringContextOps
 
 @Singleton
@@ -39,7 +39,7 @@ class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2
   def getAgentMappings(
       key: String,
       arn: Arn
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AgentReferenceMappings] = {
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[AgentReferenceMappings] = {
 
     httpClient
       .get(genMappingUrl(key, arn))

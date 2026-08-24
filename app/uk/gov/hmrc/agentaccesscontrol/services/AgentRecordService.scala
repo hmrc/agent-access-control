@@ -29,6 +29,6 @@ class AgentRecordService @Inject() (
     agentServicesAccountConnector: AgentServicesAccountConnector
 ) {
 
-  def getAgentRecord(implicit hc: HeaderCarrier): Future[SuspensionDetails] =
+  def getAgentRecord(using hc: HeaderCarrier): Future[SuspensionDetails] =
     agentServicesAccountConnector.getSuspensionDetails
 }

@@ -24,7 +24,7 @@ import play.api.mvc.Results
 import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
-import uk.gov.hmrc.auth.core._
+import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.agentCode
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.allEnrolments
@@ -40,7 +40,7 @@ trait AuthAction extends AuthorisedFunctions with Results with Logging {
 
   def withAgentAuthorised[A](
       ac: AgentCode
-  )(body: AuthDetails => Future[Result])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Result] = {
+  )(body: AuthDetails => Future[Result])(using hc: HeaderCarrier, ec: ExecutionContext): Future[Result] = {
     authorised(AuthProviders(GovernmentGateway).and(AffinityGroup.Agent))
       .retrieve(agentCode.and(allEnrolments).and(credentialRole).and(credentials)) {
         case agentCodeOpt ~ enrols ~ credRole ~ Some(Credentials(providerId, _)) =>
