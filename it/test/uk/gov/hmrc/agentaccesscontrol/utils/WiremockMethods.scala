@@ -17,13 +17,13 @@
 package uk.gov.hmrc.agentaccesscontrol.utils
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder
-import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.matching.UrlPattern
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import play.api.libs.json.Writes
 
 trait WiremockMethods {
-  def when[T](method: HTTPMethod, uri: String, body: T)(implicit writes: Writes[T]): Mapping = {
+  def when[T](method: HTTPMethod, uri: String, body: T)(using writes: Writes[T]): Mapping = {
     when(method, uri, Map.empty, body)
   }
 
@@ -32,7 +32,7 @@ trait WiremockMethods {
   }
 
   def when[T](method: HTTPMethod, uri: String, headers: Map[String, String], body: T)(
-      implicit writes: Writes[T]
+      using writes: Writes[T]
   ): Mapping = {
     val stringBody = writes.writes(body).toString()
     new Mapping(method, uri, headers, Some(stringBody))
@@ -56,12 +56,12 @@ trait WiremockMethods {
       }
     }
 
-    def thenReturn[T](status: Int, body: T)(implicit writes: Writes[T]): StubMapping = {
+    def thenReturn[T](status: Int, body: T)(using writes: Writes[T]): StubMapping = {
       val stringBody = writes.writes(body).toString()
       thenReturnInternal(status, Map.empty, Some(stringBody))
     }
 
-    def thenReturn[T](status: Int, headers: Map[String, String], body: T)(implicit writes: Writes[T]): StubMapping = {
+    def thenReturn[T](status: Int, headers: Map[String, String], body: T)(using writes: Writes[T]): StubMapping = {
       val stringBody = writes.writes(body).toString()
       thenReturnInternal(status, headers, Some(stringBody))
     }

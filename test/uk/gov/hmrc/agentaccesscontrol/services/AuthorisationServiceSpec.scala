@@ -34,7 +34,7 @@ import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
 import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetails
 import uk.gov.hmrc.auth.core.User
-import uk.gov.hmrc.domain._
+import uk.gov.hmrc.domain.*
 import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.UpstreamErrorResponse
@@ -84,10 +84,10 @@ class AuthorisationServiceSpec extends UnitSpec {
 
   private val afiAuthDetails = AuthDetails(None, Some(arn), credId, None, None)
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
-  implicit val ec: ExecutionContext =
+  given hc: HeaderCarrier = HeaderCarrier()
+  given ec: ExecutionContext =
     concurrent.ExecutionContext.Implicits.global
-  implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
+  given fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
     FakeRequest("GET", s"/agent-access-control/sa-auth/agent/$agentCode/client/$saUtr")
 
   "AuthorisationService.isAuthorisedForSa" when {
@@ -192,7 +192,7 @@ class AuthorisationServiceSpec extends UnitSpec {
 
         mockEnrolmentStoreProxyAuthorisationService
           .getDelegatedAgentUserIdsFor(saUtr)
-          .returns(Future.successful(Set.empty))
+          .returns(Future.successful(Set.empty[AgentUserId]))
 
         await(TestService.isAuthorisedForSa(agentCode, saUtr, mtdAuthDetails)) mustBe AccessResponse.NoRelationship
       }

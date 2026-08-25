@@ -21,7 +21,7 @@ import play.api.http.HeaderNames
 import play.api.libs.json.JsObject
 import play.api.libs.json.Json
 import play.api.libs.json.Writes
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.utils.WiremockMethods
 import uk.gov.hmrc.domain.SaAgentReference
@@ -64,7 +64,7 @@ trait AuthStub extends WiremockMethods {
     )
   }
 
-  def stubAuth[T](status: Int, body: T)(implicit writes: Writes[T]): StubMapping =
+  def stubAuth[T](status: Int, body: T)(using writes: Writes[T]): StubMapping =
     when(method = POST, uri = authUrl)
       .thenReturn(status = status, body = writes.writes(body))
 

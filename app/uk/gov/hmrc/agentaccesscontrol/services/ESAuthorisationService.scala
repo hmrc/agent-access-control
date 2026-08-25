@@ -48,7 +48,7 @@ class ESAuthorisationService @Inject() (
     agentPermissionsConnector: AgentPermissionsConnector,
     auditService: AuditService,
     appConfig: AppConfig
-)(implicit ec: ExecutionContext)
+)(using ec: ExecutionContext)
     extends AgentSuspensionChecker
     with Logging {
 
@@ -57,7 +57,7 @@ class ESAuthorisationService @Inject() (
       taxIdentifier: TaxIdentifier,
       service: Service,
       authDetails: AuthDetails
-  )(implicit hc: HeaderCarrier, request: Request[_]): Future[AccessResponse] =
+  )(using hc: HeaderCarrier, request: Request[?]): Future[AccessResponse] =
     authDetails match {
       case agentAuthDetails @ AuthDetails(_, Some(arn), _, _, userRoleOpt) =>
         // TODO confirm with stakeholders if we can remove regime for suspension check?
@@ -86,7 +86,7 @@ class ESAuthorisationService @Inject() (
       agentAuthDetails: AuthDetails,
       arn: Arn,
       userRoleOpt: Option[CredentialRole]
-  )(implicit hc: HeaderCarrier, request: Request[_]): Future[AccessResponse] = {
+  )(using hc: HeaderCarrier, request: Request[?]): Future[AccessResponse] = {
     checkForRelationship(arn, Some(agentAuthDetails.ggCredentialId), service, taxIdentifier)
       .map { result =>
         auditDecision(
@@ -132,7 +132,7 @@ class ESAuthorisationService @Inject() (
       result: Boolean,
       regime: String,
       extraDetails: Seq[(String, Any)]
-  )(implicit hc: HeaderCarrier, request: Request[Any], ec: ExecutionContext): Future[AuditResult] =
+  )(using hc: HeaderCarrier, request: Request[Any], ec: ExecutionContext): Future[AuditResult] =
     auditService.sendAuditEvent(
       AgentAccessControlDecision,
       "agent access decision",
@@ -143,7 +143,7 @@ class ESAuthorisationService @Inject() (
     )
 
   def checkForRelationship(arn: Arn, maybeUserId: Option[String], service: Service, taxIdentifier: TaxIdentifier)(
-      implicit ec: ExecutionContext,
+      using ec: ExecutionContext,
       hc: HeaderCarrier
   ): Future[AccessResponse] = {
 
@@ -192,7 +192,7 @@ class ESAuthorisationService @Inject() (
       userId: String,
       regime: String,
       taxIdentifier: TaxIdentifier
-  )(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
+  )(using ec: ExecutionContext, hc: HeaderCarrier): Future[Boolean] = {
     val taxGroupsServiceKey = regime match {
       // These tax service groups use a truncated key to indicate either type
       case "HMRC-TERS-ORG" | "HMRC-TERSNT-ORG"   => "HMRC-TERS"

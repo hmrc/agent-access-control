@@ -22,12 +22,11 @@ import uk.gov.hmrc.domain.TaxIdentifier
 
 case class CgtRef(value: String) extends TaxIdentifier
 
-object CgtRef {
+object CgtRef:
 
-  implicit val cgtReads: SimpleObjectReads[CgtRef]   = new SimpleObjectReads[CgtRef]("value", CgtRef.apply)
-  implicit val cgtWrites: SimpleObjectWrites[CgtRef] = new SimpleObjectWrites[CgtRef](_.value)
+  given cgtReads: SimpleObjectReads[CgtRef]   = new SimpleObjectReads[CgtRef]("value", CgtRef.apply)
+  given cgtWrites: SimpleObjectWrites[CgtRef] = new SimpleObjectWrites[CgtRef](_.value)
 
   private val cgtRegex = "^X[A-Z]CGTP[0-9]{9}$"
 
   def isValid(value: String): Boolean = value.matches(cgtRegex)
-}

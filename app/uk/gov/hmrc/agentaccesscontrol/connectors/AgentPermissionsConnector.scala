@@ -32,7 +32,7 @@ import uk.gov.hmrc.agentaccesscontrol.models.accessgroups.TaxGroup
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.UpstreamErrorResponse
@@ -41,16 +41,16 @@ import uk.gov.hmrc.http.UpstreamErrorResponse
 trait AgentPermissionsConnector {
   def granularPermissionsOptinRecordExists(
       arn: Arn
-  )(implicit hc: HeaderCarrier, executionContext: ExecutionContext): Future[Boolean]
+  )(using hc: HeaderCarrier, executionContext: ExecutionContext): Future[Boolean]
 
   def getTaxServiceGroups(arn: Arn, service: String)(
-      implicit hc: HeaderCarrier,
+      using hc: HeaderCarrier,
       executionContext: ExecutionContext
   ): Future[Option[TaxGroup]]
 }
 
 @Singleton
-class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2)(implicit appConfig: AppConfig)
+class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2)(using appConfig: AppConfig)
     extends AgentPermissionsConnector
     with Logging {
 
@@ -58,7 +58,7 @@ class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2)(implicit appC
 
   def granularPermissionsOptinRecordExists(
       arn: Arn
-  )(implicit hc: HeaderCarrier, executionContext: ExecutionContext): Future[Boolean] = {
+  )(using hc: HeaderCarrier, executionContext: ExecutionContext): Future[Boolean] = {
 
     val url = url"$agentPermissionsBaseUrl/agent-permissions/arn/${arn.value}/optin-record-exists"
 
@@ -77,7 +77,7 @@ class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2)(implicit appC
   def getTaxServiceGroups(
       arn: Arn,
       service: String
-  )(implicit hc: HeaderCarrier, executionContext: ExecutionContext): Future[Option[TaxGroup]] = {
+  )(using hc: HeaderCarrier, executionContext: ExecutionContext): Future[Option[TaxGroup]] = {
 
     val url = url"$agentPermissionsBaseUrl/agent-permissions/arn/${arn.value}/tax-group/$service"
 

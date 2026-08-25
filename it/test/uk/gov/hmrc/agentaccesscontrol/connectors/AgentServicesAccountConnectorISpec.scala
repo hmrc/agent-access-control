@@ -27,7 +27,7 @@ import uk.gov.hmrc.http.UpstreamErrorResponse
 
 class AgentServicesAccountConnectorISpec extends ComponentSpecHelper with AgentServicesAccountStub {
 
-  implicit val hc: HeaderCarrier               = HeaderCarrier()
+  given hc: HeaderCarrier                      = HeaderCarrier()
   val connector: AgentServicesAccountConnector = app.injector.instanceOf[AgentServicesAccountConnector]
 
   "getSuspensionDetails" should {

@@ -25,7 +25,7 @@ import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpErrorFunctions._
+import uk.gov.hmrc.http.HttpErrorFunctions.*
 import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.http.StringContextOps
@@ -36,7 +36,7 @@ class AfiRelationshipConnector @Inject() (appConfig: AppConfig, httpClient: Http
   def hasRelationship(
       arn: String,
       clientId: String
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
     val afiRelationshipUrl =
       url"${appConfig.afiBaseUrl}/agent-fi-relationship/relationships/PERSONAL-INCOME-RECORD/agent/$arn/client/$clientId"

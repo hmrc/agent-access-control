@@ -22,7 +22,7 @@ import uk.gov.hmrc.domain.TaxIdentifier
 
 case class Urn(value: String) extends TaxIdentifier with TrustTaxIdentifier
 
-object Urn {
+object Urn:
 
   private val urnPattern = "^((?i)[a-z]{2}trust[0-9]{8})$".r
 
@@ -32,6 +32,5 @@ object Urn {
       case _              => false
     }
 
-  implicit val urnReads: SimpleObjectReads[Urn]   = new SimpleObjectReads[Urn]("value", Urn.apply)
-  implicit val urnWrites: SimpleObjectWrites[Urn] = new SimpleObjectWrites[Urn](_.value)
-}
+  given urnReads: SimpleObjectReads[Urn]   = new SimpleObjectReads[Urn]("value", Urn.apply)
+  given urnWrites: SimpleObjectWrites[Urn] = new SimpleObjectWrites[Urn](_.value)

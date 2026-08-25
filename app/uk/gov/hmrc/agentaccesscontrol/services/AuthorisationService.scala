@@ -29,11 +29,11 @@ import play.api.mvc.Request
 import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
-import uk.gov.hmrc.agentaccesscontrol.connectors._
+import uk.gov.hmrc.agentaccesscontrol.connectors.*
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
-import uk.gov.hmrc.domain._
+import uk.gov.hmrc.domain.*
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 
@@ -55,7 +55,7 @@ class AuthorisationService @Inject() (
       agentCode: AgentCode,
       saUtr: SaUtr,
       authDetails: AuthDetails
-  )(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[AccessResponse] =
+  )(using ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[AccessResponse] =
     authDetails match {
       case nonMtdAgentAuthDetails @ AuthDetails(Some(saAgentReference), _, _, _, _) =>
         authoriseNonMtdAgentForIRSA(agentCode, saUtr, nonMtdAgentAuthDetails, saAgentReference)
@@ -74,7 +74,7 @@ class AuthorisationService @Inject() (
       saUtr: SaUtr,
       agentAuthDetails: AuthDetails,
       saAgentReference: SaAgentReference
-  )(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[AccessResponse] =
+  )(using ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[AccessResponse] =
     for {
       isAuthorisedInESP <- espAuthorisationService
         .isAuthorisedForSaInEnrolmentStoreProxy(agentAuthDetails.ggCredentialId, saUtr)
@@ -111,7 +111,7 @@ class AuthorisationService @Inject() (
     }
 
   private def authoriseMtdAgentForIRSA(agentCode: AgentCode, saUtr: SaUtr, agentAuthDetails: AuthDetails, arn: Arn)(
-      implicit ec: ExecutionContext,
+      using ec: ExecutionContext,
       hc: HeaderCarrier,
       request: Request[Any]
   ): Future[AccessResponse] = {
@@ -145,7 +145,7 @@ class AuthorisationService @Inject() (
       saUtr: SaUtr,
       agentAuthDetails: AuthDetails,
       arn: Arn
-  )(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[AccessResponse] =
+  )(using ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[AccessResponse] =
     for {
       saAgentReferences <- mappingConnector
         .getAgentMappings("sa", arn)
@@ -217,7 +217,7 @@ class AuthorisationService @Inject() (
       agentCode: AgentCode,
       empRef: EmpRef,
       authDetails: AuthDetails
-  )(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[AccessResponse] =
+  )(using ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[AccessResponse] =
     authDetails match {
       case agentAuthDetails @ AuthDetails(_, _, ggCredentialId, _, _) if ggCredentialId.nonEmpty =>
         for {
@@ -264,7 +264,7 @@ class AuthorisationService @Inject() (
       agentCode: AgentCode,
       nino: Nino,
       authDetails: AuthDetails
-  )(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[AccessResponse] =
+  )(using ec: ExecutionContext, hc: HeaderCarrier, request: Request[Any]): Future[AccessResponse] =
     authDetails match {
       case authDetails @ AuthDetails(_, Some(arn), _, _, _) =>
         withSuspensionCheck(arn, "PIR") {
@@ -276,7 +276,7 @@ class AuthorisationService @Inject() (
     }
 
   private def authoriseBasedOnAfiRelationships(agentCode: AgentCode, nino: Nino, authDetails: AuthDetails, arn: Arn)(
-      implicit ec: ExecutionContext,
+      using ec: ExecutionContext,
       hc: HeaderCarrier,
       request: Request[Any]
   ): Future[AccessResponse] = {
@@ -316,7 +316,7 @@ class AuthorisationService @Inject() (
       taxIdentifier: TaxIdentifier,
       result: Boolean,
       extraDetails: Seq[(String, Any)]
-  )(implicit hc: HeaderCarrier, request: Request[Any], ec: ExecutionContext): Future[AuditResult] = {
+  )(using hc: HeaderCarrier, request: Request[Any], ec: ExecutionContext): Future[AuditResult] = {
 
     val optionalDetails = Seq(
       agentAuthDetails.saAgentReference.map("saAgentReference" -> _),

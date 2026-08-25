@@ -40,7 +40,7 @@ import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 @Singleton
 class MicroserviceMonitoringFilter @Inject() (metrics: Metrics, routes: Routes, val mat: Materializer)(
-    implicit ec: ExecutionContext
+    using ec: ExecutionContext
 ) extends MonitoringFilter(metrics.defaultRegistry) {
 
   def keyToPatternMapping: Seq[(String, String)] =
@@ -68,7 +68,7 @@ object KeyToPatternMappingFromRoutes extends Logging {
     }
 }
 
-abstract class MonitoringFilter(kenshooRegistry: MetricRegistry)(implicit ec: ExecutionContext)
+abstract class MonitoringFilter(kenshooRegistry: MetricRegistry)(using ec: ExecutionContext)
     extends Filter
     with MonitoringKeyMatcher
     with Logging {
@@ -86,12 +86,12 @@ abstract class MonitoringFilter(kenshooRegistry: MetricRegistry)(implicit ec: Ex
     }
   }
 
-  private def monitor(serviceName: String)(function: => Future[Result])(implicit ec: ExecutionContext): Future[Result] =
+  private def monitor(serviceName: String)(function: => Future[Result])(using ec: ExecutionContext): Future[Result] =
     timer(serviceName) {
       function
     }
 
-  private def timer(serviceName: String)(function: => Future[Result])(implicit ec: ExecutionContext): Future[Result] = {
+  private def timer(serviceName: String)(function: => Future[Result])(using ec: ExecutionContext): Future[Result] = {
     val start = System.nanoTime()
     function.andThen {
       case Success(result) =>

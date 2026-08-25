@@ -17,11 +17,11 @@
 package uk.gov.hmrc.agentaccesscontrol
 
 import play.api.libs.json.Json
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentaccesscontrol.stubs._
+import uk.gov.hmrc.agentaccesscontrol.stubs.*
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
-import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants._
+import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.*
 
 class AfiAuthorisationISpec
     extends ComponentSpecHelper

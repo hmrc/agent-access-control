@@ -22,7 +22,7 @@ import uk.gov.hmrc.domain.TaxIdentifier
 
 case class Vrn(value: String) extends TaxIdentifier
 
-object Vrn {
+object Vrn:
 
   private val vrnPattern = "[0-9]{9}".r
 
@@ -32,7 +32,5 @@ object Vrn {
       case _              => false
     }
 
-  implicit val vrnReads: SimpleObjectReads[Vrn]   = new SimpleObjectReads[Vrn]("value", Vrn.apply)
-  implicit val vrnWrites: SimpleObjectWrites[Vrn] = new SimpleObjectWrites[Vrn](_.value)
-
-}
+  given vrnReads: SimpleObjectReads[Vrn]   = new SimpleObjectReads[Vrn]("value", Vrn.apply)
+  given vrnWrites: SimpleObjectWrites[Vrn] = new SimpleObjectWrites[Vrn](_.value)

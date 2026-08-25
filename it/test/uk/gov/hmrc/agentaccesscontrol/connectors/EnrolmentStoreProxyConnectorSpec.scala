@@ -21,13 +21,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.http.Status.BAD_GATEWAY
 import play.api.libs.json.JsResultException
 import play.api.libs.json.Json
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.agentaccesscontrol.stubs.EnrolmentStoreProxyStub
 import uk.gov.hmrc.agentaccesscontrol.utils.ComponentSpecHelper
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testEmpRef
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testProviderId
 import uk.gov.hmrc.agentaccesscontrol.utils.TestConstants.testSaUtr
-import uk.gov.hmrc.domain._
+import uk.gov.hmrc.domain.*
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.UpstreamErrorResponse
 
@@ -36,7 +36,7 @@ class EnrolmentStoreProxyConnectorSpec extends ComponentSpecHelper with Enrolmen
   val agentCode  = AgentCode("A1234567890A")
   val providerId = "12345-credId"
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  given hc: HeaderCarrier = HeaderCarrier()
 
   val connector: EnrolmentStoreProxyConnector = app.injector.instanceOf[EnrolmentStoreProxyConnector]
 

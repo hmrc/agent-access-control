@@ -34,8 +34,8 @@ sealed abstract class Service(
     val id: String,
     val invitationIdPrefix: Char,
     val enrolmentKey: String,
-    val supportedSuppliedClientIdType: ClientIdType[_ <: TaxIdentifier],
-    val supportedClientIdType: ClientIdType[_ <: TaxIdentifier]
+    val supportedSuppliedClientIdType: ClientIdType[? <: TaxIdentifier],
+    val supportedClientIdType: ClientIdType[? <: TaxIdentifier]
 ) {
   override def toString: String = this.id
 
@@ -94,14 +94,14 @@ object Service {
   def apply(id: String): Service                = forId(id)
   def unapply(service: Service): Option[String] = Some(service.id)
 
-  val reads                            = new SimpleObjectReads[Service]("id", Service.apply)
-  val writes                           = new SimpleObjectWrites[Service](_.id)
-  implicit val format: Format[Service] = Format(reads, writes)
+  val reads                     = new SimpleObjectReads[Service]("id", Service.apply)
+  val writes                    = new SimpleObjectWrites[Service](_.id)
+  given format: Format[Service] = Format(reads, writes)
 
 }
 
 sealed abstract class ClientIdType[+T <: TaxIdentifier](
-    val clazz: Class[_],
+    val clazz: Class[?],
     val id: String,
     val enrolmentId: String,
     val createUnderlying: String => T
@@ -109,12 +109,11 @@ sealed abstract class ClientIdType[+T <: TaxIdentifier](
   def isValid(value: String): Boolean
 }
 
-object ClientIdType {
+object ClientIdType:
   val supportedTypes =
     Seq(NinoType, MtdItIdType, VrnType, UtrType, UrnType, CgtRefType, PptRefType, CbcIdType, PlrIdType)
   def forId(id: String) =
     supportedTypes.find(_.id == id).getOrElse(throw new IllegalArgumentException("Invalid id:" + id))
-}
 
 case object NinoType extends ClientIdType(classOf[Nino], "ni", "NINO", Nino.apply) {
   override def isValid(value: String): Boolean = Nino.isValid(value)
@@ -166,14 +165,14 @@ case class ClientIdentifier[T <: TaxIdentifier](underlying: T) {
   override def toString: String = value
 }
 
-object ClientIdentifier {
-  type ClientId = ClientIdentifier[_ <: TaxIdentifier]
+object ClientIdentifier:
+  type ClientId = ClientIdentifier[? <: TaxIdentifier]
 
-  def apply(value: String, typeId: String): ClientId =
-    ClientIdType.supportedTypes
+  def apply(value: String, typeId: String): ClientId = {
+    val underlying: TaxIdentifier = ClientIdType.supportedTypes
       .find(_.id == typeId)
       .getOrElse(throw new IllegalArgumentException("Invalid Client Id Type: " + typeId))
       .createUnderlying(value.replaceAll("\\s", ""))
 
-  implicit def wrap[T <: TaxIdentifier](taxId: T): ClientIdentifier[T] = ClientIdentifier(taxId)
-}
+    ClientIdentifier(underlying)
+  }

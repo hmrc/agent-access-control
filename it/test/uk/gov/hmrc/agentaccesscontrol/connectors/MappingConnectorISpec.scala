@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol.connectors
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import play.api.libs.json.Json
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMapping
 import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMappings
 import uk.gov.hmrc.agentaccesscontrol.stubs.AgentMappingStub
@@ -32,7 +32,7 @@ class MappingConnectorISpec extends ComponentSpecHelper with AgentMappingStub {
 
   val connector: MappingConnector = app.injector.instanceOf[MappingConnector]
   private val saKey: String       = "sa"
-  implicit val hc: HeaderCarrier  = HeaderCarrier()
+  given hc: HeaderCarrier         = HeaderCarrier()
 
   "MappingConnector" should {
     "return 200 for finding one SA mapping for a particular ARN" in {

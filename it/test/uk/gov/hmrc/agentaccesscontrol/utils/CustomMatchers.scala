@@ -31,7 +31,7 @@ trait CustomMatchers {
         response.status
       )
 
-  def jsonBodyAs[T](expectedValue: T)(implicit reads: Reads[T]): HavePropertyMatcher[WSResponse, T] =
+  def jsonBodyAs[T](expectedValue: T)(using reads: Reads[T]): HavePropertyMatcher[WSResponse, T] =
     (response: WSResponse) =>
       HavePropertyMatchResult(
         response.json.as[T] == expectedValue,

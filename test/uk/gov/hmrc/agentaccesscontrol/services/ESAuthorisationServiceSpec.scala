@@ -81,8 +81,8 @@ class ESAuthorisationServiceSpec extends UnitSpec {
     AuthDetails(None, Some(arn), "ggId", Some("Agent"), Some(User))
   private val nonMtdAuthDetails: AuthDetails =
     AuthDetails(Some(saAgentRef), None, "ggId", Some("Agent"), Some(User))
-  implicit val hc: HeaderCarrier = HeaderCarrier()
-  implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
+  given hc: HeaderCarrier = HeaderCarrier()
+  given fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
     FakeRequest("GET", "/agent-access-control/mtd-it-auth/agent/arn/client/utr")
 
   private val templateTestDataSets: Seq[(Service, TaxIdentifier, String, String)] = Seq(

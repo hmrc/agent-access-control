@@ -41,8 +41,8 @@ class AuditService @Inject() (val auditConnector: AuditConnector) {
       regime: String,
       regimeId: TaxIdentifier,
       details: Seq[(String, Any)] = Seq.empty
-  )(implicit hc: HeaderCarrier, request: Request[Any], ec: ExecutionContext): Future[AuditResult] =
-    auditConnector.sendEvent(createAuditEvent(event, transactionName, agentCode, regime, regimeId.value, details: _*))
+  )(using hc: HeaderCarrier, request: Request[Any], ec: ExecutionContext): Future[AuditResult] =
+    auditConnector.sendEvent(createAuditEvent(event, transactionName, agentCode, regime, regimeId.value, details*))
 
   def createAuditEvent(
       event: AgentAccessControlEvent,
@@ -51,13 +51,13 @@ class AuditService @Inject() (val auditConnector: AuditConnector) {
       regime: String,
       regimeId: String,
       details: (String, Any)*
-  )(implicit hc: HeaderCarrier, request: Request[Any]): DataEvent =
+  )(using hc: HeaderCarrier, request: Request[Any]): DataEvent =
     DataEvent(
       auditSource = "agent-access-control",
       auditType = event.toString,
       tags = hc.toAuditTags(transactionName, request.path),
       detail = hc.toAuditDetails("agentCode" -> agentCode.value, "regime" -> regime, "regimeId" -> regimeId)
-        ++ Map(details.map(pair => pair._1 -> pair._2.toString): _*)
+        ++ Map(details.map(pair => pair._1 -> pair._2.toString)*)
     )
 }
 

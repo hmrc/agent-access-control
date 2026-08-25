@@ -40,10 +40,10 @@ class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec {
         )
   }
 
-  private val saUtr              = SaUtr("S123456789")
-  private val empRef             = EmpRef("123", "43567890")
-  implicit val hc: HeaderCarrier = new HeaderCarrier()
-  implicit val ec: ExecutionContext =
+  private val saUtr       = SaUtr("S123456789")
+  private val empRef      = EmpRef("123", "43567890")
+  given hc: HeaderCarrier = new HeaderCarrier()
+  given ec: ExecutionContext =
     concurrent.ExecutionContext.Implicits.global
 
   "isAuthorisedForSaInEnrolmentStoreProxy" should {
@@ -152,7 +152,7 @@ class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec {
     "Return an empty Array if ESP found no user ids" in new Setup {
       mockEnrolmentStoreProxyConnector
         .getIRSAAGENTPrincipalUserIdsFor(SaAgentReference("ref1"))
-        .returns(Future.successful(Set.empty))
+        .returns(Future.successful(Set.empty[AgentUserId]))
 
       val result =
         await(TestService.getAgentUserIdsFor(SaAgentReference("ref1")))
@@ -193,7 +193,7 @@ class EnrolmentStoreProxyAuthorisationServiceSpec extends UnitSpec {
 
       mockEnrolmentStoreProxyConnector
         .getIRSAAGENTPrincipalUserIdsFor(SaAgentReference("ref2"))
-        .returns(Future.successful(Set.empty))
+        .returns(Future.successful(Set.empty[AgentUserId]))
 
       val result = await(TestService.getAgentUserIdsFor(Seq(SaAgentReference("ref1"), SaAgentReference("ref2"))))
 

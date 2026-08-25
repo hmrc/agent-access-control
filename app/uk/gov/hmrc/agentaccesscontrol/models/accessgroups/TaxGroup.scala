@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentaccesscontrol.models.accessgroups
 import java.time.LocalDateTime
 import java.util.UUID
 
-import play.api.libs.json._
+import play.api.libs.json.*
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 
 case class TaxGroup(
@@ -36,6 +36,5 @@ case class TaxGroup(
     excludedClients: Set[Client]
 )
 
-object TaxGroup {
-  implicit val format: OFormat[TaxGroup] = Json.format[TaxGroup]
-}
+object TaxGroup:
+  given format: OFormat[TaxGroup] = Json.format[TaxGroup]

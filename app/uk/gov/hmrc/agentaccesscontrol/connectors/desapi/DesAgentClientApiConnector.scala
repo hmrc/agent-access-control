@@ -24,26 +24,26 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 import com.google.inject.ImplementedBy
-import play.api.http.Status._
-import play.api.libs.functional.syntax._
-import play.api.libs.json._
+import play.api.http.Status.*
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
-import uk.gov.hmrc.agentaccesscontrol.models._
-import uk.gov.hmrc.domain._
-import uk.gov.hmrc.http._
+import uk.gov.hmrc.agentaccesscontrol.models.*
+import uk.gov.hmrc.domain.*
+import uk.gov.hmrc.http.*
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.HttpErrorFunctions._
+import uk.gov.hmrc.http.HttpErrorFunctions.*
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 @ImplementedBy(classOf[DesAgentClientApiConnectorImpl])
 trait DesAgentClientApiConnector {
   def getSaAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(
-      implicit hc: HeaderCarrier,
+      using hc: HeaderCarrier,
       ec: ExecutionContext
   ): Future[SaDesAgentClientFlagsApiResponse]
 
   def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(
-      implicit hc: HeaderCarrier,
+      using hc: HeaderCarrier,
       ec: ExecutionContext
   ): Future[PayeDesAgentClientFlagsApiResponse]
 }
@@ -68,16 +68,16 @@ class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient
       _Authorization -> s"Bearer $authorizationToken"
     )
 
-  private implicit val foundResponseReads: Reads[SaFoundResponse] =
-    (__ \ "Auth_64-8").read[Boolean].and((__ \ "Auth_i64-8").read[Boolean])(SaFoundResponse)
+  private given foundResponseReads: Reads[SaFoundResponse] =
+    (__ \ "Auth_64-8").read[Boolean].and((__ \ "Auth_i64-8").read[Boolean])(SaFoundResponse.apply)
 
-  private implicit val payeFoundResponseReads: Reads[PayeFoundResponse] =
+  private given payeFoundResponseReads: Reads[PayeFoundResponse] =
     (__ \ "Auth_64-8").read[Boolean].map(PayeFoundResponse.apply)
 
   def getSaAgentClientRelationship(
       saAgentReference: SaAgentReference,
       saUtr: SaUtr
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse] = {
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse] = {
     import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 
     val url   = url"$desBaseUrlSa/sa/agents/${saAgentReference.value}/client/$saUtr"
@@ -86,7 +86,7 @@ class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient
     timer.time()
     httpClient
       .get(url)
-      .setHeader(explicitDesHeaders: _*)
+      .setHeader(explicitDesHeaders*)
       .execute[HttpResponse]
       .map { response =>
         timer.time().stop()
@@ -109,7 +109,7 @@ class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient
   def getPayeAgentClientRelationship(
       agentCode: AgentCode,
       empRef: EmpRef
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse] = {
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse] = {
     import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 
     val desHeaderCarrier = hc.copy(
@@ -122,7 +122,7 @@ class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient
 
     timer.time()
     httpClient
-      .get(url)(desHeaderCarrier)
+      .get(url)(using desHeaderCarrier)
       .execute[HttpResponse]
       .map { response =>
         timer.time().stop()
