@@ -40,8 +40,9 @@ import uk.gov.hmrc.http.UpstreamErrorResponse
 
 case class Relationship(arn: String, clientId: String)
 
-object Relationship:
+object Relationship {
   given jsonReads: Reads[Relationship] = Json.reads[Relationship]
+}
 
 @ImplementedBy(classOf[RelationshipsConnectorImpl])
 trait RelationshipsConnector {

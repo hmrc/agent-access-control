@@ -26,7 +26,6 @@ import play.api.mvc.Action
 import play.api.mvc.AnyContent
 import play.api.mvc.ControllerComponents
 import play.api.mvc.Request
-import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.CbcId
 import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.CgtRef
 import uk.gov.hmrc.agentaccesscontrol.models.clientidtypes.MtdItId
@@ -39,6 +38,7 @@ import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.models.Service
 import uk.gov.hmrc.agentaccesscontrol.services.AuthorisationService
 import uk.gov.hmrc.agentaccesscontrol.services.ESAuthorisationService
+import uk.gov.hmrc.agentaccesscontrol.util.RequestAwareLogging
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.domain.EmpRef
@@ -56,7 +56,7 @@ class AuthorisationController @Inject() (
 )(using ec: ExecutionContext)
     extends BackendController(cc)
     with AuthAction
-    with Logging {
+    with RequestAwareLogging {
 
   def authorise(authType: String, agentCode: String, clientId: String): Action[AnyContent] = {
 

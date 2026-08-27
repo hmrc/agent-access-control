@@ -35,7 +35,7 @@ import uk.gov.hmrc.http.UpstreamErrorResponse
 
 class AgentServicesAccountConnector @Inject() (http: HttpClientV2)(
     using appConfig: AppConfig,
-    val ec: ExecutionContext
+    ec: ExecutionContext
 ) {
 
   val baseUrl: String = s"${appConfig.agentServicesAccountBaseUrl}/agent-services-account"
