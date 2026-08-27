@@ -1,3 +1,10 @@
+    val timer = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
+
+    timer.time()
+        timer.time().stop()
+    val timer = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
+
+    timer.time()
 /*
  * Copyright 2023 HM Revenue & Customs
  *
@@ -123,7 +130,7 @@ class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient
       .get(url)(using desHeaderCarrier)
       .execute[HttpResponse]
       .map { response =>
-        timerCtx.stop()
+        timer.time().stop()
         response.status match {
           case status if is2xx(status) =>
             payeFoundResponseReads.reads(Json.parse(response.body)).get
