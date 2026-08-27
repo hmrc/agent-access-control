@@ -23,7 +23,6 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 import play.api.mvc.Request
-import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
@@ -34,6 +33,7 @@ import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
 import uk.gov.hmrc.agentaccesscontrol.models.Service
+import uk.gov.hmrc.agentaccesscontrol.util.RequestAwareLogging
 import uk.gov.hmrc.auth.core.CredentialRole
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.domain.TaxIdentifier
@@ -50,7 +50,7 @@ class ESAuthorisationService @Inject() (
     appConfig: AppConfig
 )(using ec: ExecutionContext)
     extends AgentSuspensionChecker
-    with Logging {
+    with RequestAwareLogging {
 
   def authoriseStandardService(
       agentCode: AgentCode,

@@ -19,13 +19,14 @@ package uk.gov.hmrc.agentaccesscontrol.services
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.models.SuspensionDetailsNotFound
+import uk.gov.hmrc.agentaccesscontrol.support.NoRequest
+import uk.gov.hmrc.agentaccesscontrol.util.RequestAwareLogging
 import uk.gov.hmrc.domain.TaxIdentifier
 import uk.gov.hmrc.http.HeaderCarrier
 
-trait AgentSuspensionChecker { this: Logging =>
+trait AgentSuspensionChecker { this: RequestAwareLogging =>
 
   val getAgentRecordService: AgentRecordService
 
@@ -38,19 +39,19 @@ trait AgentSuspensionChecker { this: Logging =>
         val isSuspended = suspensionDetails.suspensionStatus && suspensionDetails.suspendedRegimes
           .contains(regime)
         if (isSuspended) {
-          logger.warn(s"agent with id : ${agentId.value} is suspended for regime $regime")
+          logger.warn(s"agent with id : ${agentId.value} is suspended for regime $regime")(using NoRequest)
           Future.successful(AccessResponse.AgentSuspended)
         } else proceed
       }
       .recover {
         case _: SuspensionDetailsNotFound =>
           val message = s"Suspension details not found for $agentId"
-          logger.warn(s"Not authorised: $message")
+          logger.warn(s"Not authorised: $message")(using NoRequest)
           AccessResponse.Error(message)
         case e => // TODO this will also catch any errors thrown in the 'proceed' function
           val message =
             s"Error retrieving suspension details for $agentId: ${e.getMessage}"
-          logger.warn(s"Not authorised: $message")
+          logger.warn(s"Not authorised: $message")(using NoRequest)
           AccessResponse.Error(message)
       }
   }

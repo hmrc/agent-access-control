@@ -21,9 +21,10 @@ import scala.concurrent.Future
 
 import play.api.mvc.Result
 import play.api.mvc.Results
-import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
+import uk.gov.hmrc.agentaccesscontrol.support.NoRequest
+import uk.gov.hmrc.agentaccesscontrol.util.RequestAwareLogging
 import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.agentCode
@@ -36,7 +37,7 @@ import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.domain.SaAgentReference
 import uk.gov.hmrc.http.HeaderCarrier
 
-trait AuthAction extends AuthorisedFunctions with Results with Logging {
+trait AuthAction extends AuthorisedFunctions with Results with RequestAwareLogging {
 
   def withAgentAuthorised[A](
       ac: AgentCode
@@ -56,10 +57,10 @@ trait AuthAction extends AuthorisedFunctions with Results with Logging {
                 )
               )
             case Some(_) =>
-              logger.warn(s"agent code from auth did not match the agent code in url")
+              logger.warn(s"agent code from auth did not match the agent code in url")(using NoRequest)
               Future(Forbidden)
             case None =>
-              logger.info(s"no agent code found in auth details for agent code $ac")
+              logger.info(s"no agent code found in auth details for agent code $ac")(using NoRequest)
               Future(Forbidden)
           }
         case err => throw new Exception(s"Authorisation retrieval error: $err")
@@ -71,11 +72,11 @@ trait AuthAction extends AuthorisedFunctions with Results with Logging {
 
   private def handleException(): PartialFunction[Throwable, Result] = {
     case e: UnsupportedAffinityGroup =>
-      logger.warn(s"user did not have the Agent Affinity Group ${e.getMessage}")
+      logger.warn(s"user did not have the Agent Affinity Group ${e.getMessage}")(using NoRequest)
       Forbidden
 
     case e: UnsupportedAuthProvider =>
-      logger.warn(s"user was not authorised in Government Gateway ${e.getMessage}")
+      logger.warn(s"user was not authorised in Government Gateway ${e.getMessage}")(using NoRequest)
       Forbidden
   }
 
