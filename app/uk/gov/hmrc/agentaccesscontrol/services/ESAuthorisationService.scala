@@ -48,7 +48,7 @@ class ESAuthorisationService @Inject() (
     agentPermissionsConnector: AgentPermissionsConnector,
     auditService: AuditService,
     appConfig: AppConfig
-)(implicit ec: ExecutionContext)
+)(using ec: ExecutionContext)
     extends AgentSuspensionChecker
     with RequestAwareLogging {
 

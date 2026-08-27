@@ -1,10 +1,3 @@
-    val timer = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
-
-    timer.time()
-        timer.time().stop()
-    val timer = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
-
-    timer.time()
 /*
  * Copyright 2023 HM Revenue & Customs
  *
@@ -45,19 +38,19 @@ import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 @ImplementedBy(classOf[DesAgentClientApiConnectorImpl])
 trait DesAgentClientApiConnector {
   def getSaAgentClientRelationship(saAgentReference: SaAgentReference, saUtr: SaUtr)(
-      using hc: HeaderCarrier,
-      ec: ExecutionContext
+    using hc: HeaderCarrier,
+    ec: ExecutionContext
   ): Future[SaDesAgentClientFlagsApiResponse]
 
   def getPayeAgentClientRelationship(agentCode: AgentCode, empRef: EmpRef)(
-      using hc: HeaderCarrier,
-      ec: ExecutionContext
+    using hc: HeaderCarrier,
+    ec: ExecutionContext
   ): Future[PayeDesAgentClientFlagsApiResponse]
 }
 
 @Singleton
 class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient: HttpClientV2, metrics: Metrics)
-    extends DesAgentClientApiConnector {
+  extends DesAgentClientApiConnector {
 
   private val desBaseUrlPaye     = appConfig.desPayeUrl
   private val desBaseUrlSa       = appConfig.desSAUrl
@@ -82,20 +75,21 @@ class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient
     (__ \ "Auth_64-8").read[Boolean].map(PayeFoundResponse.apply)
 
   def getSaAgentClientRelationship(
-      saAgentReference: SaAgentReference,
-      saUtr: SaUtr
-  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse] = {
+                                    saAgentReference: SaAgentReference,
+                                    saUtr: SaUtr
+                                  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[SaDesAgentClientFlagsApiResponse] = {
     import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 
-    val url      = url"$desBaseUrlSa/sa/agents/${saAgentReference.value}/client/$saUtr"
-    val timer    = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
-    val timerCtx = timer.time()
+    val url   = url"$desBaseUrlSa/sa/agents/${saAgentReference.value}/client/$saUtr"
+    val timer = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-DES-GetSaAgentClientRelationship-GET")
+
+    timer.time()
     httpClient
       .get(url)
       .setHeader(explicitDesHeaders*)
       .execute[HttpResponse]
       .map { response =>
-        timerCtx.stop()
+        timer.time().stop()
         response.status match {
           case status if is2xx(status) =>
             foundResponseReads.reads(Json.parse(response.body)).get
@@ -113,9 +107,9 @@ class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient
   }
 
   def getPayeAgentClientRelationship(
-      agentCode: AgentCode,
-      empRef: EmpRef
-  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse] = {
+                                      agentCode: AgentCode,
+                                      empRef: EmpRef
+                                    )(using hc: HeaderCarrier, ec: ExecutionContext): Future[PayeDesAgentClientFlagsApiResponse] = {
     import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 
     val desHeaderCarrier = hc.copy(
@@ -124,8 +118,9 @@ class DesAgentClientApiConnectorImpl @Inject() (appConfig: AppConfig, httpClient
     )
     val url =
       url"$desBaseUrlPaye/agents/regime/PAYE/agent/$agentCode/client/${empRef.taxOfficeNumber}${empRef.taxOfficeReference}"
-    val timer    = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
-    val timerCtx = timer.time()
+    val timer = metrics.defaultRegistry.timer(s"Timer-ConsumedAPI-DES-GetPayeAgentClientRelationship-GET")
+
+    timer.time()
     httpClient
       .get(url)(using desHeaderCarrier)
       .execute[HttpResponse]
