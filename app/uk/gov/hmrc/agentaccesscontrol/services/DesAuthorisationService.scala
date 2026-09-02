@@ -22,7 +22,6 @@ import javax.inject.Singleton
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.connectors.desapi.DesAgentClientApiConnector
 import uk.gov.hmrc.agentaccesscontrol.models.PayeDesAgentClientFlagsApiResponse
 import uk.gov.hmrc.agentaccesscontrol.models.PayeFoundResponse
@@ -30,6 +29,8 @@ import uk.gov.hmrc.agentaccesscontrol.models.PayeNotFoundResponse
 import uk.gov.hmrc.agentaccesscontrol.models.SaDesAgentClientFlagsApiResponse
 import uk.gov.hmrc.agentaccesscontrol.models.SaFoundResponse
 import uk.gov.hmrc.agentaccesscontrol.models.SaNotFoundResponse
+import uk.gov.hmrc.agentaccesscontrol.support.NoRequest
+import uk.gov.hmrc.agentaccesscontrol.util.RequestAwareLogging
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.domain.EmpRef
 import uk.gov.hmrc.domain.SaAgentReference
@@ -37,7 +38,8 @@ import uk.gov.hmrc.domain.SaUtr
 import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
-class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentClientApiConnector) extends Logging {
+class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentClientApiConnector)
+    extends RequestAwareLogging {
 
   def isAuthorisedInCesa(agentCode: AgentCode, saAgentReference: SaAgentReference, saUtr: SaUtr)(
       using ec: ExecutionContext,
@@ -62,15 +64,19 @@ class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentCli
   ): Boolean =
     response match {
       case SaNotFoundResponse =>
-        logger.info(s"Not authorised: DES API returned not found for agent $agentCode and client $saUtr")
+        logger.info(s"Not authorised: DES API returned not found for agent $agentCode and client $saUtr")(
+          using NoRequest
+        )
         false
       case SaFoundResponse(true, true) =>
-        logger.info(s"Authorised: DES API returned true for both flags for agent $agentCode and client $saUtr")
+        logger.info(s"Authorised: DES API returned true for both flags for agent $agentCode and client $saUtr")(
+          using NoRequest
+        )
         true
       case SaFoundResponse(auth64_8, authI64_8) =>
         logger.info(
           s"DES API returned false for at least one flag agent $agentCode and client $saUtr. 64-8=$auth64_8, i64-8=$authI64_8"
-        )
+        )(using NoRequest)
         false
     }
 
@@ -81,13 +87,19 @@ class DesAuthorisationService @Inject() (desAgentClientApiConnector: DesAgentCli
   ): Boolean =
     response match {
       case PayeNotFoundResponse =>
-        logger.info(s"Not authorised: DES API returned not found for agent $agentCode and client $empRef")
+        logger.info(s"Not authorised: DES API returned not found for agent $agentCode and client $empRef")(
+          using NoRequest
+        )
         false
       case PayeFoundResponse(true) =>
-        logger.info(s"Authorised: DES API returned true for auth64-8 for agent $agentCode and client $empRef")
+        logger.info(s"Authorised: DES API returned true for auth64-8 for agent $agentCode and client $empRef")(
+          using NoRequest
+        )
         true
       case PayeFoundResponse(false) =>
-        logger.info(s"Not authorised: DES API returned false for auth64-8 flag agent $agentCode and client $empRef")
+        logger.info(s"Not authorised: DES API returned false for auth64-8 flag agent $agentCode and client $empRef")(
+          using NoRequest
+        )
         false
     }
 

@@ -24,17 +24,18 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
-import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.models.AgentReferenceMappings
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
+import uk.gov.hmrc.agentaccesscontrol.support.NoRequest
+import uk.gov.hmrc.agentaccesscontrol.util.RequestAwareLogging
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.StringContextOps
 
 @Singleton
-class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2) extends Logging {
+class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2) extends RequestAwareLogging {
 
   def getAgentMappings(
       key: String,
@@ -49,7 +50,7 @@ class MappingConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2
       }
       .recover {
         case NonFatal(_) =>
-          logger.warn("Something went wrong")
+          logger.warn("Something went wrong")(using NoRequest)
           AgentReferenceMappings.apply(List.empty)
       }
   }

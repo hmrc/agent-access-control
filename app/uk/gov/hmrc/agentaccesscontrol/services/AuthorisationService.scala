@@ -26,13 +26,14 @@ import scala.util.Failure
 import scala.util.Success
 
 import play.api.mvc.Request
-import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.audit.AgentAccessControlDecision
 import uk.gov.hmrc.agentaccesscontrol.audit.AuditService
 import uk.gov.hmrc.agentaccesscontrol.connectors.*
 import uk.gov.hmrc.agentaccesscontrol.models.AccessResponse
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
 import uk.gov.hmrc.agentaccesscontrol.models.AuthDetails
+import uk.gov.hmrc.agentaccesscontrol.support.NoRequest
+import uk.gov.hmrc.agentaccesscontrol.util.RequestAwareLogging
 import uk.gov.hmrc.domain.*
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
@@ -46,7 +47,7 @@ class AuthorisationService @Inject() (
     afiRelationshipConnector: AfiRelationshipConnector,
     val getAgentRecordService: AgentRecordService
 ) extends AgentSuspensionChecker
-    with Logging {
+    with RequestAwareLogging {
 
   private val accessGranted = true
   private val accessDenied  = false
@@ -347,7 +348,7 @@ class AuthorisationService @Inject() (
         .map(ar => s"agent=$ar")
         .getOrElse("")} agentCode=${agentCode.value} agentUserId=$agentUserId client=$clientTaxIdentifier ${hasAgents
         .map(ha => s"clientHasAgents=$ha")
-        .getOrElse("")}")
+        .getOrElse("")}")(using NoRequest)
     val accessResponse = AccessResponse.NoRelationship
     audit(accessResponse)
     accessResponse
@@ -361,7 +362,7 @@ class AuthorisationService @Inject() (
   )(audit: AccessResponse => Future[AuditResult]): AccessResponse = {
     logger.info(
       s"Authorised: Access allowed for agent=$agentReference agentCode=${agentCode.value} agentUserId=$agentUserId client=$clientTaxIdentifier"
-    )
+    )(using NoRequest)
     val accessResponse = AccessResponse.Authorised
     audit(accessResponse)
     accessResponse

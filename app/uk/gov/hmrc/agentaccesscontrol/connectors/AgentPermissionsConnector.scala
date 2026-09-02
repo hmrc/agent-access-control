@@ -26,10 +26,11 @@ import scala.concurrent.Future
 import com.google.inject.ImplementedBy
 import play.api.http.Status
 import play.api.libs.json.Json
-import play.api.Logging
 import uk.gov.hmrc.agentaccesscontrol.config.AppConfig
 import uk.gov.hmrc.agentaccesscontrol.models.accessgroups.TaxGroup
 import uk.gov.hmrc.agentaccesscontrol.models.Arn
+import uk.gov.hmrc.agentaccesscontrol.support.NoRequest
+import uk.gov.hmrc.agentaccesscontrol.util.RequestAwareLogging
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.HttpReads.Implicits.*
@@ -52,7 +53,7 @@ trait AgentPermissionsConnector {
 @Singleton
 class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2)(using appConfig: AppConfig)
     extends AgentPermissionsConnector
-    with Logging {
+    with RequestAwareLogging {
 
   val agentPermissionsBaseUrl = new URL(appConfig.agentPermissionsUrl)
 
@@ -68,7 +69,9 @@ class AgentPermissionsConnectorImpl @Inject() (http: HttpClientV2)(using appConf
         case Status.NOT_FOUND  => false
         case _ =>
           logger
-            .warn(s"Got ${response.status} when checking for optin record exists. Response message: '${response.body}'")
+            .warn(
+              s"Got ${response.status} when checking for optin record exists. Response message: '${response.body}'"
+            )(using NoRequest)
           false
       }
     }
